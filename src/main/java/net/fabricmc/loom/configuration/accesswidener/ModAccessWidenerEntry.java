@@ -32,10 +32,10 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
-import net.fabricmc.accesswidener.TransitiveOnlyFilter;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
+import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
+import net.fabricmc.classtweaker.visitors.TransitiveOnlyFilter;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -67,26 +67,26 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 	}
 
 	@Override
-	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
 		if (transitiveOnly) {
 			// Filter for only transitive rules
 			visitor = new TransitiveOnlyFilter(visitor);
 		}
 
 		final byte[] data = readRaw();
-		final AccessWidenerReader.Header header = AccessWidenerReader.readHeader(data);
+		final ClassTweakerReader.Header header = ClassTweakerReader.readHeader(data);
 
 		if (!header.getNamespace().equals(MappingsNamespace.NAMED.toString())) {
 			// Remap the AW if needed
 			visitor = getRemapper(visitor, remapper.get());
 		}
 
-		var reader = new AccessWidenerReader(visitor);
-		reader.read(data);
+		var reader = ClassTweakerReader.create(visitor);
+		reader.read(data, mod.getId());
 	}
 
-	private static AccessWidenerRemapper getRemapper(AccessWidenerVisitor visitor, TinyRemapper tinyRemapper) {
-		return new AccessWidenerRemapper(
+	private static ClassTweakerRemapperVisitor getRemapper(ClassTweakerVisitor visitor, TinyRemapper tinyRemapper) {
+		return new ClassTweakerRemapperVisitor(
 				visitor,
 				tinyRemapper.getEnvironment().getRemapper(),
 				MappingsNamespace.INTERMEDIARY.toString(),

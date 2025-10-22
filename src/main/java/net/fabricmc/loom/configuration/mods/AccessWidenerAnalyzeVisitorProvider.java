@@ -29,16 +29,15 @@ import java.util.List;
 
 import org.objectweb.asm.ClassVisitor;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
-import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.classtweaker.api.ClassTweaker;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public record AccessWidenerAnalyzeVisitorProvider(AccessWidener accessWidener) implements TinyRemapper.AnalyzeVisitorProvider {
+public record AccessWidenerAnalyzeVisitorProvider(ClassTweaker accessWidener) implements TinyRemapper.AnalyzeVisitorProvider {
 	static AccessWidenerAnalyzeVisitorProvider createFromMods(String namespace, List<ModDependency> mods) throws IOException {
-		AccessWidener accessWidener = new AccessWidener();
+		ClassTweaker accessWidener = ClassTweaker.newInstance();
 		accessWidener.visitHeader(namespace);
 
 		for (ModDependency mod : mods) {
@@ -48,8 +47,8 @@ public record AccessWidenerAnalyzeVisitorProvider(AccessWidener accessWidener) i
 				continue;
 			}
 
-			final var reader = new AccessWidenerReader(accessWidener);
-			reader.read(accessWidenerData.content());
+			final var reader = ClassTweakerReader.create(accessWidener);
+			reader.read(accessWidenerData.content(), null); // TODO pass mod id
 		}
 
 		return new AccessWidenerAnalyzeVisitorProvider(accessWidener);
@@ -57,6 +56,6 @@ public record AccessWidenerAnalyzeVisitorProvider(AccessWidener accessWidener) i
 
 	@Override
 	public ClassVisitor insertAnalyzeVisitor(int mrjVersion, String className, ClassVisitor next) {
-		return AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, next, accessWidener);
+		return accessWidener.createClassVisitor(Constants.ASM_VERSION, next, null);
 	}
 }

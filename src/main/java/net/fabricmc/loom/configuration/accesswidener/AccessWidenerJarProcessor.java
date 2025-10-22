@@ -38,7 +38,7 @@ import javax.inject.Inject;
 import org.gradle.api.file.RegularFileProperty;
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
@@ -131,7 +131,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 	public void processJar(Path jar, AccessWidenerJarProcessor.Spec spec, ProcessorContext context) throws IOException {
 		final List<AccessWidenerEntry> accessWideners = spec.accessWidenersForContext(context);
 
-		final var accessWidener = new AccessWidener();
+		final var accessWidener = ClassTweaker.newInstance();
 
 		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry widener : accessWideners) {

@@ -28,7 +28,7 @@ import java.io.IOException;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.ModEnvironment;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -44,5 +44,5 @@ public interface AccessWidenerEntry {
 
 	String getSortKey();
 
-	void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+	void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
 }

@@ -52,9 +52,9 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.ClassTweakerWriter;
+import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
@@ -268,19 +268,19 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		private byte[] remapAccessWidener(byte[] input) {
 			Objects.requireNonNull(tinyRemapper, "tinyRemapper");
 
-			int version = AccessWidenerReader.readVersion(input);
+			int version = ClassTweakerReader.readVersion(input);
 
-			AccessWidenerWriter writer = new AccessWidenerWriter(version);
-			AccessWidenerRemapper remapper = new AccessWidenerRemapper(
+			ClassTweakerWriter writer = ClassTweakerWriter.create(version);
+			ClassTweakerRemapperVisitor remapper = new ClassTweakerRemapperVisitor(
 					writer,
 					tinyRemapper.getEnvironment().getRemapper(),
 					getParameters().getSourceNamespace().get(),
 					getParameters().getTargetNamespace().get()
 			);
-			AccessWidenerReader reader = new AccessWidenerReader(remapper);
-			reader.read(input);
+			ClassTweakerReader reader = ClassTweakerReader.create(remapper);
+			reader.read(input, null); // TODO pass mod id
 
-			return writer.write();
+			return writer.getOutput();
 		}
 
 		private void addNestedJars() {

@@ -37,8 +37,7 @@ import org.objectweb.asm.ClassWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
+import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
@@ -46,9 +45,9 @@ import net.fabricmc.loom.util.ZipUtils;
 final class AccessWidenerTransformer {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AccessWidenerTransformer.class);
 
-	private final AccessWidener accessWidener;
+	private final ClassTweaker accessWidener;
 
-	AccessWidenerTransformer(AccessWidener accessWidener) {
+	AccessWidenerTransformer(ClassTweaker accessWidener) {
 		this.accessWidener = accessWidener;
 	}
 
@@ -73,7 +72,7 @@ final class AccessWidenerTransformer {
 		return input -> {
 			ClassReader reader = new ClassReader(input);
 			ClassWriter writer = new ClassWriter(0);
-			ClassVisitor classVisitor = AccessWidenerClassVisitor.createClassVisitor(Constants.ASM_VERSION, writer, accessWidener);
+			ClassVisitor classVisitor = accessWidener.createClassVisitor(Constants.ASM_VERSION, writer, null);
 
 			LOGGER.debug("Applying access widener to " + className);
 

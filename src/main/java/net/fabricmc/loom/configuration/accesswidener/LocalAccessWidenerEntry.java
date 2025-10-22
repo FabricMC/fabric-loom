@@ -30,8 +30,8 @@ import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.ModEnvironment;
@@ -43,9 +43,9 @@ public record LocalAccessWidenerEntry(Path path, String hash) implements AccessW
 	}
 
 	@Override
-	public void read(AccessWidenerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
-		var reader = new AccessWidenerReader(visitor);
-		reader.read(Files.readAllBytes(path));
+	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+		var reader = ClassTweakerReader.create(visitor);
+		reader.read(Files.readAllBytes(path), null);
 	}
 
 	@Override

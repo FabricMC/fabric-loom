@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
@@ -41,14 +42,12 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 
-import net.fabricmc.accesswidener.AccessWidenerFormatException;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.validator.ClassTweakerValidatingVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import net.fabricmc.tinyremapper.api.TrEnvironment;
 
 public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	@SkipWhenEmpty
@@ -77,44 +76,26 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 			tinyRemapper.readClassPath(file.toPath());
 		}
 
-		final AccessWidenerValidator validator = new AccessWidenerValidator(tinyRemapper.getEnvironment());
-		final AccessWidenerReader accessWidenerReader = new AccessWidenerReader(validator);
+		AtomicBoolean hasProblem = new AtomicBoolean(false);
+
+		final ClassTweakerValidatingVisitor validator = new ClassTweakerValidatingVisitor(tinyRemapper.getEnvironment(), (lineNumber, message) -> {
+			hasProblem.set(true);
+			getLogger().error("{} on line {}", message, lineNumber);
+		});
+
+		final ClassTweakerReader accessWidenerReader = ClassTweakerReader.create(validator);
 
 		try (BufferedReader reader = Files.newBufferedReader(getAccessWidener().get().getAsFile().toPath(), StandardCharsets.UTF_8)) {
 			accessWidenerReader.read(reader, "named");
-		} catch (AccessWidenerFormatException e) {
-			getLogger().error("Failed to validate access-widener file {} on line {}: {}", getAccessWidener().get().getAsFile().getName(), e.getLineNumber(), e.getMessage());
-			throw e;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read access widener", e);
 		} finally {
 			tinyRemapper.finish();
 		}
-	}
 
-	/**
-	 * Validates that all entries in an access-widner file relate to a class/method/field in the mc jar.
-	 */
-	private record AccessWidenerValidator(TrEnvironment environment) implements AccessWidenerVisitor {
-		@Override
-		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (environment().getClass(name) == null) {
-				throw new RuntimeException("Could not find class (%s)".formatted(name));
-			}
-		}
-
-		@Override
-		public void visitMethod(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (environment().getMethod(owner, name, descriptor) == null) {
-				throw new RuntimeException("Could not find method (%s%s) in class (%s)".formatted(name, descriptor, owner));
-			}
-		}
-
-		@Override
-		public void visitField(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			if (environment().getField(owner, name, descriptor) == null) {
-				throw new RuntimeException("Could not find field (%s%s) in class (%s)".formatted(name, descriptor, owner));
-			}
+		if (hasProblem.get()) {
+			getLogger().error("access-widener validation failed for {}", getAccessWidener().get().getAsFile().getName());
+			throw new RuntimeException("access-widener validation failed for %s".formatted(getAccessWidener().get().getAsFile().getName()));
 		}
 	}
 }

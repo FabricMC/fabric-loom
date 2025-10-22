@@ -31,8 +31,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
+import net.fabricmc.classtweaker.api.visitor.AccessWidenerVisitor;
+import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -43,6 +43,8 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class TransitiveAccessWidenerMappingsProcessor implements MinecraftJarProcessor.MappingsProcessor<AccessWidenerJarProcessor.Spec> {
 	public static final TransitiveAccessWidenerMappingsProcessor INSTANCE = new TransitiveAccessWidenerMappingsProcessor();
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(TransitiveAccessWidenerMappingsProcessor.class);
 
 	private TransitiveAccessWidenerMappingsProcessor() {
 	}
@@ -63,7 +65,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 
 		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry accessWidener : accessWideners) {
-				var visitor = new MappingCommentVisitor(accessWidener.mappingId(), mappings);
+				var visitor = new MappingCommentClassTweakerVisitor(accessWidener.mappingId(), mappings);
 				accessWidener.read(visitor, remapper);
 			}
 		} catch (IOException e) {
@@ -73,80 +75,91 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 		return true;
 	}
 
-	private record MappingCommentVisitor(String modId, MemoryMappingTree mappingTree) implements AccessWidenerVisitor {
-		private static final Logger LOGGER = LoggerFactory.getLogger(MappingCommentVisitor.class);
-
+	private record MappingCommentClassTweakerVisitor(String modId, MemoryMappingTree mappingTree) implements ClassTweakerVisitor {
 		@Override
-		public void visitClass(String name, AccessWidenerReader.AccessType access, boolean transitive) {
-			MappingTree.ClassMapping classMapping = mappingTree.getClass(name);
-
-			if (classMapping == null) {
-				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
-				return;
-			}
-
-			classMapping.setComment(appendComment(classMapping.getComment(), access));
+		public AccessWidenerVisitor visitAccessWidener(String owner) {
+			return new MappingCommentAccessWidenerVisitor(owner);
 		}
 
-		@Override
-		public void visitMethod(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			// Access is also applied to the class, so also add the comment to the class
-			visitClass(owner, access, transitive);
+		private class MappingCommentAccessWidenerVisitor implements AccessWidenerVisitor {
+			private final String className;
 
-			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
-
-			if (classMapping == null) {
-				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", owner, modId());
-				return;
+			private MappingCommentAccessWidenerVisitor(String className) {
+				this.className = className;
 			}
 
-			MappingTree.MethodMapping methodMapping = classMapping.getMethod(name, descriptor);
+			@Override
+			public void visitClass(AccessType access, boolean transitive) {
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
 
-			if (methodMapping == null) {
-				LOGGER.info("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
-				return;
+				if (classMapping == null) {
+					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", className, modId());
+					return;
+				}
+
+				classMapping.setComment(appendComment(classMapping.getComment(), access));
 			}
 
-			methodMapping.setComment(appendComment(methodMapping.getComment(), access));
-		}
+			@Override
+			public void visitMethod(String name, String descriptor, AccessType access, boolean transitive) {
+				// Access is also applied to the class, so also add the comment to the class
+				visitClass(access, transitive);
 
-		@Override
-		public void visitField(String owner, String name, String descriptor, AccessWidenerReader.AccessType access, boolean transitive) {
-			// Access is also applied to the class, so also add the comment to the class
-			visitClass(owner, access, transitive);
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
 
-			MappingTree.ClassMapping classMapping = mappingTree.getClass(owner);
+				if (classMapping == null) {
+					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", className, modId());
+					return;
+				}
 
-			if (classMapping == null) {
-				LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
-				return;
+				MappingTree.MethodMapping methodMapping = classMapping.getMethod(name, descriptor);
+
+				if (methodMapping == null) {
+					LOGGER.info("Failed to find method ({}) in ({}) to mark access widened by mod ({})", name, className, modId());
+					return;
+				}
+
+				methodMapping.setComment(appendComment(methodMapping.getComment(), access));
 			}
 
-			MappingTree.FieldMapping fieldMapping = classMapping.getField(name, descriptor);
+			@Override
+			public void visitField(String name, String descriptor, AccessType access, boolean transitive) {
+				// Access is also applied to the class, so also add the comment to the class
+				visitClass(access, transitive);
 
-			if (fieldMapping == null) {
-				LOGGER.info("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, owner, modId());
-				return;
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
+
+				if (classMapping == null) {
+					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());
+					return;
+				}
+
+				MappingTree.FieldMapping fieldMapping = classMapping.getField(name, descriptor);
+
+				if (fieldMapping == null) {
+					LOGGER.info("Failed to find field ({}) in ({}) to mark access widened by mod ({})", name, className, modId());
+					return;
+				}
+
+				fieldMapping.setComment(appendComment(fieldMapping.getComment(), access));
 			}
 
-			fieldMapping.setComment(appendComment(fieldMapping.getComment(), access));
-		}
+			private String appendComment(String comment, AccessType access) {
+				if (comment == null) {
+					comment = "";
+				} else {
+					comment += "\n";
+				}
 
-		private String appendComment(String comment, AccessWidenerReader.AccessType access) {
-			if (comment == null) {
-				comment = "";
-			} else {
-				comment += "\n";
+				String awComment = "Access widened by %s to %s".formatted(modId(), access);
+
+				if (!comment.contains(awComment)) {
+					// Ensure we don't comment the same thing twice. A bit of a cheap way to do this, but should work ok.
+					comment += awComment;
+				}
+
+				return comment;
 			}
-
-			String awComment = "Access widened by %s to %s".formatted(modId(), access);
-
-			if (!comment.contains(awComment)) {
-				// Ensure we don't comment the same thing twice. A bit of a cheap way to do this, but should work ok.
-				comment += awComment;
-			}
-
-			return comment;
 		}
 	}
 }

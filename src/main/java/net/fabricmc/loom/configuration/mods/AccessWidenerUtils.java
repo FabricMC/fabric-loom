@@ -30,9 +30,9 @@ import java.util.List;
 
 import org.objectweb.asm.commons.Remapper;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.ClassTweakerWriter;
+import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
@@ -42,18 +42,18 @@ public class AccessWidenerUtils {
 	 * Remap a mods access widener from intermediary to named, so that loader can apply it in our dev-env.
 	 */
 	public static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		int version = AccessWidenerReader.readVersion(input);
+		int version = ClassTweakerReader.readVersion(input);
 
-		AccessWidenerWriter writer = new AccessWidenerWriter(version);
-		AccessWidenerRemapper awRemapper = new AccessWidenerRemapper(
+		ClassTweakerWriter writer = ClassTweakerWriter.create(version);
+		ClassTweakerRemapperVisitor awRemapper = new ClassTweakerRemapperVisitor(
 				writer,
 				remapper,
 				MappingsNamespace.INTERMEDIARY.toString(),
 				MappingsNamespace.NAMED.toString()
 		);
-		AccessWidenerReader reader = new AccessWidenerReader(awRemapper);
-		reader.read(input);
-		return writer.write();
+		ClassTweakerReader reader = ClassTweakerReader.create(awRemapper);
+		reader.read(input, null); // TODO pass modid
+		return writer.getOutput();
 	}
 
 	public static AccessWidenerData readAccessWidenerData(Path inputJar) throws IOException {
@@ -74,11 +74,11 @@ public class AccessWidenerUtils {
 
 		final String accessWidenerPath = classTweakers.get(0);
 		final byte[] accessWidener = fabricModJson.getSource().read(accessWidenerPath);
-		final AccessWidenerReader.Header header = AccessWidenerReader.readHeader(accessWidener);
+		final ClassTweakerReader.Header header = ClassTweakerReader.readHeader(accessWidener);
 
 		return new AccessWidenerData(accessWidenerPath, header, accessWidener);
 	}
 
-	public record AccessWidenerData(String path, AccessWidenerReader.Header header, byte[] content) {
+	public record AccessWidenerData(String path, ClassTweakerReader.Header header, byte[] content) {
 	}
 }

@@ -34,6 +34,7 @@ import org.gradle.api.Named;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.SourceSet;
@@ -128,6 +129,18 @@ public abstract class ModSettings implements Named {
 		}
 
 		getExternalGroups().add(new ExternalClasspathGroup(projectPath, sourceSetName));
+	}
+
+	/**
+	 * Add {@link SourceSet}'s output directories from the supplied project to be grouped with the named mod.
+	 *
+	 * <p>If the other project is not a Loom project you must apply the `net.fabricmc.fabric-loom-companion` plugin.
+	 *
+	 * @param sourceSetName the name of the source set
+	 * @param projectDependency the {@link ProjectDependency} the source set belongs to
+	 */
+	public void sourceSet(String sourceSetName, ProjectDependency projectDependency) {
+		sourceSet(sourceSetName, projectDependency.getPath());
 	}
 
 	/**

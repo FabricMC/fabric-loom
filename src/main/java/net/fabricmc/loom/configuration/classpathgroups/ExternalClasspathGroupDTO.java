@@ -55,7 +55,7 @@ public record ExternalClasspathGroupDTO(String projectPath, Map<String, List<Str
 
 		for (SourceSet sourceSet : sourceSets) {
 			SourceSetReference ref = new SourceSetReference(sourceSet, project);
-			List<File> classpath = SourceSetHelper.getClasspath(ref);
+			List<File> classpath = SourceSetHelper.getClasspath(ref, true);
 			classpaths.put(sourceSet.getName(), classpath.stream().map(File::getAbsolutePath).toList());
 		}
 

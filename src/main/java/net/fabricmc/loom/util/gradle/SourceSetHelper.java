@@ -112,9 +112,12 @@ public final class SourceSetHelper {
 		return it.hasNext() ? it.next().getProject() : null;
 	}
 
-	public static List<File> getClasspath(SourceSetReference reference) {
+	/**
+	 * @param forExport set to true when this classpath is going to be exported for another project to consume.
+	 */
+	public static List<File> getClasspath(SourceSetReference reference, boolean forExport) {
 		final Project project = reference.project();
-		final List<File> classpath = getGradleClasspath(reference, project);
+		final List<File> classpath = getGradleClasspath(reference, forExport);
 
 		classpath.addAll(getIdeaClasspath(reference, project));
 		classpath.addAll(getIdeaModuleCompileOutput(reference));
@@ -124,7 +127,7 @@ public final class SourceSetHelper {
 		return classpath;
 	}
 
-	private static List<File> getGradleClasspath(SourceSetReference reference, Project project) {
+	private static List<File> getGradleClasspath(SourceSetReference reference, boolean forExport) {
 		final SourceSetOutput output = reference.sourceSet().getOutput();
 		final File resources = output.getResourcesDir();
 
@@ -137,8 +140,7 @@ public final class SourceSetHelper {
 		}
 
 		// Add dev jars from dependency projects if the source set is "main".
-		if (SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && !reference.project().getPath().equals(project.getPath())
-				&& GradleUtils.isLoomProject(reference.project())) {
+		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomProject(reference.project())) {
 			final Configuration namedElements = reference.project().getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS);
 
 			// Note: We're not looking at the artifacts from configuration variants. It's probably not needed

@@ -64,7 +64,6 @@ final class AccessWidenerTransformer {
 			if (targets.size() != transformed) {
 				LOGGER.debug("Access widener target count ({}) does not match transformed class count ({}).", targets.size(), transformed);
 			}
-
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to apply access wideners to %s".formatted(jarFile), e);
 		}

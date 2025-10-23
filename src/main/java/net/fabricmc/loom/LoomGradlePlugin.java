@@ -48,6 +48,7 @@ import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.LibraryLocationLogger;
+import net.fabricmc.loom.util.OneDrive;
 
 public class LoomGradlePlugin implements Plugin<PluginAware> {
 	public static final String NAME = "fabric-loom";
@@ -81,6 +82,7 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
 
 		LibraryLocationLogger.logLibraryVersions();
+		OneDrive.verify(project);
 
 		// Apply default plugins
 		project.apply(Map.of("plugin", "java-library"));

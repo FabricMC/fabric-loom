@@ -44,14 +44,14 @@ allprojects {
 loom {
 	mods {
 		core {
-			sourceSet("main", ":core")
+			sourceSet("main", projects.core)
 		}
 		example {
-			sourceSet("main", ":example")
+			sourceSet("main", projects.example)
 		}
 		root {
 			sourceSet sourceSets.main
-			sourceSet("main", ":javalib")
+			sourceSet("main", projects.javalib)
 		}
 	}
 }

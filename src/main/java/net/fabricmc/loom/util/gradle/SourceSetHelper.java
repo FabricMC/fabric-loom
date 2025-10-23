@@ -42,6 +42,7 @@ import javax.xml.xpath.XPathFactory;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -140,8 +141,10 @@ public final class SourceSetHelper {
 		}
 
 		// Add dev jars from dependency projects if the source set is "main".
-		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomProject(reference.project())) {
-			final Configuration namedElements = reference.project().getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS);
+		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomCompanionProject(reference.project())) {
+			String configurationName = GradleUtils.isLoomProject(reference.project())
+					? Constants.Configurations.NAMED_ELEMENTS : JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME;
+			final Configuration namedElements = reference.project().getConfigurations().getByName(configurationName);
 
 			// Note: We're not looking at the artifacts from configuration variants. It's probably not needed
 			// (certainly not with Loom's setup), but technically someone could add child variants that add additional

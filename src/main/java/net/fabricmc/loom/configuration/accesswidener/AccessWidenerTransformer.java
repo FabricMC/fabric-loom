@@ -56,7 +56,15 @@ final class AccessWidenerTransformer {
 	 */
 	void apply(Path jarFile) {
 		try {
-			ZipUtils.transform(jarFile, getTransformers(accessWidener.getTargets()));
+			Set<String> targets = accessWidener.getTargets();
+			int transformed = ZipUtils.transform(jarFile, getTransformers(targets));
+
+			LOGGER.debug("Applied access wideners to {} classes in {}", transformed, jarFile);
+
+			if (targets.size() != transformed) {
+				LOGGER.debug("Access widener target count ({}) does not match transformed class count ({}).", targets.size(), transformed);
+			}
+
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to apply access wideners to %s".formatted(jarFile), e);
 		}
@@ -64,17 +72,22 @@ final class AccessWidenerTransformer {
 
 	private List<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> getTransformers(Set<String> classes) {
 		return classes.stream()
-				.map(string -> new Pair<>(string.replaceAll("\\.", "/") + ".class", getTransformer(string)))
+				.map(string -> new Pair<>(string + ".class", getTransformer(string)))
 				.collect(Collectors.toList());
 	}
 
 	private ZipUtils.UnsafeUnaryOperator<byte[]> getTransformer(String className) {
 		return input -> {
 			ClassReader reader = new ClassReader(input);
+
+			if (!reader.getClassName().equals(className)) {
+				throw new IllegalStateException("Class name mismatch: expected %s but transforming %s".formatted(className, reader.getClassName()));
+			}
+
 			ClassWriter writer = new ClassWriter(0);
 			ClassVisitor classVisitor = accessWidener.createClassVisitor(Constants.ASM_VERSION, writer, null);
 
-			LOGGER.debug("Applying access widener to " + className);
+			LOGGER.debug("Applying access widener to {}", className);
 
 			reader.accept(classVisitor, 0);
 			return writer.toByteArray();

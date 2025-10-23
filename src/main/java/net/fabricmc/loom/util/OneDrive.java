@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom.util;
 
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -81,11 +80,6 @@ public final class OneDrive {
 
 			try {
 				Path path = Path.of(value);
-
-				if (Files.notExists(path)) {
-					continue;
-				}
-
 				paths.add(path.toAbsolutePath().normalize());
 			} catch (InvalidPathException ignored) {
 				// Don't care

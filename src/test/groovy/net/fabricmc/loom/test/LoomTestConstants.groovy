@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test
 
+import java.lang.management.ManagementFactory
+
 import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
@@ -45,6 +47,9 @@ class LoomTestConstants {
 	]).shuffled().toArray()
 
 	public static final File TEST_DIR = new File("./.gradle/test-files")
+
+	// Try to detect if the debugging agent is enabled.
+	public static final boolean IS_DEBUGGING_ENABLED = ManagementFactory.runtimeMXBean.inputArguments.any { it.startsWith('-agentlib:jdwp') }
 
 	/**
 	 * Nightly gradle versions get removed after a certain amount of time, lets check to see if its still online before running the tests.

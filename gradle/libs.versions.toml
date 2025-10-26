@@ -10,7 +10,7 @@ mapping-io = "0.7.1"
 lorenz-tiny = "4.0.2"
 mercury = "0.4.2"
 loom-native = "0.2.0"
-unpick = "3.0.0-beta.9"
+unpick = "3.0.0-beta.13"
 
 # Plugins
 spotless = "7.2.1"

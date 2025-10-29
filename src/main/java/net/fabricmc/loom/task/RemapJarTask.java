@@ -45,7 +45,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -121,8 +120,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getMixinRefmapServiceOptions().set(MixinRefmapService.createOptions(this));
 	}
 
-	@TaskAction
-	public void run() {
+	@Override
+	protected void copy() {
+		super.copy();
+
 		submitWork(RemapAction.class, params -> {
 			if (getAddNestedDependencies().get()) {
 				params.getNestedJars().from(getNestedJars());

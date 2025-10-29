@@ -36,7 +36,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
-import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.SourceRemapperService;
@@ -55,8 +54,10 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 		getSourcesRemapperServiceOptions().set(SourceRemapperService.createOptions(this));
 	}
 
-	@TaskAction
-	public void run() {
+	@Override
+	protected void copy() {
+		super.copy();
+
 		submitWork(RemapSourcesAction.class, params -> {
 			if (!params.namespacesMatch()) {
 				params.getSourcesRemapperServiceOptions().set(getSourcesRemapperServiceOptions());

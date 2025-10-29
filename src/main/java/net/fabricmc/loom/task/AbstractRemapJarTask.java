@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,9 @@ package net.fabricmc.loom.task;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,6 +58,8 @@ import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 import org.jetbrains.annotations.ApiStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -63,6 +67,7 @@ import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -115,6 +120,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	@Inject
 	public AbstractRemapJarTask() {
+		from(getProject().zipTree(getInputFile()));
 		getSourceNamespace().convention(MappingsNamespace.NAMED.toString()).finalizeValueOnRead();
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
@@ -142,8 +148,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(workAction, params -> {
-			params.getInputFile().set(getInputFile());
-			params.getOutputFile().set(getArchiveFile());
+			params.getArchiveFile().set(getArchiveFile());
 
 			params.getSourceNamespace().set(getSourceNamespace());
 			params.getTargetNamespace().set(getTargetNamespace());
@@ -181,8 +186,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	protected abstract Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet);
 
 	public interface AbstractRemapParams extends WorkParameters {
-		RegularFileProperty getInputFile();
-		RegularFileProperty getOutputFile();
+		RegularFileProperty getArchiveFile();
 
 		Property<String> getSourceNamespace();
 		Property<String> getTargetNamespace();
@@ -217,14 +221,33 @@ public abstract class AbstractRemapJarTask extends Jar {
 	}
 
 	public abstract static class AbstractRemapAction<T extends AbstractRemapParams> implements WorkAction<T> {
-		protected final Path inputFile;
+		private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRemapAction.class);
 		protected final Path outputFile;
 
 		@Inject
 		public AbstractRemapAction() {
-			inputFile = getParameters().getInputFile().getAsFile().get().toPath();
-			outputFile = getParameters().getOutputFile().getAsFile().get().toPath();
+			outputFile = getParameters().getArchiveFile().getAsFile().get().toPath();
 		}
+
+		@Override
+		public final void execute() {
+			try {
+				Path tempInput = Files.createTempFile("loom-remapJar-", "-input.jar");
+				Files.copy(outputFile, tempInput, StandardCopyOption.REPLACE_EXISTING);
+				execute(tempInput);
+				Files.delete(tempInput);
+			} catch (Exception e) {
+				try {
+					Files.deleteIfExists(outputFile);
+				} catch (IOException ex) {
+					LOGGER.error("Failed to delete output file", ex);
+				}
+
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap " + outputFile.toAbsolutePath(), e);
+			}
+		}
+
+		protected abstract void execute(Path inputFile) throws IOException;
 
 		protected void modifyJarManifest() throws IOException {
 			int count = ZipUtils.transform(outputFile, Map.of(Constants.Manifest.PATH, bytes -> {

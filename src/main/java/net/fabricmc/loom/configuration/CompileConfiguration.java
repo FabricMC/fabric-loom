@@ -120,9 +120,8 @@ public abstract class CompileConfiguration implements Runnable {
 					setupMinecraft(configContext);
 				}
 
-				LoomDependencyManager dependencyManager = new LoomDependencyManager();
-				extension.setDependencyManager(dependencyManager);
-				dependencyManager.handleDependencies(getProject(), serviceFactory);
+				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
+				dependencyManager.handleDependencies();
 			} catch (Exception e) {
 				ExceptionUtil.processException(e, DaemonUtils.Context.fromProject(getProject()));
 				disownLock();
@@ -173,17 +172,19 @@ public abstract class CompileConfiguration implements Runnable {
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
-		// Realise the dependencies without actually resolving them, this forces any lazy providers to be created, populating the layered mapping factories.
-		project.getConfigurations().getByName(Configurations.MAPPINGS).getDependencies().toArray();
+		if (!extension.disableObfuscation()) {
+			// Realise the dependencies without actually resolving them, this forces any lazy providers to be created, populating the layered mapping factories.
+			project.getConfigurations().getByName(Configurations.MAPPINGS).getDependencies().toArray();
 
-		// Created any layered mapping files.
-		LayeredMappingsFactory.afterEvaluate(configContext);
+			// Created any layered mapping files.
+			LayeredMappingsFactory.afterEvaluate(configContext);
 
-		// Resolve the mapping files from the configuration
-		final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
-		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
-		extension.setMappingConfiguration(mappingConfiguration);
-		mappingConfiguration.applyToProject(getProject(), mappingsDep);
+			// Resolve the mapping files from the configuration
+			final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
+			final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
+			extension.setMappingConfiguration(mappingConfiguration);
+			mappingConfiguration.applyToProject(getProject(), mappingsDep);
+		}
 
 		// Provide the remapped mc jars
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.createIntermediaryMinecraftProvider(project);

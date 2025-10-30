@@ -67,7 +67,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 		SyncTaskBuildService.register(getProject());
 
-		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)) {
+		if (extension.dontRemapOutputs()) {
 			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
 			return;
 		}

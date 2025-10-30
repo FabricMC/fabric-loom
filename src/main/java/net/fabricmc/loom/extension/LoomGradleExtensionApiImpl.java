@@ -238,6 +238,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency officialMojangMappings() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot use Mojang mappings in a none obfuscated environment");
+		}
+
 		if (layeredSpecBuilderScope.get()) {
 			throw new IllegalStateException("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`");
 		}
@@ -247,6 +251,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot configure layered mappings in a none obfuscated environment");
+		}
+
 		if (hasEvaluatedLayeredMappings) {
 			throw new IllegalStateException("Layered mappings have already been evaluated");
 		}
@@ -294,6 +302,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public SetProperty<String> getKnownIndyBsms() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot configure known indyBsms in a none obfuscated environment");
+		}
+
 		return knownIndyBsms;
 	}
 
@@ -329,6 +341,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
+		if (LoomGradleExtension.get(getProject()).disableObfuscation()) {
+			throw new UnsupportedOperationException("Cannot get intermediate mappings provider in a none obfuscated environment");
+		}
+
 		return intermediateMappingsProvider.get();
 	}
 
@@ -342,11 +358,15 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		T provider = getProject().getObjects().newInstance(clazz);
 		configureIntermediateMappingsProviderInternal(provider);
 		action.execute(provider);
-		intermediateMappingsProvider.set(provider);
+		setIntermediateMappingsProvider(provider);
 	}
 
 	@Override
 	public File getMappingsFile() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot get mappings file in a none obfuscated environment");
+		}
+
 		return LoomGradleExtension.get(getProject()).getMappingConfiguration().tinyMappings.toFile();
 	}
 
@@ -421,11 +441,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public NamedDomainObjectList<RemapConfigurationSettings> getRemapConfigurations() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot get remap configurations in a none obfuscated environment");
+		}
+
 		return remapConfigurations;
 	}
 
 	@Override
 	public RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot add remap configuration in a none obfuscated environment");
+		}
+
 		final RemapConfigurationSettings configurationSettings = getProject().getObjects().newInstance(RemapConfigurationSettings.class, name);
 
 		// TODO remove in 2.0, this is a fallback to mimic the previous (Broken) behaviour
@@ -440,11 +468,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void createRemapConfigurations(SourceSet sourceSet) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot create remap configurations in a none obfuscated environment");
+		}
+
 		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
 	}
 
 	@Override
 	public <T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot add remapper extension in a none obfuscated environment");
+		}
+
 		final ObjectFactory objectFactory = getProject().getObjects();
 		final RemapperExtensionHolder holder;
 
@@ -470,6 +506,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		final ConfigurableFileCollection jars = getProject().getObjects().fileCollection();
 		jars.from(getProject().provider(() -> LoomGradleExtension.get(getProject()).getMinecraftJars(MappingsNamespace.NAMED)));
 		return jars;
+	}
+
+	private boolean notObfuscated() {
+		return LoomGradleExtension.get(getProject()).disableObfuscation();
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods

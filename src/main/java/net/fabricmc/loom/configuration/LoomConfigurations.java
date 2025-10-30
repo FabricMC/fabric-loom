@@ -134,16 +134,18 @@ public abstract class LoomConfigurations implements Runnable {
 
 		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
 
-		register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
-		register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
+		if (!extension.disableObfuscation()) {
+			register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
+			register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
+			extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
+			extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
+
+			extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(getProject()));
+		}
+
 		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Role.RESOLVABLE);
 		register(Constants.Configurations.LOCAL_RUNTIME, Role.RESOLVABLE);
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.LOCAL_RUNTIME);
-
-		extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(getProject()));
-
-		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
-		extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
 
 		extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES);
 

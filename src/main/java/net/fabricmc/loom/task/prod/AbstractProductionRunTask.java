@@ -61,7 +61,6 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
  * This is the base task for running the game in a "production" like environment. Using intermediary names, and not enabling development only features.
@@ -129,7 +128,7 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 		getJavaLauncher().convention(getJavaToolchainService().launcherFor(defaultToolchain));
 		getRunDir().convention(getProject().getLayout().getProjectDirectory().dir("run"));
 
-		if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)) {
+		if (!getExtension().dontRemapOutputs()) {
 			getMods().from(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME));
 		}
 

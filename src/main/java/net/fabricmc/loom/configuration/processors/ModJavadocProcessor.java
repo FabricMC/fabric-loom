@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -50,7 +51,12 @@ import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.mappingio.MappedElementKind;
 import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.MappingUtil;
+import net.fabricmc.mappingio.MappingVisitor;
+import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
+import net.fabricmc.mappingio.adapter.MappingNsRenamer;
 import net.fabricmc.mappingio.tree.MappingTree;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -127,7 +133,16 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				mappingsHash = Checksum.of(data).sha1().hex();
 
 				try (Reader reader = new InputStreamReader(new ByteArrayInputStream(data))) {
-					MappingReader.read(reader, mappings);
+					// Replace the default fallback namespaces with intermediary and named
+					// if the format doesn't have them (this includes the Enigma format, which we want to
+					// support since it's produced by ModEnigmaTask).
+					final Map<String, String> fallbackNamespaceReplacements = Map.of(
+							MappingUtil.NS_SOURCE_FALLBACK, MappingsNamespace.INTERMEDIARY.toString(),
+							MappingUtil.NS_TARGET_FALLBACK, MappingsNamespace.NAMED.toString()
+					);
+					final MappingNsRenamer renamer = new MappingNsRenamer(mappings, fallbackNamespaceReplacements);
+					final DstNameCheckingVisitor checker = new DstNameCheckingVisitor(modId, renamer);
+					MappingReader.read(reader, checker);
 				}
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to read javadoc from mod: " + modId, e);
@@ -135,10 +150,6 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 			if (!mappings.getSrcNamespace().equals(MappingsNamespace.INTERMEDIARY.toString())) {
 				throw new IllegalStateException("Javadoc provided by mod (%s) must be have an intermediary source namespace".formatted(modId));
-			}
-
-			if (!mappings.getDstNamespaces().isEmpty()) {
-				throw new IllegalStateException("Javadoc provided by mod (%s) must not contain any dst names".formatted(modId));
 			}
 
 			return new ModJavadoc(modId, mappings, mappingsHash);
@@ -212,6 +223,20 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		@Override
 		public String toString() {
 			return "ModJavadoc{modId='%s', mappingsHash='%s'}".formatted(modId, mappingsHash);
+		}
+	}
+
+	private static final class DstNameCheckingVisitor extends ForwardingMappingVisitor {
+		private final String modId;
+
+		DstNameCheckingVisitor(String modId, MappingVisitor next) {
+			super(next);
+			this.modId = modId;
+		}
+
+		@Override
+		public void visitDstName(MappedElementKind targetKind, int namespace, String name) {
+			throw new IllegalStateException("Javadoc provided by mod (%s) must not contain any dst names".formatted(modId));
 		}
 	}
 }

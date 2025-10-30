@@ -165,7 +165,7 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		}
 
 		if (requirements.size() == 1) {
-			return new JsonPrimitive(dependency.getModId().get());
+			return new JsonPrimitive(requirements.getFirst());
 		}
 
 		JsonArray json = new JsonArray();

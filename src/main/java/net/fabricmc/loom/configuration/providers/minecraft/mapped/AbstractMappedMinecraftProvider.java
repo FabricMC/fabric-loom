@@ -184,6 +184,8 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 			if (!intermediateName.equals(IntermediaryMappingsProvider.NAME)) {
 				sj.add(intermediateName);
 			}
+		} else {
+			sj.add("deobf");
 		}
 
 		if (getTargetNamespace() != MappingsNamespace.NAMED) {

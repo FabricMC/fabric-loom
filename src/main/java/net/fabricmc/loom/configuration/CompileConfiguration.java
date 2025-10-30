@@ -51,6 +51,7 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
@@ -187,7 +188,7 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.createIntermediaryMinecraftProvider(project);
+		@Nullable IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : jarConfiguration.createIntermediaryMinecraftProvider(project);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
 		registerGameProcessors(configContext);
@@ -200,8 +201,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
 
-		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
-		intermediaryMinecraftProvider.provide(provideContext);
+		if (intermediaryMinecraftProvider != null) {
+			extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
+			intermediaryMinecraftProvider.provide(provideContext);
+		}
 
 		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 		namedMinecraftProvider.provide(provideContext);

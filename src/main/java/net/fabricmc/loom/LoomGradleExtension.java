@@ -123,12 +123,12 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	boolean isCollectingDependencyVerificationMetadata();
 
 	/**
-	 * When enabled do not remap the output jars
+	 * When enabled do not remap the output jars.
 	 */
 	boolean dontRemapOutputs();
 
 	/**
-	 * When enabled disable all forms of remapping
+	 * When enabled disable all forms of remapping.
 	 */
 	boolean disableObfuscation();
 }

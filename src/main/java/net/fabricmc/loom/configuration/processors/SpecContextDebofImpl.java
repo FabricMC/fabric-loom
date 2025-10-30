@@ -22,33 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.configuration.processors;
 
-import spock.lang.Specification
-import spock.lang.Unroll
+import java.util.List;
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.util.fmj.FabricModJson;
 
-import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+// TODO debof - fixme
+public record SpecContextDebofImpl(List<FabricModJson> modDependencies,
+									List<FabricModJson> localMods) implements SpecContext {
+	public static SpecContext create() {
+		return new SpecContextDebofImpl(List.of(), List.of());
+	}
 
-class NotObfuscatedTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "Not Obfuscated"() {
-		setup:
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
-				dependencies {
-					minecraft 'com.mojang:minecraft:1.21.10'
-                    api "net.fabricmc.fabric-api:fabric-api:0.134.1+1.21.10"
-                }
-		'''
-		gradle.getGradleProperties() << "fabric.loom.disableObfuscation=true"
+	@Override
+	public List<FabricModJson> modDependenciesCompileRuntime() {
+		return List.of();
+	}
 
-		when:
-		def result = gradle.run(task: "build")
-
-		then:
-		result.task(":build").outcome == SUCCESS
+	@Override
+	public List<FabricModJson> modDependenciesCompileRuntimeClient() {
+		return List.of();
 	}
 }

@@ -56,18 +56,18 @@ import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
  * @param localMods Mods found in the current project.
  * @param compileRuntimeMods Dependent mods found in both the compile and runtime classpath.
  */
-public record SpecContextImpl(
+public record SpecContextRemappedImpl(
 		List<FabricModJson> modDependencies,
 		List<FabricModJson> localMods,
 		List<ModHolder> compileRuntimeMods) implements SpecContext {
-	public static SpecContextImpl create(Project project) {
+	public static SpecContextRemappedImpl create(Project project) {
 		return create(new SpecContextProjectView.Impl(project, LoomGradleExtension.get(project)));
 	}
 
 	@VisibleForTesting
-	public static SpecContextImpl create(SpecContextProjectView projectView) {
+	public static SpecContextRemappedImpl create(SpecContextProjectView projectView) {
 		AsyncCache<List<FabricModJson>> fmjCache = new AsyncCache<>();
-		return new SpecContextImpl(
+		return new SpecContextRemappedImpl(
 				getDependentMods(projectView, fmjCache),
 				projectView.getMods(),
 				getCompileRuntimeMods(projectView, fmjCache)

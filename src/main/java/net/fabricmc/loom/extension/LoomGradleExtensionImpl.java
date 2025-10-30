@@ -164,7 +164,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public MappingConfiguration getMappingConfiguration() {
 		if (disableObfuscation()) {
-			throw new UnsupportedOperationException("Cannot get mappings configuration in a none obfuscated environment");
+			throw new UnsupportedOperationException("Cannot get mappings configuration in a non-obfuscated environment");
 		}
 
 		return Objects.requireNonNull(mappingConfiguration, "Cannot get MappingsProvider before it has been setup");
@@ -173,7 +173,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public void setMappingConfiguration(MappingConfiguration mappingConfiguration) {
 		if (disableObfuscation()) {
-			throw new UnsupportedOperationException("Cannot set mappings configuration in a none obfuscated environment");
+			throw new UnsupportedOperationException("Cannot set mappings configuration in a non-obfuscated environment");
 		}
 
 		this.mappingConfiguration = mappingConfiguration;
@@ -290,7 +290,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public Collection<LayeredMappingsFactory> getLayeredMappingFactories() {
 		if (disableObfuscation()) {
-			throw new UnsupportedOperationException("Cannot get layered mapping factories in a none obfuscated environment");
+			throw new UnsupportedOperationException("Cannot get layered mapping factories in a non-obfuscated environment");
 		}
 
 		hasEvaluatedLayeredMappings = true;

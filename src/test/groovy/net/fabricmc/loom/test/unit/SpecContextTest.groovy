@@ -39,8 +39,8 @@ import spock.lang.TempDir
 import net.fabricmc.loom.LoomGradleExtension
 import net.fabricmc.loom.api.RemapConfigurationSettings
 import net.fabricmc.loom.api.fmj.FabricModJsonV1Spec
-import net.fabricmc.loom.configuration.processors.SpecContextImpl
 import net.fabricmc.loom.configuration.processors.SpecContextProjectView
+import net.fabricmc.loom.configuration.processors.SpecContextRemappedImpl
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.ZipUtils
 import net.fabricmc.loom.util.fmj.gen.FabricModJsonV1Generator
@@ -98,7 +98,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextImpl.create(projectView)
+		def specContext = SpecContextRemappedImpl.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 0
@@ -117,7 +117,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextImpl.create(projectView)
+		def specContext = SpecContextRemappedImpl.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -136,7 +136,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextImpl.create(projectView)
+		def specContext = SpecContextRemappedImpl.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -155,7 +155,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextImpl.create(projectView)
+		def specContext = SpecContextRemappedImpl.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -175,7 +175,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextImpl.create(projectView)
+		def specContext = SpecContextRemappedImpl.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1

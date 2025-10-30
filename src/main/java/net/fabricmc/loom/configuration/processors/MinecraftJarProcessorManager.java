@@ -66,7 +66,15 @@ public final class MinecraftJarProcessorManager {
 			processors.add(project.getObjects().newInstance(LegacyJarProcessorWrapper.class, legacyProcessor));
 		}
 
-		return MinecraftJarProcessorManager.create(processors, SpecContextImpl.create(project));
+		SpecContext specContext;
+
+		if (extension.disableObfuscation()) {
+			specContext = SpecContextDebofImpl.create();
+		} else {
+			specContext = SpecContextRemappedImpl.create(project);
+		}
+
+		return MinecraftJarProcessorManager.create(processors, specContext);
 	}
 
 	@Nullable

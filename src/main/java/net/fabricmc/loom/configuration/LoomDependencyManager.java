@@ -34,7 +34,7 @@ import net.fabricmc.loom.util.service.ServiceFactory;
 public record LoomDependencyManager(Project project, ServiceFactory serviceFactory, LoomGradleExtension extension) {
 	public void handleDependencies() {
 		if (extension.disableObfuscation()) {
-			handleNoneRemapDependencies();
+			handleNonRemapDependencies();
 		} else {
 			handleRemapDependencies();
 		}
@@ -55,7 +55,7 @@ public record LoomDependencyManager(Project project, ServiceFactory serviceFacto
 		}
 	}
 
-	private void handleNoneRemapDependencies() {
-		// TODO do we need to do anything?
+	private void handleNonRemapDependencies() {
+		// TODO debof - do we need to do anything?
 	}
 }

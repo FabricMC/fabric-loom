@@ -24,6 +24,9 @@
 
 package net.fabricmc.loom.task;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -35,6 +38,7 @@ import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.task.service.MigrateMappingsService;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
@@ -51,6 +55,10 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	@Option(option = "output", description = "Remapped source output directory")
 	public abstract DirectoryProperty getOutputDir();
 
+	@Input
+	@Option(option = "overrideInputsIHaveABackup", description = "Override input files with the remapped files")
+	public abstract Property<Boolean> getOverrideInputs();
+
 	@Nested
 	protected abstract Property<MigrateMappingsService.Options> getMigrationServiceOptions();
 
@@ -65,6 +73,14 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		try (var serviceFactory = new ScopedServiceFactory()) {
 			MigrateMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
 			service.migrateMapppings();
+		}
+
+		if (getOverrideInputs().get()) {
+			Path inputPath = getInputDir().getAsFile().get().toPath();
+			Path outputPath = getOutputDir().getAsFile().get().toPath();
+
+			DeletingFileVisitor.deleteDirectory(inputPath);
+			Files.move(outputPath, inputPath);
 		}
 	}
 }

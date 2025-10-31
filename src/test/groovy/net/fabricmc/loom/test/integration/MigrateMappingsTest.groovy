@@ -202,4 +202,46 @@ class MigrateMappingsTest extends Specification implements GradleProjectTestTrai
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "Override inputs (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+            dependencies {
+                minecraft 'com.mojang:minecraft:24w36a'
+                mappings 'net.fabricmc:yarn:24w36a+build.6:v2'
+            }
+            """.stripIndent()
+
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		sourceFile.text = """
+		package example;
+
+		import net.minecraft.predicate.entity.InputPredicate;
+
+		public class Test {
+			public static void main(String[] args) {
+			    InputPredicate cls = null;
+			}
+		}
+		"""
+
+		when:
+		def result = gradle.run(tasks: [
+			"migrateMappings",
+			"--mappings",
+			"net.minecraft:mappings:24w36a",
+			"--overrideInputsIHaveABackup"
+		])
+		def remapped = new File(gradle.projectDir, "src/main/java/example/Test.java").text
+
+		then:
+		result.task(":migrateMappings").outcome == SUCCESS
+		remapped.contains("import net.minecraft.advancements.critereon.InputPredicate;")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

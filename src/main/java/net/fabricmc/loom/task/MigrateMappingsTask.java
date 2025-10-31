@@ -33,6 +33,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
@@ -48,6 +49,7 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	public abstract Property<String> getMappings();
 
 	@InputDirectory
+	@SkipWhenEmpty
 	@Option(option = "input", description = "Java source file directory")
 	public abstract DirectoryProperty getInputDir();
 

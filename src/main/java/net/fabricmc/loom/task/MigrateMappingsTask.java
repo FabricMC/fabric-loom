@@ -24,17 +24,21 @@
 
 package net.fabricmc.loom.task;
 
+import javax.inject.Inject;
+
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.task.service.MigrateMappingsService;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
@@ -58,6 +62,13 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
 		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
+	}
+
+	@Inject
+	public MigrateMappingsTask(SourceSet sourceSet) {
+		this();
+		getInputDir().set(SourceSetHelper.getFirstSrcDir(sourceSet));
+		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir(sourceSet.getTaskName("remapped", "src")));
 	}
 
 	@TaskAction

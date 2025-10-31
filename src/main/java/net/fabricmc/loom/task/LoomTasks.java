@@ -61,7 +61,15 @@ public abstract class LoomTasks implements Runnable {
 	@Override
 	public void run() {
 		SourceSetHelper.getSourceSets(getProject()).all(sourceSet -> {
-			if (!SourceSetHelper.getFirstSrcDir(sourceSet).exists() && !SourceSetHelper.isMainSourceSet(sourceSet)) {
+			if (SourceSetHelper.isMainSourceSet(sourceSet)) {
+				getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
+					t.setDescription("Migrates mappings to a new version.");
+				});
+
+				return;
+			}
+
+			if (!SourceSetHelper.getFirstSrcDir(sourceSet).exists()) {
 				return;
 			}
 

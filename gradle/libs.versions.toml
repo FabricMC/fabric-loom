@@ -9,6 +9,7 @@ clazz-tweaker = "0.1.1"
 mapping-io = "0.7.1"
 lorenz-tiny = "4.0.2"
 mercury = "0.4.2"
+mercury-mixin = "0.1.0"
 loom-native = "0.2.0"
 unpick = "3.0.0-beta.9"
 
@@ -34,6 +35,7 @@ fabric-clazz-tweaker = { module = "net.fabricmc:class-tweaker", version.ref = "c
 fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping-io" }
 fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
+fabric-mercury-mixin = { module = "net.fabricmc:mercurymixin", version.ref = "mercury-mixin" }
 fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
 fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
 fabric-unpick-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }

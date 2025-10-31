@@ -32,6 +32,7 @@ import java.nio.file.Path;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.cadixdev.mercury.mixin.MixinRemapper;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.JavaVersion;
@@ -133,6 +134,7 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		).read();
 
 		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+		mercury.getProcessors().add(MixinRemapper.create(mappingSet));
 
 		for (File file : getOptions().getClasspath().getFiles()) {
 			mercury.getClassPath().add(file.toPath());

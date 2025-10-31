@@ -73,8 +73,11 @@ public abstract class LoomTasks implements Runnable {
 				return;
 			}
 
-			getTasks().register(sourceSet.getTaskName("migrate", "mappings"), MigrateMappingsTask.class, sourceSet)
-					.configure(t -> t.setDescription("Migrates mappings to a new version."));
+			getTasks().register(sourceSet.getTaskName("migrate", "mappings"), MigrateMappingsTask.class, t -> {
+				t.setDescription("Migrates mappings to a new version.");
+				t.getInputDir().set(SourceSetHelper.getFirstSrcDir(sourceSet));
+				t.getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir(sourceSet.getTaskName("remapped", "src")));
+			});
 		});
 
 		var generateLog4jConfig = getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +24,25 @@
 
 package net.fabricmc.loom.task.service;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
-import org.cadixdev.lorenz.MappingSet;
-import org.cadixdev.mercury.Mercury;
-import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.IllegalDependencyNotation;
-import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
-import org.gradle.api.tasks.OutputDirectory;
+import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,14 +51,20 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
-import net.fabricmc.lorenztiny.TinyMappingsJoiner;
+import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.tinyremapper.IMappingProvider;
+import net.fabricmc.tinyremapper.TinyRemapper;
 
-public class MigrateMappingsService extends Service<MigrateMappingsService.Options> {
+public final class MigrateMappingsService extends Service<MigrateMappingsService.Options> implements Closeable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MigrateMappingsService.class);
 	private static final ServiceType<Options, MigrateMappingsService> TYPE = new ServiceType<>(Options.class, MigrateMappingsService.class);
+
+	private @Nullable TinyRemapper tinyRemapper;
 
 	public MigrateMappingsService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);
@@ -75,21 +75,16 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		Property<MappingsService.Options> getSourceMappings();
 		@Nested
 		Property<TinyMappingsService.Options> getTargetMappings();
-		@InputDirectory
-		DirectoryProperty getInputDir();
-		@Input
-		Property<String> getSourceCompatibility();
 		@InputFiles
 		ConfigurableFileCollection getClasspath();
-		@OutputDirectory
-		DirectoryProperty getOutputDir();
+		@InputFiles
+		ConfigurableFileCollection getMinecraftLibraryClasspath();
 	}
 
-	public static Provider<Options> createOptions(Project project, Provider<String> targetMappings, DirectoryProperty inputDir, DirectoryProperty outputDir) {
+	public static Provider<Options> createOptions(Project project, Provider<String> targetMappings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final Provider<String> from = project.provider(() -> "intermediary");
 		final Provider<String> to = project.provider(() -> "named");
-		final JavaVersion javaVersion = project.getExtensions().getByType(JavaPluginExtension.class).getSourceCompatibility();
 
 		ConfigurableFileCollection classpath = project.getObjects().fileCollection();
 		classpath.from(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
@@ -97,58 +92,100 @@ public class MigrateMappingsService extends Service<MigrateMappingsService.Optio
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.NAMED));
 
+		ConfigurableFileCollection minecraftLibraryClasspath = project.getObjects().fileCollection();
+		minecraftLibraryClasspath.from(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+		minecraftLibraryClasspath.from(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+
 		return TYPE.create(project, (o) -> {
 			FileCollection targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
 			o.getSourceMappings().set(MappingsService.createOptionsWithProjectMappings(project, from, to));
 			o.getTargetMappings().set(TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny"));
-			o.getSourceCompatibility().set(javaVersion.toString());
-			o.getInputDir().set(inputDir);
 			o.getClasspath().from(classpath);
-			o.getOutputDir().set(outputDir);
+			o.getMinecraftLibraryClasspath().from(minecraftLibraryClasspath);
 		});
 	}
 
-	public void migrateMapppings() throws IOException {
-		final Path inputDir = getOptions().getInputDir().get().getAsFile().toPath();
-		final Path outputDir = getOptions().getOutputDir().get().getAsFile().toPath();
+	public MappingsService getSourceMappingsService() {
+		return getServiceFactory().get(getOptions().getSourceMappings().get());
+	}
 
-		if (!Files.exists(inputDir) || !Files.isDirectory(inputDir)) {
-			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
+	public TinyMappingsService getTargetMappingsService() {
+		return getServiceFactory().get(getOptions().getTargetMappings().get());
+	}
+
+	public FileCollection getClasspath() {
+		return getOptions().getClasspath();
+	}
+
+	public Remapper getRemapper() {
+		if (tinyRemapper != null) {
+			return tinyRemapper.getEnvironment().getRemapper();
 		}
 
-		Files.deleteIfExists(outputDir);
-		Files.createDirectories(outputDir);
+		final Path[] classpath = getClasspath().minus(getOptions().getMinecraftLibraryClasspath())
+				.getFiles()
+				.stream()
+				.map(File::toPath)
+				.distinct()
+				.toArray(Path[]::new);
+		tinyRemapper = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
+				.withMappings(this::provideMappings)
+				.build();
+		tinyRemapper.readClassPath(classpath);
+		return tinyRemapper.getEnvironment().getRemapper();
+	}
 
-		Mercury mercury = new Mercury();
-		mercury.setGracefulClasspathChecks(true);
-		mercury.setSourceCompatibility(getOptions().getSourceCompatibility().get());
+	private void provideMappings(IMappingProvider.MappingAcceptor mappingAcceptor) {
+		final MappingTree sourceTree = getSourceMappingsService().getMemoryMappingTree();
+		final MappingTree targetTree = getTargetMappingsService().getMappingTree();
+		final int targetIntermediaryId = targetTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
 
-		final MappingsService sourceMappingsService = getServiceFactory().get(getOptions().getSourceMappings().get());
-		final TinyMappingsService targetMappingsService = getServiceFactory().get(getOptions().getTargetMappings().get());
+		for (MappingTree.ClassMapping sourceClass : sourceTree.getClasses()) {
+			final String classIntermediary = sourceClass.getName(MappingsNamespace.INTERMEDIARY.toString());
+			final MappingTree.ClassMapping targetClass = targetTree.getClass(classIntermediary, targetIntermediaryId);
 
-		final MappingSet mappingSet = new TinyMappingsJoiner(
-				sourceMappingsService.getMemoryMappingTree(), MappingsNamespace.NAMED.toString(),
-				targetMappingsService.getMappingTree(), MappingsNamespace.NAMED.toString(),
-				MappingsNamespace.INTERMEDIARY.toString()
-		).read();
+			if (targetClass == null) {
+				continue;
+			}
 
-		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
+			final String sourceClassName = Objects.requireNonNullElse(sourceClass.getName(MappingsNamespace.NAMED.toString()), classIntermediary);
+			final String targetClassName = Objects.requireNonNullElse(targetClass.getName(MappingsNamespace.NAMED.toString()), classIntermediary);
+			mappingAcceptor.acceptClass(sourceClassName, targetClassName);
 
-		for (File file : getOptions().getClasspath().getFiles()) {
-			mercury.getClassPath().add(file.toPath());
+			for (MappingTree.FieldMapping sourceField : sourceClass.getFields()) {
+				final String fieldIntermediary = sourceField.getName(MappingsNamespace.INTERMEDIARY.toString());
+				final String fieldIntermediaryDesc = sourceField.getDesc(MappingsNamespace.INTERMEDIARY.toString());
+				final MappingTree.FieldMapping targetField = targetTree.getField(classIntermediary, fieldIntermediary, fieldIntermediaryDesc, targetIntermediaryId);
+
+				if (targetField != null) {
+					final String sourceName = Objects.requireNonNullElse(sourceField.getName(MappingsNamespace.NAMED.toString()), fieldIntermediary);
+					final String sourceDesc = sourceField.getDesc(MappingsNamespace.NAMED.toString());
+					final String targetName = Objects.requireNonNullElse(targetField.getName(MappingsNamespace.NAMED.toString()), fieldIntermediary);
+					mappingAcceptor.acceptField(new IMappingProvider.Member(sourceClassName, sourceName, sourceDesc), targetName);
+				}
+			}
+
+			for (MappingTree.MethodMapping sourceMethod : sourceClass.getMethods()) {
+				final String methodIntermediary = sourceMethod.getName(MappingsNamespace.INTERMEDIARY.toString());
+				final String methodIntermediaryDesc = sourceMethod.getDesc(MappingsNamespace.INTERMEDIARY.toString());
+				final MappingTree.FieldMapping targetMethod = targetTree.getField(classIntermediary, methodIntermediary, methodIntermediaryDesc, targetIntermediaryId);
+
+				if (targetMethod != null) {
+					final String sourceName = Objects.requireNonNullElse(sourceMethod.getName(MappingsNamespace.NAMED.toString()), methodIntermediary);
+					final String sourceDesc = sourceMethod.getDesc(MappingsNamespace.NAMED.toString());
+					final String targetName = Objects.requireNonNullElse(targetMethod.getName(MappingsNamespace.NAMED.toString()), methodIntermediary);
+					mappingAcceptor.acceptMethod(new IMappingProvider.Member(sourceClassName, sourceName, sourceDesc), targetName);
+				}
+			}
 		}
+	}
 
-		try {
-			mercury.rewrite(
-					inputDir,
-					outputDir
-			);
-		} catch (Exception e) {
-			LOGGER.warn("Could not remap fully!", e);
+	@Override
+	public void close() throws IOException {
+		if (tinyRemapper != null) {
+			tinyRemapper.finish();
+			tinyRemapper = null;
 		}
-
-		// clean file descriptors
-		System.gc();
 	}
 
 	/**

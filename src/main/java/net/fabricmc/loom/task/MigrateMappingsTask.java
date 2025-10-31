@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2024 FabricMC
+ * Copyright (c) 2019-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 
-import net.fabricmc.loom.task.service.MigrateMappingsService;
+import net.fabricmc.loom.task.service.MigrateSourceCodeMappingsService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
@@ -52,19 +52,19 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	public abstract DirectoryProperty getOutputDir();
 
 	@Nested
-	protected abstract Property<MigrateMappingsService.Options> getMigrationServiceOptions();
+	protected abstract Property<MigrateSourceCodeMappingsService.Options> getMigrationServiceOptions();
 
 	public MigrateMappingsTask() {
 		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
-		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
+		getMigrationServiceOptions().set(MigrateSourceCodeMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
 	}
 
 	@TaskAction
 	public void doTask() throws Throwable {
 		try (var serviceFactory = new ScopedServiceFactory()) {
-			MigrateMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
-			service.migrateMapppings();
+			MigrateSourceCodeMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
+			service.migrateMappings();
 		}
 	}
 }

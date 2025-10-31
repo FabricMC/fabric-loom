@@ -408,7 +408,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		}
 
 		SourceMappingsService mappingsService = serviceFactory.get(getMappings());
-		String mappingsHash = mappingsService.getMappingsHash();
+		String mappingsHash = mappingsService.getProcessorHash();
 
 		if (mappingsHash != null) {
 			sj.add(mappingsHash);

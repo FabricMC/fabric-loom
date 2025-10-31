@@ -38,6 +38,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +67,8 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		ConfigurableFileCollection getMappings(); // Only a single file
 
 		@Input
-		Property<String> getHash();
+		@Optional
+		Property<String> getProcessorHash(); // the hash of the processors applied to the mappings
 	}
 
 	public static Provider<Options> create(Project project) {
@@ -75,7 +77,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 
 		return TYPE.create(project, options -> {
 			options.getMappings().from(project.file(mappings));
-			options.getHash().set(hash);
+			options.getProcessorHash().set(hash);
 		});
 	}
 
@@ -150,7 +152,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		return getOptions().getMappings().getSingleFile().toPath();
 	}
 
-	public @Nullable String getMappingsHash() {
-		return getOptions().getHash().getOrNull();
+	public @Nullable String getProcessorHash() {
+		return getOptions().getProcessorHash().getOrNull();
 	}
 }

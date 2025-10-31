@@ -68,6 +68,7 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
 		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
+		getOverrideInputs().convention(false);
 	}
 
 	@TaskAction

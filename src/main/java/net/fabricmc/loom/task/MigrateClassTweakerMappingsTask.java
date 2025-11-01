@@ -25,10 +25,10 @@
 package net.fabricmc.loom.task;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
@@ -44,11 +44,7 @@ import net.fabricmc.loom.task.service.MigrateMappingsService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
-public abstract class MigrateClassTweakerMappingsTask extends AbstractLoomTask {
-	@Input
-	@Option(option = "mappings", description = "Target mappings")
-	public abstract Property<String> getMappings();
-
+public abstract class MigrateClassTweakerMappingsTask extends AbstractMigrateMappingsTask {
 	@InputFile
 	@Option(option = "input", description = "Access widener file")
 	public abstract RegularFileProperty getInputFile();
@@ -70,14 +66,17 @@ public abstract class MigrateClassTweakerMappingsTask extends AbstractLoomTask {
 	public void doTask() throws Throwable {
 		try (var serviceFactory = new ScopedServiceFactory()) {
 			final MigrateMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
-			final byte[] inputBytes = Files.readAllBytes(getInputFile().get().getAsFile().toPath());
+			final Path inputFile = getInputFile().get().getAsFile().toPath();
+			final byte[] inputBytes = Files.readAllBytes(inputFile);
 			final int ctVersion = ClassTweakerReader.readVersion(inputBytes);
 
 			final ClassTweakerWriter writer = ClassTweakerWriter.create(ctVersion);
 			final var remapper = new ClassTweakerRemapperVisitor(writer, service.getRemapper(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString());
 			ClassTweakerReader.create(remapper).read(inputBytes, "unused_id");
 
-			Files.write(getOutputFile().get().getAsFile().toPath(), writer.getOutput());
+			final boolean inPlace = getOverrideInputs().get();
+			final Path targetFile = inPlace ? inputFile : getOutputFile().get().getAsFile().toPath();
+			Files.write(targetFile, writer.getOutput());
 		}
 	}
 }

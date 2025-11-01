@@ -22,33 +22,23 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom;
 
-import spock.lang.Specification
-import spock.lang.Unroll
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+/**
+ * A marker plugin to indicate to the main loom plugin not to setup for remapping.
+ */
+public class LoomNoRemapGradlePlugin implements Plugin<Project> {
+	public static final String NAME = "net.fabricmc.fabric-loom-no-remap";
 
-import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+	@Override
+	public void apply(Project target) {
+		if (target.getPluginManager().hasPlugin(LoomGradlePlugin.NAME)) {
+			throw new IllegalStateException(NAME + " must be applied before " + LoomGradlePlugin.NAME);
+		}
 
-class NotObfuscatedTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "Not Obfuscated"() {
-		setup:
-		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
-				dependencies {
-					minecraft 'com.mojang:minecraft:1.21.10'
-                    api "net.fabricmc.fabric-api:fabric-api:0.134.1+1.21.10"
-                }
-		'''
-		gradle.getGradleProperties() << "fabric.loom.disableObfuscation=true"
-
-		when:
-		def result = gradle.run(task: "build")
-
-		then:
-		result.task(":build").outcome == SUCCESS
+		target.getPlugins().apply(LoomGradlePlugin.NAME);
 	}
 }

@@ -87,6 +87,10 @@ public final class SourceSetHelper {
 		return getSourceSetByName(SourceSet.MAIN_SOURCE_SET_NAME, project);
 	}
 
+	public static boolean isMainSourceSet(SourceSet sourceSet) {
+		return SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName());
+	}
+
 	public static SourceSet createSourceSet(String name, Project project) {
 		return getSourceSets(project).create(name);
 	}
@@ -302,5 +306,15 @@ public final class SourceSetHelper {
 		}
 
 		return null;
+	}
+
+	public static File getFirstSrcDir(SourceSet sourceSet) {
+		Iterator<File> iterator = sourceSet.getJava().getSrcDirs().iterator();
+
+		if (iterator.hasNext()) {
+			return iterator.next();
+		}
+
+		throw new IllegalStateException("SourceSet " + sourceSet.getName() + " has no source directories.");
 	}
 }

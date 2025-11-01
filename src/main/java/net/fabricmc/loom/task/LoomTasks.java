@@ -49,6 +49,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.GradleUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class LoomTasks implements Runnable {
 	@Inject
@@ -59,8 +60,24 @@ public abstract class LoomTasks implements Runnable {
 
 	@Override
 	public void run() {
-		getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
-			t.setDescription("Migrates source code mappings to a new version.");
+		SourceSetHelper.getSourceSets(getProject()).all(sourceSet -> {
+			if (SourceSetHelper.isMainSourceSet(sourceSet)) {
+				getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
+					t.setDescription("Migrates source code mappings to a new version.");
+				});
+
+				return;
+			}
+
+			if (!SourceSetHelper.getFirstSrcDir(sourceSet).exists()) {
+				return;
+			}
+
+			getTasks().register(sourceSet.getTaskName("migrate", "mappings"), MigrateMappingsTask.class, t -> {
+				t.setDescription("Migrates source code mappings to a new version.");
+				t.getInputDir().set(SourceSetHelper.getFirstSrcDir(sourceSet));
+				t.getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir(sourceSet.getTaskName("remapped", "src")));
+			});
 		});
 
 		getTasks().register("migrateClassTweakerMappings", MigrateClassTweakerMappingsTask.class, t -> {

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,12 @@ import java.nio.file.Path;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,17 +65,23 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 	public interface Options extends Service.Options {
 		@InputFiles
 		ConfigurableFileCollection getMappings(); // Only a single file
+
+		@Input
+		@Optional
+		Property<String> getProcessorHash(); // the hash of the processors applied to the mappings
 	}
 
 	public static Provider<Options> create(Project project) {
-		final Path mappings = getMappings(project);
+		final Property<String> hash = project.getObjects().property(String.class);
+		final Path mappings = getMappings(project, hash);
 
 		return TYPE.create(project, options -> {
 			options.getMappings().from(project.file(mappings));
+			options.getProcessorHash().set(hash);
 		});
 	}
 
-	private static Path getMappings(Project project) {
+	private static Path getMappings(Project project, Property<String> hashProperty) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MinecraftJarProcessorManager jarProcessor = MinecraftJarProcessorManager.create(project);
 
@@ -80,8 +90,11 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 			return extension.getMappingConfiguration().tinyMappings;
 		}
 
+		final String hash = jarProcessor.getSourceMappingsHash();
+		hashProperty.set(hash);
+
 		final Path dir = extension.getFiles().getProjectPersistentCache().toPath().resolve("source_mappings");
-		final Path path = dir.resolve(jarProcessor.getSourceMappingsHash() + ".tiny");
+		final Path path = dir.resolve(hash + ".tiny");
 
 		if (Files.exists(path) && !extension.refreshDeps()) {
 			LOGGER.debug("Using cached source mappings");
@@ -137,5 +150,9 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 
 	public Path getMappingsFile() {
 		return getOptions().getMappings().getSingleFile().toPath();
+	}
+
+	public @Nullable String getProcessorHash() {
+		return getOptions().getProcessorHash().getOrNull();
 	}
 }

@@ -24,17 +24,22 @@
 
 package net.fabricmc.loom.task;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 
 import net.fabricmc.loom.task.service.MigrateSourceCodeMappingsService;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
@@ -44,12 +49,17 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 	public abstract Property<String> getMappings();
 
 	@InputDirectory
+	@SkipWhenEmpty
 	@Option(option = "input", description = "Java source file directory")
 	public abstract DirectoryProperty getInputDir();
 
 	@OutputDirectory
 	@Option(option = "output", description = "Remapped source output directory")
 	public abstract DirectoryProperty getOutputDir();
+
+	@Input
+	@Option(option = "overrideInputsIHaveABackup", description = "Override input files with the remapped files")
+	public abstract Property<Boolean> getOverrideInputs();
 
 	@Nested
 	protected abstract Property<MigrateSourceCodeMappingsService.Options> getMigrationServiceOptions();
@@ -58,6 +68,7 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
 		getMigrationServiceOptions().set(MigrateSourceCodeMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
+		getOverrideInputs().convention(false);
 	}
 
 	@TaskAction
@@ -65,6 +76,14 @@ public abstract class MigrateMappingsTask extends AbstractLoomTask {
 		try (var serviceFactory = new ScopedServiceFactory()) {
 			MigrateSourceCodeMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
 			service.migrateMappings();
+		}
+
+		if (getOverrideInputs().get()) {
+			Path inputPath = getInputDir().getAsFile().get().toPath();
+			Path outputPath = getOutputDir().getAsFile().get().toPath();
+
+			DeletingFileVisitor.deleteDirectory(inputPath);
+			Files.move(outputPath, inputPath);
 		}
 	}
 }

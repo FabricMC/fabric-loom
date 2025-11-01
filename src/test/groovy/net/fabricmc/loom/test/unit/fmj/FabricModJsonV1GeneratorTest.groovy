@@ -399,7 +399,7 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		  "id": "examplemod",
 		  "version": "1.0.0",
 		  "depends": {
-		    "fabricloader": "fabricloader",
+		    "fabricloader": "\\u003e\\u003d0.14.0",
 		    "fabric-api": [
 		      "\\u003e\\u003d0.14.0",
 		      "\\u003c0.15.0"
@@ -592,23 +592,23 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		  ],
 		  "accessWidener": "mymod.accesswidener",
 		  "depends": {
-		    "fabricloader": "fabricloader",
+		    "fabricloader": "\\u003e\\u003d0.14.0",
 		    "fabric-api": [
 		      "\\u003e\\u003d0.14.0",
 		      "\\u003c0.15.0"
 		    ]
 		  },
 		  "recommends": {
-		    "recommended-mod": "recommended-mod"
+		    "recommended-mod": "\\u003e\\u003d1.0.0"
 		  },
 		  "suggests": {
-		    "suggested-mod": "suggested-mod"
+		    "suggested-mod": "\\u003e\\u003d1.0.0"
 		  },
 		  "conflicts": {
-		    "conflicting-mod": "conflicting-mod"
+		    "conflicting-mod": "\\u003c1.0.0"
 		  },
 		  "breaks": {
-		    "broken-mod": "broken-mod"
+		    "broken-mod": "\\u003c1.0.0"
 		  },
 		  "name": "Example Mod",
 		  "description": "This is an example mod.",

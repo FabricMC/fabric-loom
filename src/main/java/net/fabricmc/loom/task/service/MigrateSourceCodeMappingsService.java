@@ -31,6 +31,7 @@ import java.nio.file.Path;
 
 import org.cadixdev.lorenz.MappingSet;
 import org.cadixdev.mercury.Mercury;
+import org.cadixdev.mercury.mixin.MixinRemapper;
 import org.cadixdev.mercury.remapper.MercuryRemapper;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
@@ -47,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
+import net.fabricmc.loom.util.DeletingFileVisitor;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -90,7 +93,10 @@ public final class MigrateSourceCodeMappingsService extends Service<MigrateSourc
 			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
 		}
 
-		Files.deleteIfExists(outputDir);
+		if (Files.exists(outputDir)) {
+			DeletingFileVisitor.deleteDirectory(outputDir);
+		}
+
 		Files.createDirectories(outputDir);
 
 		Mercury mercury = new Mercury();
@@ -107,6 +113,7 @@ public final class MigrateSourceCodeMappingsService extends Service<MigrateSourc
 				MappingsNamespace.INTERMEDIARY.toString()
 		).read();
 
+		mercury.getProcessors().add(MixinRemapper.create(mappingSet));
 		mercury.getProcessors().add(MercuryRemapper.create(mappingSet));
 
 		for (File file : migrateMappingsService.getClasspath().getFiles()) {
@@ -119,7 +126,13 @@ public final class MigrateSourceCodeMappingsService extends Service<MigrateSourc
 					outputDir
 			);
 		} catch (Exception e) {
-			LOGGER.warn("Could not remap fully!", e);
+			try {
+				DeletingFileVisitor.deleteDirectory(outputDir);
+			} catch (IOException ignored) {
+				// Nope
+			}
+
+			throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to migrate mappings", e);
 		}
 
 		// clean file descriptors

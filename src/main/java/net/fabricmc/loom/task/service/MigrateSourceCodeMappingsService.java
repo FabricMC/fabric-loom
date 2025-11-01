@@ -43,8 +43,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
@@ -56,7 +54,6 @@ import net.fabricmc.loom.util.service.ServiceType;
 import net.fabricmc.lorenztiny.TinyMappingsJoiner;
 
 public final class MigrateSourceCodeMappingsService extends Service<MigrateSourceCodeMappingsService.Options> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(MigrateSourceCodeMappingsService.class);
 	private static final ServiceType<Options, MigrateSourceCodeMappingsService> TYPE = new ServiceType<>(Options.class, MigrateSourceCodeMappingsService.class);
 
 	public MigrateSourceCodeMappingsService(Options options, ServiceFactory serviceFactory) {

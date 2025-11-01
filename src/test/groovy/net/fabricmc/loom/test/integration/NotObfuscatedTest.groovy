@@ -43,7 +43,6 @@ class NotObfuscatedTest extends Specification implements GradleProjectTestTrait 
                     api "net.fabricmc.fabric-api:fabric-api:0.134.1+1.21.10"
                 }
 		'''
-		gradle.getGradleProperties() << "fabric.loom.disableObfuscation=true"
 
 		when:
 		def result = gradle.run(task: "build")

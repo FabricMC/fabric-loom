@@ -244,4 +244,45 @@ class MigrateMappingsTest extends Specification implements GradleProjectTestTrai
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	def "Migrate AW (in place: #inPlace, header: #header)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase")
+		gradle.buildGradle << """
+			loom.accessWidenerPath = file('src/main/resources/test.accesswidener')
+            dependencies {
+                minecraft 'com.mojang:minecraft:24w36a'
+                mappings 'net.fabricmc:yarn:24w36a+build.6:v2'
+            }
+            """.stripIndent()
+		def awFile = new File(gradle.projectDir, 'src/main/resources/test.accesswidener')
+		awFile.parentFile.mkdirs()
+		awFile.text = header + '\n' + 'extendable method net/minecraft/block/PaneBlock connectsTo (Lnet/minecraft/block/BlockState;Z)Z'
+
+		when:
+		def tasks = [
+			"migrateClassTweakerMappings",
+			"--mappings",
+			"net.minecraft:mappings:24w36a"
+		]
+
+		if (inPlace) {
+			tasks.add("--overrideInputsIHaveABackup")
+		}
+
+		def result = gradle.run(tasks: tasks)
+		def remapped = (inPlace ? awFile : new File(gradle.projectDir, 'remapped.accesswidener')).text
+
+		then:
+		result.task(":migrateClassTweakerMappings").outcome == SUCCESS
+		remapped == header + '\n' + 'extendable\tmethod\tnet/minecraft/world/level/block/IronBarsBlock\tattachsTo\t(Lnet/minecraft/world/level/block/state/BlockState;Z)Z\n'
+
+		where:
+		// Check that the header is kept intact and that the in place remapping works
+		header | inPlace
+		'accessWidener\tv1\tnamed' | false
+		'accessWidener\tv1\tnamed' | true // the code is the same so we only need one case for in place remapping
+		'accessWidener\tv2\tnamed' | false
+		'classTweaker\tv1\tnamed'  | false
+	}
 }

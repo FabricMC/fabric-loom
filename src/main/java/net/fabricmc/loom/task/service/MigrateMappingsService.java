@@ -25,23 +25,26 @@
 package net.fabricmc.loom.task.service;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.util.Map;
 
 import org.gradle.api.IllegalDependencyNotation;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFile;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
-import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.commons.Remapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,20 +54,21 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperLoggerAdapter;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
-import net.fabricmc.mappingio.tree.MappingTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
-import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.mappingio.MappingReader;
+import net.fabricmc.mappingio.adapter.MappingNsRenamer;
+import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class MigrateMappingsService extends Service<MigrateMappingsService.Options> implements Closeable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MigrateMappingsService.class);
 	private static final ServiceType<Options, MigrateMappingsService> TYPE = new ServiceType<>(Options.class, MigrateMappingsService.class);
-
-	private @Nullable TinyRemapper tinyRemapper;
+	private static final String MIGRATION_TARGET_NS = "migrationTarget";
 
 	public MigrateMappingsService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);
@@ -75,10 +79,14 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 		Property<MappingsService.Options> getSourceMappings();
 		@Nested
 		Property<TinyMappingsService.Options> getTargetMappings();
+		@Nested
+		Property<TinyRemapperService.Options> getTinyRemapperOptions();
 		@InputFiles
 		ConfigurableFileCollection getClasspath();
 		@InputFiles
 		ConfigurableFileCollection getMinecraftLibraryClasspath();
+		@InputFile
+		RegularFileProperty getMergedMappings();
 	}
 
 	public static Provider<Options> createOptions(Project project, Provider<String> targetMappings) {
@@ -100,6 +108,22 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 			FileCollection targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
 			o.getSourceMappings().set(MappingsService.createOptionsWithProjectMappings(project, from, to));
 			o.getTargetMappings().set(TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny"));
+			Provider<RegularFile> mergedMappings = createMergedMappingFile(project, targetMappings, o.getSourceMappings(), targetMappingsFile);
+			o.getMergedMappings().set(mergedMappings);
+
+			o.getTinyRemapperOptions().set(TinyRemapperService.TYPE.create(project, o2 -> {
+				o2.getClasspath().from(classpath.minus(minecraftLibraryClasspath));
+				o2.getFrom().set(MappingsNamespace.NAMED.toString());
+				o2.getTo().set(MIGRATION_TARGET_NS);
+				o2.getMappings().add(MappingsService.TYPE.create(project, o3 -> {
+					o3.getMappingsFile().set(mergedMappings);
+					o3.getFrom().set(MappingsNamespace.NAMED.toString());
+					o3.getTo().set(MIGRATION_TARGET_NS);
+					o3.getRemapLocals().set(false);
+				}));
+				o2.getUselegacyMixinAP().set(false);
+			}));
+
 			o.getClasspath().from(classpath);
 			o.getMinecraftLibraryClasspath().from(minecraftLibraryClasspath);
 		});
@@ -118,74 +142,51 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 	}
 
 	public Remapper getRemapper() {
-		if (tinyRemapper != null) {
-			return tinyRemapper.getEnvironment().getRemapper();
-		}
-
-		final Path[] classpath = getClasspath().minus(getOptions().getMinecraftLibraryClasspath())
-				.getFiles()
-				.stream()
-				.map(File::toPath)
-				.distinct()
-				.toArray(Path[]::new);
-		tinyRemapper = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
-				.withMappings(this::provideMappings)
-				.build();
-		tinyRemapper.readClassPath(classpath);
-		return tinyRemapper.getEnvironment().getRemapper();
+		final TinyRemapperService service = getServiceFactory().get(getOptions().getTinyRemapperOptions());
+		return service.getTinyRemapperForRemapping().getEnvironment().getRemapper();
 	}
 
-	private void provideMappings(IMappingProvider.MappingAcceptor mappingAcceptor) {
-		final MappingTree sourceTree = getSourceMappingsService().getMemoryMappingTree();
-		final MappingTree targetTree = getTargetMappingsService().getMappingTree();
-		final int targetIntermediaryId = targetTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+	private static Provider<RegularFile> createMergedMappingFile(Project project, Provider<String> targetMappingsId, Provider<MappingsService.Options> sourceOptions, FileCollection targetMappings) {
+		return sourceOptions.flatMap(sourceOpt -> {
+			final Provider<RegularFile> fileProvider = project.getLayout()
+					.getBuildDirectory()
+					.file(targetMappingsId.map(id -> "migrate-mappings-" + Checksum.of(id).sha256().hex(16) + ".tiny"));
+			return fileProvider.map(file -> {
+				final Path path = file.getAsFile().toPath();
 
-		for (MappingTree.ClassMapping sourceClass : sourceTree.getClasses()) {
-			final String classIntermediary = sourceClass.getName(MappingsNamespace.INTERMEDIARY.toString());
-			final MappingTree.ClassMapping targetClass = targetTree.getClass(classIntermediary, targetIntermediaryId);
+				if (!Files.exists(path) || LoomGradleExtension.get(project).refreshDeps()) {
+					try {
+						final MemoryMappingTree tree = mergeMappings(sourceOpt, targetMappings);
+						Files.createDirectories(path.getParent());
 
-			if (targetClass == null) {
-				continue;
-			}
-
-			final String sourceClassName = Objects.requireNonNullElse(sourceClass.getName(MappingsNamespace.NAMED.toString()), classIntermediary);
-			final String targetClassName = Objects.requireNonNullElse(targetClass.getName(MappingsNamespace.NAMED.toString()), classIntermediary);
-			mappingAcceptor.acceptClass(sourceClassName, targetClassName);
-
-			for (MappingTree.FieldMapping sourceField : sourceClass.getFields()) {
-				final String fieldIntermediary = sourceField.getName(MappingsNamespace.INTERMEDIARY.toString());
-				final String fieldIntermediaryDesc = sourceField.getDesc(MappingsNamespace.INTERMEDIARY.toString());
-				final MappingTree.FieldMapping targetField = targetTree.getField(classIntermediary, fieldIntermediary, fieldIntermediaryDesc, targetIntermediaryId);
-
-				if (targetField != null) {
-					final String sourceName = Objects.requireNonNullElse(sourceField.getName(MappingsNamespace.NAMED.toString()), fieldIntermediary);
-					final String sourceDesc = sourceField.getDesc(MappingsNamespace.NAMED.toString());
-					final String targetName = Objects.requireNonNullElse(targetField.getName(MappingsNamespace.NAMED.toString()), fieldIntermediary);
-					mappingAcceptor.acceptField(new IMappingProvider.Member(sourceClassName, sourceName, sourceDesc), targetName);
+						try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(path, StandardCharsets.UTF_8), false)) {
+							tree.accept(writer);
+						}
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				}
-			}
 
-			for (MappingTree.MethodMapping sourceMethod : sourceClass.getMethods()) {
-				final String methodIntermediary = sourceMethod.getName(MappingsNamespace.INTERMEDIARY.toString());
-				final String methodIntermediaryDesc = sourceMethod.getDesc(MappingsNamespace.INTERMEDIARY.toString());
-				final MappingTree.FieldMapping targetMethod = targetTree.getField(classIntermediary, methodIntermediary, methodIntermediaryDesc, targetIntermediaryId);
+				return file;
+			});
+		});
+	}
 
-				if (targetMethod != null) {
-					final String sourceName = Objects.requireNonNullElse(sourceMethod.getName(MappingsNamespace.NAMED.toString()), methodIntermediary);
-					final String sourceDesc = sourceMethod.getDesc(MappingsNamespace.NAMED.toString());
-					final String targetName = Objects.requireNonNullElse(targetMethod.getName(MappingsNamespace.NAMED.toString()), methodIntermediary);
-					mappingAcceptor.acceptMethod(new IMappingProvider.Member(sourceClassName, sourceName, sourceDesc), targetName);
-				}
-			}
+	private static MemoryMappingTree mergeMappings(MappingsService.Options sourceOptions, FileCollection targetFiles) throws IOException {
+		final var tree = new MemoryMappingTree();
+		MappingReader.read(sourceOptions.getMappingsFile().get().getAsFile().toPath(), tree);
+
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(targetFiles.getSingleFile().toPath())) {
+			final var renamer = new MappingNsRenamer(tree, Map.of(MappingsNamespace.NAMED.toString(), MIGRATION_TARGET_NS));
+			MappingReader.read(fs.getPath("mappings/mappings.tiny"), renamer);
 		}
+
+		return tree;
 	}
 
 	@Override
 	public void close() throws IOException {
-		if (tinyRemapper != null) {
-			tinyRemapper.finish();
-			tinyRemapper = null;
-		}
+		Files.deleteIfExists(getOptions().getMergedMappings().get().getAsFile().toPath());
 	}
 
 	/**

@@ -32,6 +32,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
@@ -46,6 +47,7 @@ import net.fabricmc.loom.util.service.ScopedServiceFactory;
 @UntrackedTask(because = "Always rerun this task.")
 public abstract class MigrateClassTweakerMappingsTask extends AbstractMigrateMappingsTask {
 	@InputFile
+	@SkipWhenEmpty
 	@Option(option = "input", description = "Access widener file")
 	public abstract RegularFileProperty getInputFile();
 

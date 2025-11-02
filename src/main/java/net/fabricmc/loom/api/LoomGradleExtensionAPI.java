@@ -257,6 +257,8 @@ public interface LoomGradleExtensionAPI {
 
 	boolean areEnvironmentSourceSetsSplit();
 
+	Property<Boolean> getRemapJsrAnnotations();
+
 	Property<Boolean> getRuntimeOnlyLog4j();
 
 	Property<Boolean> getSplitModDependencies();

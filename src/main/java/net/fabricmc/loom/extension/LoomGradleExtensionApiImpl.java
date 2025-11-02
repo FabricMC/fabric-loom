@@ -93,6 +93,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
+	private final Property<Boolean> remapJsrAnnotations;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> splitModDependencies;
 	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
@@ -174,6 +175,9 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.accessWidener.finalizeValueOnRead();
 		this.getGameJarProcessors().finalizeValueOnRead();
+
+		this.remapJsrAnnotations = project.getObjects().property(Boolean.class).convention(true);
+		this.remapJsrAnnotations.finalizeValueOnRead();
 
 		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(false);
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
@@ -374,6 +378,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration() {
 		return minecraftJarConfiguration;
+	}
+
+	@Override
+	public Property<Boolean> getRemapJsrAnnotations() {
+		return remapJsrAnnotations;
 	}
 
 	@Override

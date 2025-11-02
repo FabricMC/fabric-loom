@@ -75,7 +75,6 @@ public final class TinyRemapperHelper {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withMappings(create(mappingTree, fromM, toM, true))
-				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)
@@ -88,6 +87,10 @@ public final class TinyRemapperHelper {
 
 					return next;
 				});
+
+		if (extension.getRemapJsrAnnotations().get()) {
+			builder = builder.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass));
+		}
 
 		builderConsumer.accept(builder);
 		return builder.build();

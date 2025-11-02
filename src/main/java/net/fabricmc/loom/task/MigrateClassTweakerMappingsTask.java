@@ -41,7 +41,7 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.ClassTweakerWriter;
 import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.service.MigrateMappingsService;
+import net.fabricmc.loom.task.service.MigrateClassTweakerMappingsService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 @UntrackedTask(because = "Always rerun this task.")
@@ -56,18 +56,18 @@ public abstract class MigrateClassTweakerMappingsTask extends AbstractMigrateMap
 	public abstract RegularFileProperty getOutputFile();
 
 	@Nested
-	protected abstract Property<MigrateMappingsService.Options> getMigrationServiceOptions();
+	protected abstract Property<MigrateClassTweakerMappingsService.Options> getMigrationServiceOptions();
 
 	public MigrateClassTweakerMappingsTask() {
 		getInputFile().convention(getExtension().getAccessWidenerPath());
 		getOutputFile().convention(getProject().getLayout().getProjectDirectory().file("remapped.accesswidener"));
-		getMigrationServiceOptions().set(MigrateMappingsService.createOptions(getProject(), getMappings()));
+		getMigrationServiceOptions().set(MigrateClassTweakerMappingsService.createOptions(getProject(), getMappings()));
 	}
 
 	@TaskAction
 	public void doTask() throws Throwable {
 		try (var serviceFactory = new ScopedServiceFactory()) {
-			final MigrateMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
+			final MigrateClassTweakerMappingsService service = serviceFactory.get(getMigrationServiceOptions().get());
 			final Path inputFile = getInputFile().get().getAsFile().toPath();
 			final byte[] inputBytes = Files.readAllBytes(inputFile);
 			final int ctVersion = ClassTweakerReader.readVersion(inputBytes);

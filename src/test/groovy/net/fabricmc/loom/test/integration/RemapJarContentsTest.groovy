@@ -53,6 +53,8 @@ class RemapJarContentsTest extends Specification implements GradleProjectTestTra
 		manifest.mainAttributes.getValue('Hello-World') == 'test'
 		manifest.mainAttributes.getValue('Inherited-In-Remap-Jar') == '1234'
 		manifest.getAttributes('fabric.mod.json').getValue('Inherited-In-Remap-Jar') == '5678'
+		manifest.getAttributes('modid.mixins.json').getValue('Hello-World') == 'another test'
+		manifest.getAttributes('modid.mixins.json').getValue('Inherited-In-Remap-Jar') == '9'
 
 		where:
 		version << STANDARD_TEST_VERSIONS

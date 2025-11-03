@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
@@ -74,6 +75,12 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 public abstract class AbstractRemapJarTask extends Jar {
+	/**
+	 * The main input jar to remap.
+	 * Other contents can be added to this task, but this jar must always be present.
+	 *
+	 * <p>The input file's manifest will be copied into the remapped jar.
+	 */
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
 
@@ -143,6 +150,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(workAction, params -> {
+			params.getInputFile().set(getInputFile());
 			params.getArchiveFile().set(getArchiveFile());
 
 			params.getSourceNamespace().set(getSourceNamespace());
@@ -181,6 +189,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	protected abstract Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet);
 
 	public interface AbstractRemapParams extends WorkParameters {
+		RegularFileProperty getInputFile();
 		RegularFileProperty getArchiveFile();
 
 		Property<String> getSourceNamespace();
@@ -242,6 +251,9 @@ public abstract class AbstractRemapJarTask extends Jar {
 			}
 		}
 
+		// Note: the inputFile parameter is the remapping input file.
+		// The main input jar is available in the parameters, but should not be used
+		// for remapping as it might be missing some files added manually to this task.
 		protected abstract void execute(Path inputFile) throws IOException;
 
 		protected void modifyJarManifest() throws IOException {
@@ -250,6 +262,13 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
 				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
+
+				byte[] sourceManifestBytes = ZipUtils.unpackNullable(getParameters().getInputFile().get().getAsFile().toPath(), Constants.Manifest.PATH);
+
+				if (sourceManifestBytes != null) {
+					var sourceManifest = new Manifest(new ByteArrayInputStream(sourceManifestBytes));
+					mergeManifests(manifest, sourceManifest);
+				}
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				manifest.write(out);
@@ -267,6 +286,24 @@ public abstract class AbstractRemapJarTask extends Jar {
 			if (isReproducibleFileOrder || !isPreserveFileTimestamps || compression != ZipEntryCompression.DEFLATED) {
 				ZipReprocessorUtil.reprocessZip(outputFile, isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
+		}
+
+		private static void mergeManifests(Manifest target, Manifest source) {
+			mergeAttributes(target.getMainAttributes(), source.getMainAttributes());
+
+			source.getEntries().forEach((name, sourceAttributes) -> {
+				final Attributes targetAttributes = target.getAttributes(name);
+
+				if (targetAttributes != null) {
+					mergeAttributes(targetAttributes, sourceAttributes);
+				} else {
+					target.getEntries().put(name, sourceAttributes);
+				}
+			});
+		}
+
+		private static void mergeAttributes(Attributes target, Attributes source) {
+			source.forEach(target::putIfAbsent);
 		}
 	}
 

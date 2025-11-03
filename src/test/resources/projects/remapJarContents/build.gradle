@@ -78,6 +78,14 @@ publishing {
 	}
 }
 
+jar {
+	manifest {
+		attributes 'Inherited-In-Remap-Jar': '1234'
+		attributes(['Inherited-In-Remap-Jar': '5678'], 'fabric.mod.json')
+		attributes 'Hello-World': 'shadowed in remapJar'
+	}
+}
+
 remapJar {
 	from 'test_file.txt'
 

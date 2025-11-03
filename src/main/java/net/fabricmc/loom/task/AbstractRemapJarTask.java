@@ -259,16 +259,15 @@ public abstract class AbstractRemapJarTask extends Jar {
 		protected void modifyJarManifest() throws IOException {
 			int count = ZipUtils.transform(outputFile, Map.of(Constants.Manifest.PATH, bytes -> {
 				var manifest = new Manifest(new ByteArrayInputStream(bytes));
-
-				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
-				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
-
 				byte[] sourceManifestBytes = ZipUtils.unpackNullable(getParameters().getInputFile().get().getAsFile().toPath(), Constants.Manifest.PATH);
 
 				if (sourceManifestBytes != null) {
 					var sourceManifest = new Manifest(new ByteArrayInputStream(sourceManifestBytes));
 					mergeManifests(manifest, sourceManifest);
 				}
+
+				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
+				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
 
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				manifest.write(out);

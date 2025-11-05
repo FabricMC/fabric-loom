@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -39,10 +40,23 @@ class NotObfuscatedTest extends Specification implements GradleProjectTestTrait 
 		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << '''
 				dependencies {
-					minecraft 'com.mojang:minecraft:1.21.10'
-                    api "net.fabricmc.fabric-api:fabric-api:0.134.1+1.21.10"
+					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
                 }
 		'''
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		@Language("JAVA") String src =  """
+		package example;
+
+		import net.minecraft.resources.Identifier;
+
+		public class Test {
+			public static void main(String[] args) {
+			    Identifier id = Identifier.fromNamespaceAndPath("loom", "test");
+			}
+		}
+		"""
+		sourceFile.text = src
 
 		when:
 		def result = gradle.run(task: "build")

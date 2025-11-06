@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.processors;
+package net.fabricmc.loom.configuration.processors.speccontext;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -42,7 +42,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -56,29 +55,29 @@ import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
  * @param localMods Mods found in the current project.
  * @param compileRuntimeMods Dependent mods found in both the compile and runtime classpath.
  */
-public record SpecContextRemappedImpl(
+public record RemappedSpecContext(
 		List<FabricModJson> modDependencies,
 		List<FabricModJson> localMods,
 		List<ModHolder> compileRuntimeMods) implements SpecContext {
-	public static SpecContextRemappedImpl create(Project project) {
-		return create(new SpecContextProjectView.Impl(project, LoomGradleExtension.get(project)));
+	public static RemappedSpecContext create(Project project) {
+		return create(new RemappedProjectView.Impl(project));
 	}
 
 	@VisibleForTesting
-	public static SpecContextRemappedImpl create(SpecContextProjectView projectView) {
+	public static RemappedSpecContext create(RemappedProjectView projectView) {
 		AsyncCache<List<FabricModJson>> fmjCache = new AsyncCache<>();
-		return new SpecContextRemappedImpl(
+		return new RemappedSpecContext(
 				getDependentMods(projectView, fmjCache),
 				projectView.getMods(),
 				getCompileRuntimeMods(projectView, fmjCache)
 		);
 	}
 
-	// Reruns a list of mods found on both the compile and/or runtime classpaths
-	private static List<FabricModJson> getDependentMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+	// Returns a list of mods found on both the compile and/or runtime classpaths
+	private static List<FabricModJson> getDependentMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
-		for (RemapConfigurationSettings entry : projectView.extension().getRemapConfigurations()) {
+		for (RemapConfigurationSettings entry : projectView.getRemapConfigurations()) {
 			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
 
 			for (File artifact : artifacts) {
@@ -92,24 +91,16 @@ public record SpecContextRemappedImpl(
 
 		if (!projectView.disableProjectDependantMods()) {
 			// Add all the dependent projects
-			for (Project dependentProject : getDependentProjects(projectView).toList()) {
+			for (Project dependentProject : SpecContext.getDependentProjects(projectView).toList()) {
 				futures.add(fmjCache.get(dependentProject.getPath(), () -> FabricModJsonHelpers.getModsInProject(dependentProject)));
 			}
 		}
 
-		return distinctSorted(AsyncCache.joinList(futures));
-	}
-
-	private static Stream<Project> getDependentProjects(SpecContextProjectView projectView) {
-		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-		final Stream<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
-
-		return Stream.concat(runtimeProjects, compileProjects)
-				.distinct();
+		return SpecContext.distinctSorted(AsyncCache.joinList(futures));
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<ModHolder> getCompileRuntimeMods(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(projectView, fmjCache));
 
 		for (Project dependentProject : getCompileRuntimeProjectDependencies(projectView).toList()) {
@@ -126,32 +117,32 @@ public record SpecContextRemappedImpl(
 	}
 
 	// Returns a list of jar mods that are found on the compile and runtime remapping configurations
-	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeModsFromRemapConfigs(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
 		// A set of mod ids from all remap configurations that are considered for dependency transforms.
 		final Set<String> runtimeModIds = getModIds(
-				SpecContextProjectView.ArtifactUsage.RUNTIME,
+				ProjectView.ArtifactUsage.RUNTIME,
 				projectView,
 				fmjCache,
-				projectView.extension().getRuntimeRemapConfigurations().stream()
+				projectView.getRuntimeRemapConfigurations().stream()
 						.filter(settings -> settings.getApplyDependencyTransforms().get())
 		);
 
 		// A set of mod ids that are found on one or more remap configurations that target the common source set.
 		// Null when split source sets are not enabled, meaning all mods are common.
-		final Set<String> commonRuntimeModIds = projectView.extension().areEnvironmentSourceSetsSplit() ? getModIds(
-				SpecContextProjectView.ArtifactUsage.RUNTIME,
+		final Set<String> commonRuntimeModIds = projectView.areEnvironmentSourceSetsSplit() ? getModIds(
+				ProjectView.ArtifactUsage.RUNTIME,
 				projectView,
 				fmjCache,
-				projectView.extension().getRuntimeRemapConfigurations().stream()
+				projectView.getRuntimeRemapConfigurations().stream()
 						.filter(settings -> settings.getSourceSet().map(sourceSet -> !sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME)).get())
 						.filter(settings -> settings.getApplyDependencyTransforms().get()))
 				: null;
 
 		Stream<FabricModJson> compileMods = getMods(
-				SpecContextProjectView.ArtifactUsage.COMPILE,
+				ProjectView.ArtifactUsage.COMPILE,
 				projectView,
 				fmjCache,
-				projectView.extension().getCompileRemapConfigurations().stream()
+				projectView.getCompileRemapConfigurations().stream()
 						.filter(settings -> settings.getApplyDependencyTransforms().get()));
 
 		return compileMods
@@ -164,13 +155,13 @@ public record SpecContextRemappedImpl(
 				.toList();
 	}
 
-	private static Stream<FabricModJson> getMods(SpecContextProjectView.ArtifactUsage artifactUsage, SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+	private static Stream<FabricModJson> getMods(ProjectView.ArtifactUsage artifactUsage, RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
 		return stream.flatMap(projectView.resolveArtifacts(artifactUsage))
 				.map(modFromZip(fmjCache))
 				.filter(Objects::nonNull);
 	}
 
-	private static Set<String> getModIds(SpecContextProjectView.ArtifactUsage artifactUsage, SpecContextProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
+	private static Set<String> getModIds(ProjectView.ArtifactUsage artifactUsage, RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, Stream<RemapConfigurationSettings> stream) {
 		return getMods(artifactUsage, projectView, fmjCache, stream)
 				.map(FabricModJson::getId)
 				.collect(Collectors.toSet());
@@ -188,7 +179,7 @@ public record SpecContextRemappedImpl(
 	}
 
 	// Returns a list of Loom Projects found in both the runtime and compile classpath
-	private static Stream<Project> getCompileRuntimeProjectDependencies(SpecContextProjectView projectView) {
+	private static Stream<Project> getCompileRuntimeProjectDependencies(ProjectView projectView) {
 		if (projectView.disableProjectDependantMods()) {
 			return Stream.empty();
 		}
@@ -198,14 +189,6 @@ public record SpecContextRemappedImpl(
 
 		return runtimeProjects
 				.filter(compileProjects::contains); // Use the intersection of the two configurations.
-	}
-
-	// Sort to ensure stable caching
-	private static List<FabricModJson> distinctSorted(List<FabricModJson> mods) {
-		return mods.stream()
-				.distinct()
-				.sorted(Comparator.comparing(FabricModJson::getId))
-				.toList();
 	}
 
 	@Override

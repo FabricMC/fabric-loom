@@ -35,6 +35,9 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
+
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -69,9 +72,9 @@ public final class MinecraftJarProcessorManager {
 		SpecContext specContext;
 
 		if (extension.disableObfuscation()) {
-			specContext = SpecContextDebofImpl.create();
+			specContext = DeobfSpecContext.create(project);
 		} else {
-			specContext = SpecContextRemappedImpl.create(project);
+			specContext = RemappedSpecContext.create(project);
 		}
 
 		return MinecraftJarProcessorManager.create(processors, specContext);

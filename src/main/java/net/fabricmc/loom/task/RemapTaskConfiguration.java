@@ -45,6 +45,8 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.jvm.tasks.Jar;
 
+import org.jetbrains.annotations.NotNull;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
@@ -52,8 +54,6 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
-
-import org.jetbrains.annotations.NotNull;
 
 public abstract class RemapTaskConfiguration implements Runnable {
 	public static final String REMAP_JAR_TASK_NAME = "remapJar";
@@ -216,7 +216,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 	private static class NestJarsAction implements Action<Task>, Serializable {
 		private final Provider<Directory> nestedJarsDir;
 
-		public NestJarsAction(Provider<Directory> nestedJarsDir) {
+		NestJarsAction(Provider<Directory> nestedJarsDir) {
 			this.nestedJarsDir = nestedJarsDir;
 		}
 

@@ -39,10 +39,10 @@ class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 		def gradle = gradleProject(project: "includedJars", version: version)
 
 		when:
-		def result = gradle.run(tasks: ["remapJar"])
+		def result = gradle.run(tasks: ["jar"])
 
 		then:
-		result.task(":remapJar").outcome == SUCCESS
+		result.task(":jar").outcome == SUCCESS
 
 		// Assert directly declared dependencies are present
 		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-core-2.22.0.jar")

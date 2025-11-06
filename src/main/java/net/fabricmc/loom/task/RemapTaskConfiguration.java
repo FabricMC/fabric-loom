@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
+
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
@@ -99,9 +101,32 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
 
 		// Configure the default jar task
+		TaskProvider<NestableJarGenerationTask> processIncludeJarsTask = getTasks().named(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class);
 		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
 			task.getArchiveClassifier().convention("dev");
 			task.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
+
+			// Add JIJ support to the regular jar task
+			task.dependsOn(processIncludeJarsTask);
+			task.doLast("nestJars", t -> {
+				final Jar jarTask = (Jar) t;
+				final File jarFile = jarTask.getArchiveFile().get().getAsFile();
+				final NestableJarGenerationTask processTask = processIncludeJarsTask.get();
+				final File outputDir = processTask.getOutputDirectory().get().getAsFile();
+
+				if (outputDir.exists() && outputDir.isDirectory()) {
+					final File[] jars = outputDir.listFiles((dir, name) -> name.endsWith(".jar"));
+
+					if (jars != null && jars.length > 0) {
+						net.fabricmc.loom.build.nesting.JarNester.nestJars(
+								java.util.Arrays.asList(jars),
+								jarFile,
+								getProject().getLogger()
+						);
+						getProject().getLogger().lifecycle("Nested {} jar(s) into {}", jars.length, jarFile.getName());
+					}
+				}
+			});
 		});
 
 		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(getTasks().named(REMAP_JAR_TASK_NAME)));

@@ -222,12 +222,6 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		@Override
 		public void execute(@NotNull Task t) {
 			final Jar jarTask = (Jar) t;
-
-			if (!jarTask.getArchiveFile().isPresent()) {
-				jarTask.getLogger().warn("Jar task archive file not available, skipping JIJ");
-				return;
-			}
-
 			final File jarFile = jarTask.getArchiveFile().get().getAsFile();
 
 			if (!nestedJarsDir.isPresent()) {

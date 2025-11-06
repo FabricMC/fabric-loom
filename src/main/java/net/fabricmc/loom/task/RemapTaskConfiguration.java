@@ -44,7 +44,6 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.jvm.tasks.Jar;
-
 import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.LoomGradleExtension;

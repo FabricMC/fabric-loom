@@ -35,9 +35,6 @@ import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
-import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
-
 import org.gradle.api.Project;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -48,6 +45,8 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 

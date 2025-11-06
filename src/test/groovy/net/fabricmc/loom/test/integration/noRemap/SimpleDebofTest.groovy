@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.integration.noRemap
 
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
@@ -33,9 +33,9 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class NotObfuscatedTest extends Specification implements GradleProjectTestTrait {
+class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "Not Obfuscated"() {
+	def "build"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << '''

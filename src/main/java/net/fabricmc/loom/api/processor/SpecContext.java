@@ -36,7 +36,7 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 
 public interface SpecContext {
 	/**
-	 * Returns a list of all the external mods that this project depends on regardless of configuration
+	 * Returns a list of all the external mods that this project depends on regardless of configuration.
 	 */
 	List<FabricModJson> modDependencies();
 

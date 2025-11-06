@@ -357,6 +357,8 @@ tasks.register('writeActionsTestMatrix') {
 
 				def className = it.name.replace(".groovy", "")
 				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
+			} else if (it.name.endsWith("noRemap")) {
+				testMatrix.add("net.fabricmc.loom.test.integration.noRemap.*")
 			}
 		}
 

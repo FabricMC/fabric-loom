@@ -36,7 +36,6 @@ import org.gradle.api.artifacts.Configuration
 import spock.lang.Specification
 import spock.lang.TempDir
 
-import net.fabricmc.loom.LoomGradleExtension
 import net.fabricmc.loom.api.RemapConfigurationSettings
 import net.fabricmc.loom.api.fmj.FabricModJsonV1Spec
 import net.fabricmc.loom.configuration.processors.speccontext.ProjectView

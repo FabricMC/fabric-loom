@@ -35,8 +35,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.jetbrains.annotations.Nullable;
+import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.AsyncCache;
@@ -45,15 +44,17 @@ import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 
 public record DeobfSpecContext(List<FabricModJson> modDependencies,
-							   List<FabricModJson> localMods,
-							   // Mods that are in the following configurations: [runtimeClasspath, compileClasspath] or [runtimeClientClasspath, compileClientClasspath]
-							   // These are mods that will be used to transform both the client and server jars
-							   List<FabricModJson> modDependenciesCompileRuntime,
-							   // Here we want mods that are ONLY in [runtimeClientClasspath, compileClientClasspath] and not [runtimeClasspath, compileClasspath]
-							   // These mods will be excluded from transforming the server jar
-							   List<FabricModJson> modDependenciesCompileRuntimeClient
+								List<FabricModJson> localMods,
+								// Mods that are in the following configurations: [runtimeClasspath, compileClasspath] or [runtimeClientClasspath, compileClientClasspath]
+								// These are mods that will be used to transform both the client and server jars
+								List<FabricModJson> modDependenciesCompileRuntime,
+								// Here we want mods that are ONLY in [runtimeClientClasspath, compileClientClasspath] and not [runtimeClasspath, compileClasspath]
+								// These mods will be excluded from transforming the server jar
+								List<FabricModJson> modDependenciesCompileRuntimeClient
 ) implements SpecContext {
 	public static DeobfSpecContext create(Project project) {
+		DebofConfiguration.create(project);
+
 		return create(new DeobfProjectView.Impl(project));
 	}
 
@@ -63,16 +64,29 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 		Map<String, FabricModJson> mods = dependentMods.stream()
 				.collect(HashMap::new, (map, mod) -> map.put(mod.getId(), mod), Map::putAll);
 
+		FileCollection mainRuntimeClasspath = projectView.getDependencies(DebofConfiguration.RUNTIME, DebofConfiguration.TargetSourceSet.MAIN);
+		FileCollection mainCompileClasspath = projectView.getDependencies(DebofConfiguration.COMPILE, DebofConfiguration.TargetSourceSet.MAIN);
+
 		// All mods in both [runtimeClasspath, compileClasspath]
 		Set<String> mainTransformingModIds = common(
-				getModIds(projectView.getRuntimeClasspath(), fmjCache),
-				getModIds(projectView.getCompileClasspath(), fmjCache)
+				getModIds(mainRuntimeClasspath, fmjCache),
+				getModIds(mainCompileClasspath, fmjCache)
 		);
+
 		// All mods in both [runtimeClientClasspath, compileClientClasspath]
-		Set<String> clientTransformingModIds = common(
-				getModIds(projectView.getRuntimeClientClasspath(), fmjCache),
-				getModIds(projectView.getCompileClientClasspath(), fmjCache)
-		);
+		Set<String> clientTransformingModIds;
+
+		if (projectView.areEnvironmentSourceSetsSplit()) {
+			FileCollection clientRuntimeClasspath = projectView.getDependencies(DebofConfiguration.RUNTIME, DebofConfiguration.TargetSourceSet.CLIENT);
+			FileCollection clientCompileClasspath = projectView.getDependencies(DebofConfiguration.COMPILE, DebofConfiguration.TargetSourceSet.CLIENT);
+
+			clientTransformingModIds = common(
+					getModIds(clientRuntimeClasspath, fmjCache),
+					getModIds(clientCompileClasspath, fmjCache)
+			);
+		} else {
+			clientTransformingModIds = Set.of();
+		}
 
 		return new DeobfSpecContext(
 				dependentMods,
@@ -106,14 +120,10 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 	}
 
 	// Returns a list of mod ids in a given configuration
-	private static Set<String> getModIds(@Nullable Configuration configuration, AsyncCache<List<FabricModJson>> fmjCache) {
-		if (configuration == null) {
-			return Set.of();
-		}
-
+	private static Set<String> getModIds(FileCollection configuration, AsyncCache<List<FabricModJson>> fmjCache) {
 		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
-		Set<File> artifacts = configuration.resolve();
+		Set<File> artifacts = configuration.getFiles();
 
 		for (File artifact : artifacts) {
 			futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {

@@ -41,6 +41,7 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 		gradle.buildGradle << '''
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
+					implementation "net.fabricmc:fabric-loader:0.17.3"
                 }
 		'''
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
@@ -49,6 +50,8 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 		package example;
 
 		import net.minecraft.resources.Identifier;
+
+		import org.spongepowered.asm.mixin.Mixin; // Make sure we applied loaders deps via the installer data
 
 		public class Test {
 			public static void main(String[] args) {

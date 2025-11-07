@@ -53,8 +53,6 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 								List<FabricModJson> modDependenciesCompileRuntimeClient
 ) implements SpecContext {
 	public static DeobfSpecContext create(Project project) {
-		DebofConfiguration.create(project);
-
 		return create(new DeobfProjectView.Impl(project));
 	}
 

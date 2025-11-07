@@ -56,6 +56,6 @@ public record LoomDependencyManager(Project project, ServiceFactory serviceFacto
 	}
 
 	private void handleNonRemapDependencies() {
-		// TODO debof - do we need to do anything?
+		DebofInstallerData.findAndApply(project);
 	}
 }

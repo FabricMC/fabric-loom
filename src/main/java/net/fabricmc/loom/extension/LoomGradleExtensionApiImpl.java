@@ -543,5 +543,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		public MixinExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
+
+		@Override
+		public void nestJars(org.gradle.api.tasks.TaskProvider<? extends org.gradle.jvm.tasks.Jar> jarTask, FileCollection jars) {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
 	}
 }

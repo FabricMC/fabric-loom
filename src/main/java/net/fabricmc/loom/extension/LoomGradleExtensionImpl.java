@@ -57,6 +57,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.task.NestJarsAction;
+import net.fabricmc.loom.task.RemapJarTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
@@ -338,5 +340,18 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public boolean disableObfuscation() {
 		return disableObfuscation.get();
+	}
+
+	@Override
+	public void nestJars(org.gradle.api.tasks.TaskProvider<? extends org.gradle.jvm.tasks.Jar> jarTask, FileCollection jars) {
+		jarTask.configure(task -> {
+			if (task instanceof RemapJarTask remapJarTask) {
+				// For RemapJarTask, add to the nestedJars property
+				remapJarTask.getNestedJars().from(jars);
+			} else {
+				// For regular Jar tasks (non-remap mode), add a NestJarsAction with the FileCollection
+				task.doLast(new NestJarsAction(jars));
+			}
+		});
 	}
 }

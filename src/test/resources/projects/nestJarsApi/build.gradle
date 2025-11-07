@@ -1,0 +1,30 @@
+plugins {
+	id 'fabric-loom'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft 'com.mojang:minecraft:1.20.1'
+	mappings loom.officialMojangMappings()
+}
+
+// Create a simple mod jar file to nest
+task createNestedMod(type: Jar) {
+	archiveBaseName = 'nested-mod'
+	destinationDirectory = layout.buildDirectory.dir('nested-mods')
+
+	from('nested-mod-content') {
+		include 'fabric.mod.json'
+	}
+}
+
+// Use the new nestJars API to nest the locally built jar
+loom {
+	nestJars(tasks.named('remapJar'), files(createNestedMod.outputs.files))
+}
+
+// Make sure remapJar depends on the nested mod being created
+tasks.remapJar.dependsOn(createNestedMod)

@@ -26,14 +26,18 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.gradle.api.Action;
 import org.gradle.api.Task;
 import org.gradle.api.file.Directory;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loom.build.nesting.JarNester;
 
@@ -42,35 +46,50 @@ import net.fabricmc.loom.build.nesting.JarNester;
  * Uses a provider to avoid capturing task references at configuration time.
  * Do NOT turn me into a record!
  */
-class NestJarsAction implements Action<Task>, Serializable {
+public class NestJarsAction implements Action<Task>, Serializable {
+	@Nullable
 	private final Provider<Directory> nestedJarsDir;
+	@Nullable
+	private final FileCollection additionalJars;
 
-	NestJarsAction(Provider<Directory> nestedJarsDir) {
+	public NestJarsAction(Provider<Directory> nestedJarsDir) {
 		this.nestedJarsDir = nestedJarsDir;
+		this.additionalJars = null;
+	}
+
+	public NestJarsAction(FileCollection additionalJars) {
+		this.nestedJarsDir = null;
+		this.additionalJars = additionalJars;
 	}
 
 	@Override
 	public void execute(@NotNull Task t) {
 		final Jar jarTask = (Jar) t;
 		final File jarFile = jarTask.getArchiveFile().get().getAsFile();
+		final List<File> allJars = new ArrayList<>();
 
-		if (!nestedJarsDir.isPresent()) {
-			return;
+		// Collect jars from directory if present
+		if (nestedJarsDir != null && nestedJarsDir.isPresent()) {
+			final File outputDir = nestedJarsDir.get().getAsFile();
+
+			if (outputDir.exists() && outputDir.isDirectory()) {
+				final File[] jars = outputDir.listFiles((dir, name) -> name.endsWith(".jar"));
+
+				if (jars != null && jars.length > 0) {
+					allJars.addAll(Arrays.asList(jars));
+				}
+			}
 		}
 
-		final File outputDir = nestedJarsDir.get().getAsFile();
+		// Collect jars from FileCollection if present
+		if (additionalJars != null && !additionalJars.isEmpty()) {
+			allJars.addAll(additionalJars.getFiles());
+		}
 
-		if (outputDir.exists() && outputDir.isDirectory()) {
-			final File[] jars = outputDir.listFiles((dir, name) -> name.endsWith(".jar"));
-
-			if (jars != null && jars.length > 0) {
-				JarNester.nestJars(
-						Arrays.asList(jars),
-						jarFile,
-						jarTask.getLogger()
-				);
-				jarTask.getLogger().lifecycle("Nested {} jar(s) into {}", jars.length, jarFile.getName());
-			}
+		// Nest all collected jars
+		if (!allJars.isEmpty()) {
+			JarNester.nestJars(allJars, jarFile, jarTask.getLogger());
+			jarTask.getLogger().lifecycle("Nested {} jar(s) into {}", allJars.size(), jarFile.getName());
 		}
 	}
 }

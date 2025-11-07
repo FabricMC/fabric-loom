@@ -129,18 +129,31 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 
 	@Override
 	public void processJar(Path jar, AccessWidenerJarProcessor.Spec spec, ProcessorContext context) throws IOException {
+		ClassTweaker classTweaker = getClassTweaker(spec, context);
+		AccessWidenerTransformer transformer = new AccessWidenerTransformer(classTweaker);
+		transformer.apply(jar);
+	}
+
+	private ClassTweaker getClassTweaker(AccessWidenerJarProcessor.Spec spec, ProcessorContext context) throws IOException {
 		final List<AccessWidenerEntry> accessWideners = spec.accessWidenersForContext(context);
 
-		final var accessWidener = ClassTweaker.newInstance();
+		final var classTweaker = ClassTweaker.newInstance();
+
+		if (context.disableObfuscation()) {
+			for (AccessWidenerEntry widener : accessWideners) {
+				widener.readOfficial(classTweaker);
+			}
+
+			return classTweaker;
+		}
 
 		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry widener : accessWideners) {
-				widener.read(accessWidener, remapper);
+				widener.read(classTweaker, remapper);
 			}
 		}
 
-		AccessWidenerTransformer transformer = new AccessWidenerTransformer(accessWidener);
-		transformer.apply(jar);
+		return classTweaker;
 	}
 
 	@Override

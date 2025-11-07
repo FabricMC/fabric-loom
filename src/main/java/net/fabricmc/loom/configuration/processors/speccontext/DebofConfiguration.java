@@ -38,6 +38,10 @@ import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.util.Strings;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
+/**
+ * This mess is created out of the need to resolve the compile/runtime dependencies, without using the actual runtime/compile classpath.
+ * As we need to add the minecraft jar to it later (based on the compile/runtime dependencies).
+ */
 public record DebofConfiguration(String name, List<Function<SourceSet, String>> configurationFunctions) {
 	public static final DebofConfiguration COMPILE = new DebofConfiguration("compile", List.of(
 			SourceSet::getImplementationConfigurationName,

@@ -47,6 +47,7 @@ class DebofDependenciesTest extends Specification implements GradleProjectTestTr
 		setup:
 		def dep = tempDir.resolve("mod.jar")
 		ZipUtils.add(dep, "fabric.mod.json", FMJ)
+		ZipUtils.add(dep, "test.accesswidener", AW)
 
 		mavenHelper("loom.test", "test", "1.0.0").copyToMaven(dep, null)
 
@@ -58,32 +59,10 @@ class DebofDependenciesTest extends Specification implements GradleProjectTestTr
 					implementation 'loom.test:test:1.0.0'
                 }
 		'''
-		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
-		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
-		package example;
-
-		import net.minecraft.resources.Identifier;
-
-		public class Test {
-			public static void main(String[] args) {
-			    Identifier id = Identifier.fromNamespaceAndPath("loom", "test");
-				id.testCompiles();
-			}
-		}
-		"""
-		sourceFile.text = src
-
-		sourceFile = new File(gradle.projectDir, "src/main/java/example/InjectedInterface.java")
-		src =  """
-		package example;
-
-		public interface InjectedInterface {
-			default void testCompiles() {
-			}
-		}
-		"""
-		sourceFile.text = src
+		def pkg = new File(gradle.projectDir, "src/main/java/example/")
+		pkg.mkdirs()
+		new File(pkg, "Test.java").text = Test
+		new File(pkg, "InjectedInterface.java").text = InjectedInterface
 
 		when:
 		def result = gradle.run(task: "build")
@@ -99,11 +78,43 @@ class DebofDependenciesTest extends Specification implements GradleProjectTestTr
 	  "id": "testmod",
 	  "version": "1",
 	  "name": "Test Mod",
+	  "accessWidener": "test.accesswidener",
 	  "custom": {
 		"loom:injected_interfaces": {
 		  "net/minecraft/resources/Identifier": ["example/InjectedInterface"]
 		}
 	  }
 	}
+	"""
+
+	@Language("Access Widener")
+	private static final String AW = """
+	accessWidener\tv2\tofficial
+	transitive-accessible field net/minecraft/resources/Identifier path Ljava/lang/String;
+	""".stripIndent().trim()
+
+	@Language("JAVA")
+	private static final String Test = """
+		package example;
+
+		import net.minecraft.resources.Identifier;
+
+		public class Test {
+			public static void main(String[] args) {
+				Identifier id = Identifier.fromNamespaceAndPath("loom", "test");
+				id.testCompiles(); // Test iface injection
+				String path = id.path; // Test AW
+			}
+		}
+	"""
+
+	@Language("JAVA")
+	private static final String InjectedInterface = """
+		package example;
+
+		public interface InjectedInterface {
+			default void testCompiles() {
+			}
+		}
 	"""
 }

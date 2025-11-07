@@ -64,6 +64,9 @@ import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
+
 public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
 	private final MixinExtension mixinApExtension;
@@ -343,7 +346,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	}
 
 	@Override
-	public void nestJars(org.gradle.api.tasks.TaskProvider<? extends org.gradle.jvm.tasks.Jar> jarTask, FileCollection jars) {
+	public void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars) {
 		jarTask.configure(task -> {
 			if (task instanceof RemapJarTask remapJarTask) {
 				// For RemapJarTask, add to the nestedJars property

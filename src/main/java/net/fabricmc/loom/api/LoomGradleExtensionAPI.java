@@ -40,6 +40,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -281,7 +283,7 @@ public interface LoomGradleExtensionAPI {
 	 * Non-mod jars will be rejected.
 	 *
 	 * <p>Example usage:
-	 * {@snippet :
+	 * {@snippet lang=groovy :
 	 * loom {
 	 *     nestJars(tasks.jar, files('local-mod.jar'))
 	 *     nestJars(tasks.remapJar, tasks.named('buildOtherMod'))
@@ -293,5 +295,5 @@ public interface LoomGradleExtensionAPI {
 	 * @since 1.14
 	 */
 	@ApiStatus.Experimental
-	void nestJars(org.gradle.api.tasks.TaskProvider<? extends org.gradle.jvm.tasks.Jar> jarTask, FileCollection jars);
+	void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars);
 }

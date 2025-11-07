@@ -76,6 +76,9 @@ import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
+
 /**
  * This class implements the public extension api.
  */
@@ -545,7 +548,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		}
 
 		@Override
-		public void nestJars(org.gradle.api.tasks.TaskProvider<? extends org.gradle.jvm.tasks.Jar> jarTask, FileCollection jars) {
+		public void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

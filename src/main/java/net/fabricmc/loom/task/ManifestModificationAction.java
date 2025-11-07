@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,14 +53,17 @@ import net.fabricmc.loom.util.ZipUtils;
 public class ManifestModificationAction implements Action<Task>, Serializable {
 	private final Provider<JarManifestService> manifestService;
 	private final String targetNamespace;
+	private final boolean areEnvironmentSourceSetsSplit;
 	private final List<String> clientOnlyEntries;
 
 	public ManifestModificationAction(
 			Provider<JarManifestService> manifestService,
 			String targetNamespace,
+			boolean areEnvironmentSourceSetsSplit,
 			List<String> clientOnlyEntries) {
 		this.manifestService = manifestService;
 		this.targetNamespace = targetNamespace;
+		this.areEnvironmentSourceSetsSplit = areEnvironmentSourceSetsSplit;
 		this.clientOnlyEntries = clientOnlyEntries;
 	}
 
@@ -71,7 +75,7 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 		try {
 			modifyManifest(jarFile);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to modify jar manifest for " + jarFile.getName(), e);
+			throw new UncheckedIOException("Failed to modify jar manifest for " + jarFile.getName(), e);
 		}
 	}
 
@@ -81,9 +85,13 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 		// Set the mapping namespace to "official" for non-remapped jars
 		manifestAttributes.put(Constants.Manifest.MAPPING_NAMESPACE, targetNamespace);
 
-		// Add client-only entries attributes if present
-		if (clientOnlyEntries != null && !clientOnlyEntries.isEmpty()) {
+		// Set split environment flag if source sets are split (even for common-only jars)
+		if (areEnvironmentSourceSetsSplit) {
 			manifestAttributes.put(Constants.Manifest.SPLIT_ENV, "true");
+		}
+
+		// Add client-only entries list if present
+		if (clientOnlyEntries != null && !clientOnlyEntries.isEmpty()) {
 			manifestAttributes.put(Constants.Manifest.CLIENT_ENTRIES, String.join(";", clientOnlyEntries));
 		}
 

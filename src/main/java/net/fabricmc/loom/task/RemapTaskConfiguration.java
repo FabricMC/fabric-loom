@@ -74,15 +74,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		});
 
 		if (extension.dontRemapOutputs()) {
-			// No remapping needed - use simplified JIJ approach directly on jar task
-			getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).configure(task -> {
-				task.dependsOn(processIncludeJarsTask);
-				// Use JarNester to properly add jars and update fabric.mod.json
-				task.doLast(new NestJarsAction(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory)));
-			});
-
-			// Add jar task to unmapped collection
-			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
+			new NonRemappedJarTaskConfiguration(getProject(), extension, processIncludeJarsTask).configure();
 			return;
 		}
 

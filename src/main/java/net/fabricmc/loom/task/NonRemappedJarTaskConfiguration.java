@@ -24,13 +24,25 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
+import net.fabricmc.loom.task.service.ClientEntriesService;
+import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 /**
  * Configures the jar task for non-remapped (non-obfuscated) output.
@@ -48,15 +60,42 @@ public class NonRemappedJarTaskConfiguration {
 	}
 
 	public void configure() {
-		// No remapping needed - use simplified JIJ approach directly on jar task
+		final Provider<JarManifestService> manifestServiceProvider = JarManifestService.get(project);
+
 		project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).configure(task -> {
 			task.dependsOn(processIncludeJarsTask);
-			// Use JarNester to properly add jars and update fabric.mod.json
+
 			task.doLast(new NestJarsAction(project.fileTree(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory))
 					.matching(pattern -> pattern.include("*.jar"))));
+
+			task.doLast(new ManifestModificationAction(
+					manifestServiceProvider,
+					"official",
+					getClientOnlyEntries()
+			));
+
+			task.usesService(manifestServiceProvider);
 		});
 
-		// Add jar task to unmapped collection
 		extension.getUnmappedModCollection().from(project.getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
+	}
+
+	private List<String> getClientOnlyEntries() {
+		if (!extension.areEnvironmentSourceSetsSplit()) {
+			return Collections.emptyList();
+		}
+
+		final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(
+				MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME,
+				project
+		);
+		final Provider<ClientEntriesService.Classes.Options> optionsProvider = ClientEntriesService.Classes.createOptions(project, clientSourceSet);
+
+		try (var serviceFactory = new ScopedServiceFactory()) {
+			ClientEntriesService<ClientEntriesService.Classes.Options> service = serviceFactory.get(optionsProvider);
+			return new ArrayList<>(service.getClientOnlyEntries());
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to determine client-only entries", e);
+		}
 	}
 }

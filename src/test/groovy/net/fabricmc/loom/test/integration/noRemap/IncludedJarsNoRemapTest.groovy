@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.integration.noRemap
 
+import java.util.jar.Manifest
+
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -51,6 +53,20 @@ class IncludedJarsNoRemapTest extends Specification implements GradleProjectTest
 		// But not transitives.
 		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-api-2.22.0.jar")
 		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-api-4.14.0.jar")
+
+		// Verify manifest attributes
+		def manifestContent = gradle.getOutputZipEntry("includedJars.jar", "META-INF/MANIFEST.MF")
+		def manifest = new Manifest(new ByteArrayInputStream(manifestContent.bytes))
+		def attributes = manifest.getMainAttributes()
+
+		// Check that the namespace is set to "official" for non-remapped jars
+		attributes.getValue("Fabric-Mapping-Namespace") == "official"
+
+		// Check that Loom metadata is present
+		attributes.getValue("Fabric-Gradle-Version") != null
+		attributes.getValue("Fabric-Loom-Version") != null
+		attributes.getValue("Fabric-Minecraft-Version") != null
+		attributes.getValue("Fabric-Tiny-Remapper-Version") != null
 
 		where:
 		version << STANDARD_TEST_VERSIONS

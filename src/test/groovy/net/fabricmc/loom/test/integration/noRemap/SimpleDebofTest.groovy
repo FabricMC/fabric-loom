@@ -59,7 +59,10 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 		sourceFile.text = src
 
 		when:
-		def result = gradle.run(tasks: ["build", "configureClientLaunch"])
+		def result = gradle.run(tasks: [
+			"build",
+			"configureClientLaunch"
+		])
 
 		then:
 		result.task(":build").outcome == SUCCESS

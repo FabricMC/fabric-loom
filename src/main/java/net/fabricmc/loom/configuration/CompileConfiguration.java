@@ -63,6 +63,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.processors.speccontext.DebofConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
@@ -102,6 +103,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 		afterEvaluationWithService((serviceFactory) -> {
 			final ConfigContext configContext = new ConfigContextImpl(getProject(), serviceFactory, extension);
+
+			if (extension.disableObfuscation()) {
+				DebofConfiguration.create(getProject());
+			}
 
 			MinecraftSourceSets.get(getProject()).afterEvaluate(getProject());
 

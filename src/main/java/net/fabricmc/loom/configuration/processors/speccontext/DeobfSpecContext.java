@@ -25,12 +25,15 @@
 package net.fabricmc.loom.configuration.processors.speccontext;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -101,7 +104,7 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 
 		for (File artifact : artifacts) {
 			futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {
-				return FabricModJsonFactory.createFromZipOptional(artifact.toPath())
+				return getMod(artifact.toPath())
 						.map(List::of)
 						.orElseGet(List::of);
 			}));
@@ -125,7 +128,7 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 
 		for (File artifact : artifacts) {
 			futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {
-				return FabricModJsonFactory.createFromZipOptional(artifact.toPath())
+				return getMod(artifact.toPath())
 						.map(List::of)
 						.orElseGet(List::of);
 			}));
@@ -134,6 +137,14 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 		return SpecContext.distinctSorted(AsyncCache.joinList(futures)).stream()
 				.map(FabricModJson::getId)
 				.collect(HashSet::new, Set::add, Set::addAll);
+	}
+
+	private static Optional<FabricModJson> getMod(Path path) {
+		if (Files.isRegularFile(path)) {
+			return FabricModJsonFactory.createFromZipOptional(path);
+		}
+
+		return Optional.empty();
 	}
 
 	private static List<FabricModJson> getMods(Map<String, FabricModJson> mods, Set<String> ids) {

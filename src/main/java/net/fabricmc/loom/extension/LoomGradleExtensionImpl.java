@@ -174,6 +174,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public MappingConfiguration getMappingConfiguration() {
 		if (disableObfuscation()) {
+			project.getLogger().lifecycle("help", new RuntimeException());
 			throw new UnsupportedOperationException("Cannot get mappings configuration in a non-obfuscated environment");
 		}
 

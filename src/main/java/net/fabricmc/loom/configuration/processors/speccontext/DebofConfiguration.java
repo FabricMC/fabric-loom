@@ -87,7 +87,12 @@ public record DebofConfiguration(String name, List<Function<SourceSet, String>> 
 				LoomConfigurations.Role.RESOLVABLE.apply(c);
 
 				for (Function<SourceSet, String> configProvider : configurationFunctions()) {
-					Configuration sourceConfig = configurations.getByName(configProvider.apply(sourceSet));
+					Configuration sourceConfig = configurations.findByName(configProvider.apply(sourceSet));
+
+					if (sourceConfig == null) {
+						continue;
+					}
+
 					c.extendsFrom(sourceConfig);
 				}
 			});

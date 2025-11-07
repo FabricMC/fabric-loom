@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.0.21"
+kotlin = "2.2.20"
 asm = "9.9"
 gson = "2.10.1"
 
@@ -14,9 +14,9 @@ loom-native = "0.2.0"
 unpick = "3.0.0-beta.13"
 
 # Plugins
-spotless = "7.2.1"
+spotless = "8.0.0"
 test-retry = "1.6.2"
-checkstyle = "10.26.1"
+checkstyle = "12.1.1"
 codenarc = "3.6.0"
 
 [libraries]

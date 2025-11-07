@@ -24,7 +24,8 @@
 
 package net.fabricmc.loom.test.unit
 
-import groovy.xml.QName
+import groovy.namespace.QName
+import groovy.xml.XmlParser
 import spock.lang.Specification
 
 import net.fabricmc.loom.util.GroovyXmlUtil

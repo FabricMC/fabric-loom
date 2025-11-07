@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import groovy.namespace.QName;
 import groovy.util.Node;
-import groovy.xml.QName;
 
 public final class GroovyXmlUtil {
 	private GroovyXmlUtil() { }
@@ -59,12 +59,8 @@ public final class GroovyXmlUtil {
 			return nodeName.equals(givenName);
 		}
 
-		if (nodeName instanceof QName qName) {
-			return qName.matches(givenName);
-		}
-
 		// New groovy 3 (gradle 7) class
-		if (nodeName instanceof groovy.namespace.QName qName) {
+		if (nodeName instanceof QName qName) {
 			return qName.matches(givenName);
 		}
 

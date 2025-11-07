@@ -45,6 +45,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
@@ -75,9 +77,6 @@ import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
-
-import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.tasks.Jar;
 
 /**
  * This class implements the public extension api.

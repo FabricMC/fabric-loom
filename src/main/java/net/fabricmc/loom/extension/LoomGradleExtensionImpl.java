@@ -40,6 +40,8 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomNoRemapGradlePlugin;
@@ -63,9 +65,6 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.gradle.GradleUtils;
-
-import org.gradle.api.tasks.TaskProvider;
-import org.gradle.jvm.tasks.Jar;
 
 public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;

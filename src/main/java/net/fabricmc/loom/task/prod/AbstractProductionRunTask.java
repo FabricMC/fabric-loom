@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -128,7 +129,12 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 		getJavaLauncher().convention(getJavaToolchainService().launcherFor(defaultToolchain));
 		getRunDir().convention(getProject().getLayout().getProjectDirectory().dir("run"));
 
-		if (!getExtension().dontRemapOutputs()) {
+		// Use the appropriate jar based on whether remapping is enabled
+		if (getExtension().dontRemapOutputs()) {
+			// No remapping - use the standard jar task
+			getMods().from(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME));
+		} else {
+			// Remapping enabled - use the remapJar task
 			getMods().from(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME));
 		}
 

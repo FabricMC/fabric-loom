@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2023 FabricMC
+ * Copyright (c) 2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,25 +32,21 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
+class NestJarsApiTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "included jars (gradle #version)"() {
+	def "nest jars using loom.nestJars() API (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "includedJars", version: version)
+		def gradle = gradleProject(project: "nestJarsApi", version: version)
 
 		when:
 		def result = gradle.run(tasks: ["remapJar"])
 
 		then:
 		result.task(":remapJar").outcome == SUCCESS
+		result.task(":createNestedMod").outcome == SUCCESS
 
-		// Assert directly declared dependencies are present in remapped jar
-		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-core-2.22.0.jar")
-		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-text-serializer-gson-4.14.0.jar")
-
-		// But not transitives.
-		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-api-2.22.0.jar")
-		!gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-api-4.14.0.jar")
+		// Assert the locally built mod jar is nested using the new API
+		gradle.hasOutputZipEntry("nestJarsApi.jar", "META-INF/jars/nested-mod.jar")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

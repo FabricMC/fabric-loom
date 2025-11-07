@@ -67,17 +67,18 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 		SyncTaskBuildService.register(getProject());
 
-		if (extension.dontRemapOutputs()) {
-			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
-			return;
-		}
-
 		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE_INTERNAL);
-		getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
+		TaskProvider<NestableJarGenerationTask> processIncludeJarsTask = getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
 			task.from(includeConfiguration);
 			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));
 		});
 
+		if (extension.dontRemapOutputs()) {
+			new NonRemappedJarTaskConfiguration(getProject(), extension, processIncludeJarsTask).configure();
+			return;
+		}
+
+		// Remapping needed - use the traditional remapJar task with JIJ support (original logic)
 		Action<RemapJarTask> remapJarTaskAction = task -> {
 			final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
 

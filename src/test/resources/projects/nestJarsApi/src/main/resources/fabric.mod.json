@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "mainmod",
+  "version": "1.0.0",
+  "name": "Main Mod",
+  "description": "Main mod that nests another mod using nestJars API",
+  "environment": "*"
+}

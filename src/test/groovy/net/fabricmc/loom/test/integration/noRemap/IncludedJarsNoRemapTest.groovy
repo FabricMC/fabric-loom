@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.integration.noRemap
 
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -32,19 +32,19 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
+class IncludedJarsNoRemapTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "included jars (gradle #version)"() {
+	def "included jars without remapping (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "includedJars", version: version)
+		def gradle = gradleProject(project: "includedJarsNoRemap", version: version)
 
 		when:
-		def result = gradle.run(tasks: ["remapJar"])
+		def result = gradle.run(tasks: ["jar"])
 
 		then:
-		result.task(":remapJar").outcome == SUCCESS
+		result.task(":jar").outcome == SUCCESS
 
-		// Assert directly declared dependencies are present in remapped jar
+		// Assert directly declared dependencies are present in jar (no remap)
 		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-core-2.22.0.jar")
 		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-text-serializer-gson-4.14.0.jar")
 

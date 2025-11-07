@@ -40,6 +40,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -272,4 +274,26 @@ public interface LoomGradleExtensionAPI {
 	 * @return A lazily evaluated {@link FileCollection} containing the named minecraft jars.
 	 */
 	FileCollection getNamedMinecraftJars();
+
+	/**
+	 * Nest mod jars from a {@link FileCollection} into the specified jar task.
+	 * This is useful for including locally built mod jars or jars that don't come from Maven.
+	 *
+	 * <p>Important: The jars must already be valid mod jars (containing a fabric.mod.json file).
+	 * Non-mod jars will be rejected.
+	 *
+	 * <p>Example usage:
+	 * {@snippet lang=groovy :
+	 * loom {
+	 *     nestJars(tasks.jar, files('local-mod.jar'))
+	 *     nestJars(tasks.remapJar, tasks.named('buildOtherMod'))
+	 * }
+	 * }
+	 *
+	 * @param jarTask the jar task to nest jars into (can be jar or remapJar)
+	 * @param jars the file collection containing mod jars to nest
+	 * @since 1.14
+	 */
+	@ApiStatus.Experimental
+	void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars);
 }

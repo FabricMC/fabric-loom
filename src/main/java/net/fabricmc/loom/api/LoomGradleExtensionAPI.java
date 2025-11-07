@@ -281,12 +281,12 @@ public interface LoomGradleExtensionAPI {
 	 * Non-mod jars will be rejected.
 	 *
 	 * <p>Example usage:
-	 * <pre>{@code
+	 * {@snippet :
 	 * loom {
 	 *     nestJars(tasks.jar, files('local-mod.jar'))
 	 *     nestJars(tasks.remapJar, tasks.named('buildOtherMod'))
 	 * }
-	 * }</pre>
+	 * }
 	 *
 	 * @param jarTask the jar task to nest jars into (can be jar or remapJar)
 	 * @param jars the file collection containing mod jars to nest

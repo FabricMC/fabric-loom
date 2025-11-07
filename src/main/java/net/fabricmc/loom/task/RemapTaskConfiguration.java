@@ -24,10 +24,6 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-import java.io.Serializable;
-import java.util.Arrays;
-
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
@@ -36,18 +32,14 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.ArtifactHandler;
-import org.gradle.api.file.Directory;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.jvm.tasks.Jar;
-import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -91,55 +83,56 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 			// Add jar task to unmapped collection
 			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
-		} else {
-			// Remapping needed - use the traditional remapJar task with JIJ support (original logic)
-			Action<RemapJarTask> remapJarTaskAction = task -> {
-				final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
-
-				// Basic task setup
-				task.dependsOn(jarTask);
-				task.setDescription("Remaps the built project jar to intermediary mappings.");
-				task.setGroup(Constants.TaskGroup.FABRIC);
-				getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
-				getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
-
-				// Setup the input file and the nested deps
-				task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
-				task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
-				task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
-			};
-
-			// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
-			// Being lazy also breaks maven publishing, see: https://github.com/FabricMC/fabric-loom/issues/1023
-			getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
-
-			// Configure the default jar task
-			getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
-				task.getArchiveClassifier().convention("dev");
-				task.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
-			});
-
-			getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(getTasks().named(REMAP_JAR_TASK_NAME)));
-
-			trySetupSourceRemapping();
-
-			if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
-				return;
-			}
-
-			GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
-				// Remove -dev jars from the default jar task
-				for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
-					Configuration configuration = getConfigurations().getByName(configurationName);
-					final Jar jarTask = (Jar) getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-					configuration.getArtifacts().removeIf(artifact -> {
-						// if the artifact is built by the jar task, and has the same output path.
-						return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath())
-								&& (extension.isProjectIsolationActive() || artifact.getBuildDependencies().getDependencies(null).contains(jarTask));
-					});
-				}
-			});
+			return;
 		}
+
+		// Remapping needed - use the traditional remapJar task with JIJ support (original logic)
+		Action<RemapJarTask> remapJarTaskAction = task -> {
+			final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
+
+			// Basic task setup
+			task.dependsOn(jarTask);
+			task.setDescription("Remaps the built project jar to intermediary mappings.");
+			task.setGroup(Constants.TaskGroup.FABRIC);
+			getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
+			getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+
+			// Setup the input file and the nested deps
+			task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
+			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
+			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
+		};
+
+		// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
+		// Being lazy also breaks maven publishing, see: https://github.com/FabricMC/fabric-loom/issues/1023
+		getTasks().create(REMAP_JAR_TASK_NAME, RemapJarTask.class, remapJarTaskAction);
+
+		// Configure the default jar task
+		getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class).configure(task -> {
+			task.getArchiveClassifier().convention("dev");
+			task.getDestinationDirectory().set(getProject().getLayout().getBuildDirectory().map(directory -> directory.dir("devlibs")));
+		});
+
+		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(getTasks().named(REMAP_JAR_TASK_NAME)));
+
+		trySetupSourceRemapping();
+
+		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
+			return;
+		}
+
+		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
+			// Remove -dev jars from the default jar task
+			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
+				Configuration configuration = getConfigurations().getByName(configurationName);
+				final Jar jarTask = (Jar) getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+				configuration.getArtifacts().removeIf(artifact -> {
+					// if the artifact is built by the jar task, and has the same output path.
+					return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath())
+							&& (extension.isProjectIsolationActive() || artifact.getBuildDependencies().getDependencies(null).contains(jarTask));
+				});
+			}
+		});
 	}
 
 	private void trySetupSourceRemapping() {
@@ -205,43 +198,5 @@ public abstract class RemapTaskConfiguration implements Runnable {
 				getProject().getLogger().warn("Not publishing sources jar as it was not created by the java plugin. Use java.withSourcesJar() to fix.");
 			}
 		});
-	}
-
-	/**
-	 * Configuration-cache-compatible action for nesting jars.
-	 * Uses a provider to avoid capturing task references at configuration time.
-	 * Do NOT turn me into a record!
-	 */
-	private static class NestJarsAction implements Action<Task>, Serializable {
-		private final Provider<Directory> nestedJarsDir;
-
-		NestJarsAction(Provider<Directory> nestedJarsDir) {
-			this.nestedJarsDir = nestedJarsDir;
-		}
-
-		@Override
-		public void execute(@NotNull Task t) {
-			final Jar jarTask = (Jar) t;
-			final File jarFile = jarTask.getArchiveFile().get().getAsFile();
-
-			if (!nestedJarsDir.isPresent()) {
-				return;
-			}
-
-			final File outputDir = nestedJarsDir.get().getAsFile();
-
-			if (outputDir.exists() && outputDir.isDirectory()) {
-				final File[] jars = outputDir.listFiles((dir, name) -> name.endsWith(".jar"));
-
-				if (jars != null && jars.length > 0) {
-					JarNester.nestJars(
-							Arrays.asList(jars),
-							jarFile,
-							jarTask.getLogger()
-					);
-					jarTask.getLogger().lifecycle("Nested {} jar(s) into {}", jars.length, jarFile.getName());
-				}
-			}
-		}
 	}
 }

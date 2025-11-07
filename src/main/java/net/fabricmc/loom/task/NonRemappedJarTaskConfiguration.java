@@ -52,7 +52,7 @@ public class NonRemappedJarTaskConfiguration {
 		project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).configure(task -> {
 			task.dependsOn(processIncludeJarsTask);
 			// Use JarNester to properly add jars and update fabric.mod.json
-			task.doLast(new NestJarsAction(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory)));
+			task.doLast(new NestJarsAction(project.fileTree(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory))));
 		});
 
 		// Add jar task to unmapped collection

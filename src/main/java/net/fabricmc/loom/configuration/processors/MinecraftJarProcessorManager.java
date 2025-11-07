@@ -45,6 +45,8 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -69,9 +71,9 @@ public final class MinecraftJarProcessorManager {
 		SpecContext specContext;
 
 		if (extension.disableObfuscation()) {
-			specContext = SpecContextDebofImpl.create();
+			specContext = DeobfSpecContext.create(project);
 		} else {
-			specContext = SpecContextRemappedImpl.create(project);
+			specContext = RemappedSpecContext.create(project);
 		}
 
 		return MinecraftJarProcessorManager.create(processors, specContext);

@@ -45,4 +45,6 @@ public interface AccessWidenerEntry {
 	String getSortKey();
 
 	void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException;
+
+	void readOfficial(ClassTweakerVisitor visitor) throws IOException;
 }

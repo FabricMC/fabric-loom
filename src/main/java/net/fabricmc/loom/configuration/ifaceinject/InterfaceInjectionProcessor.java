@@ -111,6 +111,20 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
+		List<InjectedInterface> injectedInterfaces = getInjectedInterfaces(spec, context);
+
+		try {
+			ZipUtils.transform(jar, getTransformers(injectedInterfaces));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
+		}
+	}
+
+	private List<InjectedInterface> getInjectedInterfaces(Spec spec, ProcessorContext context) throws IOException {
+		if (context.disableObfuscation()) {
+			return spec.injectedInterfaces();
+		}
+
 		// Remap from intermediary->named
 		final MemoryMappingTree mappings = context.getMappings();
 		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
@@ -128,11 +142,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();
-			try {
-				ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to apply interface injections to " + jar, e);
-			}
+			return remappedInjectedInterfaces;
 		}
 	}
 

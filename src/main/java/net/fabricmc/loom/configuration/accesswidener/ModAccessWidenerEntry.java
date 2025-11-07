@@ -85,6 +85,24 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 		reader.read(data, mod.getId());
 	}
 
+	@Override
+	public void readOfficial(ClassTweakerVisitor visitor) throws IOException {
+		if (transitiveOnly) {
+			// Filter for only transitive rules
+			visitor = new TransitiveOnlyFilter(visitor);
+		}
+
+		final byte[] data = readRaw();
+		final ClassTweakerReader.Header header = ClassTweakerReader.readHeader(data);
+
+		if (!header.getNamespace().equals(MappingsNamespace.OFFICIAL.toString())) {
+			throw new IOException("Expected official namespace for access widener entry, found: " + header.getNamespace());
+		}
+
+		var reader = ClassTweakerReader.create(visitor);
+		reader.read(data, mod.getId());
+	}
+
 	private static ClassTweakerRemapperVisitor getRemapper(ClassTweakerVisitor visitor, TinyRemapper tinyRemapper) {
 		return new ClassTweakerRemapperVisitor(
 				visitor,

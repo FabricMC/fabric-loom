@@ -24,12 +24,20 @@
 
 package net.fabricmc.loom.api.processor;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.gradle.api.Project;
+import org.gradle.api.plugins.JavaPlugin;
+
+import net.fabricmc.loom.configuration.processors.speccontext.ProjectView;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 
 public interface SpecContext {
+	/**
+	 * Returns a list of all the external mods that this project depends on regardless of configuration.
+	 */
 	List<FabricModJson> modDependencies();
 
 	List<FabricModJson> localMods();
@@ -46,5 +54,23 @@ public interface SpecContext {
 
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();
+	}
+
+	// Returns all of the loom projects that are depended on in the main sourceset
+	// TODO make project isolation aware
+	static Stream<Project> getDependentProjects(ProjectView projectView) {
+		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
+		final Stream<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+
+		return Stream.concat(runtimeProjects, compileProjects)
+				.distinct();
+	}
+
+	// Sort to ensure stable caching
+	static List<FabricModJson> distinctSorted(List<FabricModJson> mods) {
+		return mods.stream()
+				.distinct()
+				.sorted(Comparator.comparing(FabricModJson::getId))
+				.toList();
 	}
 }

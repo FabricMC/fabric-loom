@@ -22,12 +22,9 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.processors;
+package net.fabricmc.loom.configuration.processors.speccontext;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
@@ -36,24 +33,22 @@ import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.attributes.Usage;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 
 // Used to abstract out the Gradle API usage to ease unit testing.
-public interface SpecContextProjectView {
-	LoomGradleExtension extension();
-
+public interface ProjectView {
 	// Returns a list of Loom Projects found in the specified Configuration
 	Stream<Project> getLoomProjectDependencies(String name);
 
-	Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(ArtifactUsage artifactUsage);
-
+	// Returns the mods defined in the current project
 	List<FabricModJson> getMods();
 
 	boolean disableProjectDependantMods();
+
+	boolean areEnvironmentSourceSetsSplit();
 
 	enum ArtifactUsage {
 		RUNTIME(Usage.JAVA_RUNTIME),
@@ -64,9 +59,21 @@ public interface SpecContextProjectView {
 		ArtifactUsage(String gradleUsage) {
 			this.gradleUsage = gradleUsage;
 		}
+
+		public String getGradleUsage() {
+			return gradleUsage;
+		}
 	}
 
-	record Impl(Project project, LoomGradleExtension extension) implements SpecContextProjectView {
+	abstract class AbstractProjectView implements ProjectView {
+		protected final Project project;
+		protected final LoomGradleExtension extension;
+
+		protected AbstractProjectView(Project project) {
+			this.project = project;
+			this.extension = LoomGradleExtension.get(project);
+		}
+
 		@Override
 		public Stream<Project> getLoomProjectDependencies(String name) {
 			final Configuration configuration = project.getConfigurations().getByName(name);
@@ -75,18 +82,6 @@ public interface SpecContextProjectView {
 					.stream()
 					.map((d) -> project.project(d.getPath()))
 					.filter(GradleUtils::isLoomProject);
-		}
-
-		@Override
-		public Function<RemapConfigurationSettings, Stream<Path>> resolveArtifacts(ArtifactUsage artifactUsage) {
-			final Usage usage = project.getObjects().named(Usage.class, artifactUsage.gradleUsage);
-
-			return settings -> {
-				final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
-				configuration.setCanBeConsumed(false);
-				configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-				return configuration.resolve().stream().map(File::toPath);
-			};
 		}
 
 		@Override
@@ -100,6 +95,11 @@ public interface SpecContextProjectView {
 			// TODO provide a project isolated way of doing this.
 			return extension.isProjectIsolationActive()
 					|| GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS);
+		}
+
+		@Override
+		public boolean areEnvironmentSourceSetsSplit() {
+			return extension.areEnvironmentSourceSetsSplit();
 		}
 	}
 }

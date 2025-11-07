@@ -36,11 +36,11 @@ import org.gradle.api.artifacts.Configuration
 import spock.lang.Specification
 import spock.lang.TempDir
 
-import net.fabricmc.loom.LoomGradleExtension
 import net.fabricmc.loom.api.RemapConfigurationSettings
 import net.fabricmc.loom.api.fmj.FabricModJsonV1Spec
-import net.fabricmc.loom.configuration.processors.SpecContextProjectView
-import net.fabricmc.loom.configuration.processors.SpecContextRemappedImpl
+import net.fabricmc.loom.configuration.processors.speccontext.ProjectView
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedProjectView
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.ZipUtils
 import net.fabricmc.loom.util.fmj.gen.FabricModJsonV1Generator
@@ -54,8 +54,7 @@ class SpecContextTest extends Specification {
 	Path tempDir
 
 	Project project
-	LoomGradleExtension extension
-	SpecContextProjectView projectView
+	RemappedProjectView projectView
 	NamedDomainObjectList<RemapConfigurationSettings> remapConfigurations
 
 	RemapConfigurationSettings implementation
@@ -67,14 +66,12 @@ class SpecContextTest extends Specification {
 
 	void setup() {
 		project = GradleTestUtil.mockProject()
-		extension = LoomGradleExtension.get(project)
-		projectView = mock(SpecContextProjectView.class)
+		projectView = mock(RemappedProjectView.class)
 		remapConfigurations = project.getObjects().namedDomainObjectList(RemapConfigurationSettings.class)
 
-		when(projectView.extension()).thenReturn(extension)
-		when(extension.getRemapConfigurations()).thenReturn(remapConfigurations)
-		when(projectView.resolveArtifacts(SpecContextProjectView.ArtifactUsage.RUNTIME)).thenReturn(resolve(runtimeArtifacts))
-		when(projectView.resolveArtifacts(SpecContextProjectView.ArtifactUsage.COMPILE)).thenReturn(resolve(apiArtifacts))
+		when(projectView.getRemapConfigurations()).thenReturn(remapConfigurations)
+		when(projectView.resolveArtifacts(ProjectView.ArtifactUsage.RUNTIME)).thenReturn(resolve(runtimeArtifacts))
+		when(projectView.resolveArtifacts(ProjectView.ArtifactUsage.COMPILE)).thenReturn(resolve(apiArtifacts))
 
 		implementation = createConfigurationSettings("implementation")
 		runtimeOnly = createConfigurationSettings("runtimeOnly")
@@ -85,8 +82,8 @@ class SpecContextTest extends Specification {
 			compileOnly
 		])
 
-		when(extension.getCompileRemapConfigurations()).thenReturn([implementation, compileOnly])
-		when(extension.getRuntimeRemapConfigurations()).thenReturn([implementation, runtimeOnly])
+		when(projectView.getCompileRemapConfigurations()).thenReturn([implementation, compileOnly])
+		when(projectView.getRuntimeRemapConfigurations()).thenReturn([implementation, runtimeOnly])
 	}
 
 	def "Empty"() {
@@ -98,7 +95,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextRemappedImpl.create(projectView)
+		def specContext = RemappedSpecContext.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 0
@@ -117,7 +114,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextRemappedImpl.create(projectView)
+		def specContext = RemappedSpecContext.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -136,7 +133,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextRemappedImpl.create(projectView)
+		def specContext = RemappedSpecContext.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -155,7 +152,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextRemappedImpl.create(projectView)
+		def specContext = RemappedSpecContext.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1
@@ -175,7 +172,7 @@ class SpecContextTest extends Specification {
 				)
 
 		when:
-		def specContext = SpecContextRemappedImpl.create(projectView)
+		def specContext = RemappedSpecContext.create(projectView)
 
 		then:
 		specContext.modDependencies().size() == 1

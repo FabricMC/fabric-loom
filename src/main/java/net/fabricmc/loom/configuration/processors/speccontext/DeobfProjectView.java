@@ -22,27 +22,39 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.processors;
+package net.fabricmc.loom.configuration.processors.speccontext;
 
-import java.util.List;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 
-import net.fabricmc.loom.api.processor.SpecContext;
-import net.fabricmc.loom.util.fmj.FabricModJson;
+public interface DeobfProjectView extends ProjectView {
+	FileCollection getDependencies(DebofConfiguration debofConfiguration, DebofConfiguration.TargetSourceSet targetSourceSet);
 
-// TODO debof - fixme
-public record SpecContextDebofImpl(List<FabricModJson> modDependencies,
-									List<FabricModJson> localMods) implements SpecContext {
-	public static SpecContext create() {
-		return new SpecContextDebofImpl(List.of(), List.of());
-	}
+	FileCollection getFullClasspath();
 
-	@Override
-	public List<FabricModJson> modDependenciesCompileRuntime() {
-		return List.of();
-	}
+	class Impl extends AbstractProjectView implements DeobfProjectView {
+		protected Impl(Project project) {
+			super(project);
+		}
 
-	@Override
-	public List<FabricModJson> modDependenciesCompileRuntimeClient() {
-		return List.of();
+		@Override
+		public FileCollection getDependencies(DebofConfiguration debofConfiguration, DebofConfiguration.TargetSourceSet targetSourceSet) {
+			return debofConfiguration.getConfiguration(project, targetSourceSet);
+		}
+
+		@Override
+		public FileCollection getFullClasspath() {
+			ConfigurableFileCollection classpath = project.files();
+
+			for (DebofConfiguration debofConfiguration : DebofConfiguration.ALL) {
+				for (Configuration configuration : debofConfiguration.getConfigurations(project)) {
+					classpath.from(configuration);
+				}
+			}
+
+			return classpath;
+		}
 	}
 }

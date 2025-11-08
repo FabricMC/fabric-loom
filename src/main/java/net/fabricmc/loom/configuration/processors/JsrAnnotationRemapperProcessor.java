@@ -41,10 +41,10 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class JsrAnnotationRemapperProcessor implements MinecraftJarProcessor<JsrAnnotationRemapperProcessor.Spec> {
-	private static final Map<String, String> JSR_TO_JETBRAINS = Map.of(
-			"javax/annotation/Nullable", "org/jetbrains/annotations/Nullable",
-			"javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull",
-			"javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable"
+	private static final Map<String, String> JETBRAINS_TO_JSR = Map.of(
+			"org/jetbrains/annotations/Nullable", "javax/annotation/Nullable",
+			"org/jetbrains/annotations/NotNull", "javax/annotation/Nonnull",
+			"org/jetbrains/annotations/Unmodifiable", "javax/annotation/concurrent/Immutable"
 	);
 
 	private final String name;
@@ -56,7 +56,7 @@ public class JsrAnnotationRemapperProcessor implements MinecraftJarProcessor<Jsr
 
 	@Override
 	public @Nullable Spec buildSpec(SpecContext context) {
-		return new Spec(JSR_TO_JETBRAINS);
+		return new Spec(JETBRAINS_TO_JSR);
 	}
 
 	@Override
@@ -69,7 +69,7 @@ public class JsrAnnotationRemapperProcessor implements MinecraftJarProcessor<Jsr
 			tinyRemapper.readInputs(jar);
 			tinyRemapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap JSR annotations in " + jar, e);
+			throw new RuntimeException("Failed to remap annotations to JSR in " + jar, e);
 		} finally {
 			tinyRemapper.finish();
 		}

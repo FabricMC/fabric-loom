@@ -26,6 +26,7 @@ package net.fabricmc.loom.util;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
@@ -44,6 +45,12 @@ import net.fabricmc.tinyremapper.TinyRemapper;
  * Contains shortcuts to create tiny remappers using the mappings accessibly to the project.
  */
 public final class TinyRemapperHelper {
+	private static final Map<String, String> JSR_TO_JETBRAINS = Map.of(
+			"javax/annotation/Nullable", "org/jetbrains/annotations/Nullable",
+			"javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull",
+			"javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable"
+			);
+
 	/**
 	 * Matches the new local variable naming format introduced in 21w37a.
 	 */
@@ -68,6 +75,7 @@ public final class TinyRemapperHelper {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withMappings(create(mappingTree, fromM, toM, true))
+				.withMappings(out -> JSR_TO_JETBRAINS.forEach(out::acceptClass))
 				.renameInvalidLocals(true)
 				.rebuildSourceFilenames(true)
 				.invalidLvNamePattern(MC_LV_PATTERN)

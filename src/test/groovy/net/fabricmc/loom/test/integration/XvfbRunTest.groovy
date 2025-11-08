@@ -49,20 +49,19 @@ class XvfbRunTest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 		gradle.buildGradle << '''
-                loom {
-                    runs {
-                        clientGameTest {
-                            client()
-                            useXvfb()
-                        }
-                    }
-                }
-
                 fabricApi {
                     configureTests {
                     	createSourceSet = true
                     	modId = "example-test"
                     	eula = true
+                    }
+                }
+
+                loom {
+                    runs {
+                        clientGameTest {
+                            useXvfb()
+                        }
                     }
                 }
             ''' + DEPENDENCIES

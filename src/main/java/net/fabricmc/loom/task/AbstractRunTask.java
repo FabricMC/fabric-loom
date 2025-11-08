@@ -166,11 +166,21 @@ public abstract class AbstractRunTask extends JavaExec {
 			throw new RuntimeException("xvfb-run not found on PATH. Please install xvfb.");
 		}
 
+		// Get the java executable path - try toolchain first, fallback to system property
+		String javaExec;
+		if (getJavaLauncher().isPresent()) {
+			javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
+		} else {
+			// Fallback: construct path from JAVA_HOME
+			String javaHome = System.getProperty("java.home");
+			javaExec = javaHome + File.separator + "bin" + File.separator + "java";
+		}
+
 		// Build the complete command line: xvfb-run --auto-servernum java [args]
 		List<String> commandLine = new ArrayList<>();
 		commandLine.add(xvfbRunPath);
 		commandLine.add("--auto-servernum");
-		commandLine.add(getExecutable());
+		commandLine.add(javaExec);
 		commandLine.addAll(getJvmArguments().get());
 		commandLine.addAll(getArgs());
 

@@ -108,9 +108,15 @@ public abstract class AbstractRunTask extends JavaExec {
 		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
-		getUseXvfb().convention(getProject().getProviders().environmentVariable("CI")
-				.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
-				.orElse(false)
+
+		// Set up useXvfb: use value from config if set, otherwise use convention (CI + Linux)
+		getUseXvfb().convention(
+				config.map(runConfig -> runConfig.settings.getUseXvfb())
+						.flatMap(prop -> prop.orElse(
+								getProject().getProviders().environmentVariable("CI")
+										.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
+										.orElse(false)
+						))
 		);
 
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();

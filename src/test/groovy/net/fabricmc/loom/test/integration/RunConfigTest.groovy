@@ -233,7 +233,7 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                 loom {
                     runs {
                         clientGameTest {
-                            useXvfb.set(true)
+                            useXvfb()
                         }
                     }
                 }

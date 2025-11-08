@@ -84,6 +84,14 @@ public abstract class RunConfigSettings implements Named {
 	private final Property<Boolean> appendProjectPathToConfigName;
 
 	/**
+	 * Whether to use XVFB to run the game, using a virtual framebuffer. This is useful for CI environments that don't have a display server.
+	 * Only applies to task execution, not IDE run configurations.
+	 *
+	 * <p>Defaults to true only on Linux and when the "CI" environment variable is set.
+	 */
+	private final Property<Boolean> useXvfb;
+
+	/**
 	 * The default main class of the run configuration.
 	 *
 	 * <p>This can be overwritten in {@code fabric_installer.[method].json}. Note that this <em>doesn't</em> take
@@ -147,6 +155,7 @@ public abstract class RunConfigSettings implements Named {
 			return RunConfig.getMainClass(environment, extension, defaultMainClass);
 		}));
 		this.devLaunchMainClass = project.getObjects().property(String.class).convention("net.fabricmc.devlaunchinjector.Main");
+		this.useXvfb = project.getObjects().property(Boolean.class);
 
 		setSource(p -> {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
@@ -318,6 +327,35 @@ public abstract class RunConfigSettings implements Named {
 		if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
 			vmArg("-XstartOnFirstThread");
 		}
+	}
+
+	/**
+	 * Enable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
+	 * This is useful for running client tests in CI environments on Linux.
+	 * Only applies to task execution, not IDE run configurations.
+	 */
+	public void useXvfb() {
+		this.useXvfb.set(true);
+	}
+
+	/**
+	 * Enable or disable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
+	 * Only applies to task execution, not IDE run configurations.
+	 *
+	 * @param useXvfb whether to use XVFB
+	 */
+	public void useXvfb(boolean useXvfb) {
+		this.useXvfb.set(useXvfb);
+	}
+
+	/**
+	 * Get the useXvfb property.
+	 * Only applies to task execution, not IDE run configurations.
+	 *
+	 * @return the useXvfb property
+	 */
+	public Property<Boolean> getUseXvfb() {
+		return useXvfb;
 	}
 
 	/**

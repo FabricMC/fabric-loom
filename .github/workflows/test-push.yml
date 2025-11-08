@@ -83,6 +83,8 @@ jobs:
         with:
           java-version: 21
           distribution: 'temurin'
+      - name: Install xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail

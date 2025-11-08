@@ -156,8 +156,15 @@ public abstract class AbstractRunTask extends JavaExec {
 		// Get the java executable path that would normally be used
 		String javaExec = getExecutable();
 
-		// Change the executable to xvfb-run
-		setExecutable("xvfb-run");
+		// Find the absolute path to xvfb-run
+		String xvfbRunPath = findExecutableOnPath("xvfb-run");
+
+		if (xvfbRunPath == null) {
+			throw new RuntimeException("xvfb-run not found on PATH. Please install xvfb.");
+		}
+
+		// Change the executable to xvfb-run with absolute path
+		setExecutable(xvfbRunPath);
 
 		// Build the argument list: xvfb-run options, then java, then all java arguments
 		List<String> xvfbArgs = new ArrayList<>();
@@ -172,6 +179,26 @@ public abstract class AbstractRunTask extends JavaExec {
 		getArgs().clear();
 		getArgs().addAll(xvfbArgs);
 		getArgs().addAll(existingArgs);
+	}
+
+	private String findExecutableOnPath(String executableName) {
+		String path = System.getenv("PATH");
+
+		if (path == null) {
+			return null;
+		}
+
+		String[] pathDirs = path.split(File.pathSeparator);
+
+		for (String dir : pathDirs) {
+			File file = new File(dir, executableName);
+
+			if (file.exists() && file.canExecute()) {
+				return file.getAbsolutePath();
+			}
+		}
+
+		return null;
 	}
 
 	@Override

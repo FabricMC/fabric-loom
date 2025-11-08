@@ -48,9 +48,12 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.process.ExecOperations;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
@@ -60,6 +63,9 @@ import net.fabricmc.loom.util.Platform;
 public abstract class AbstractRunTask extends JavaExec {
 	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRunTask.class);
+
+	@Inject
+	protected abstract ExecOperations getExecOperations();
 
 	@Input
 	protected abstract Property<String> getInternalRunDir();
@@ -168,8 +174,8 @@ public abstract class AbstractRunTask extends JavaExec {
 		commandLine.addAll(getJvmArguments().get());
 		commandLine.addAll(getArgs());
 
-		// Execute using Gradle's exec
-		getProject().exec(execSpec -> {
+		// Execute using Gradle's ExecOperations service (configuration cache safe)
+		getExecOperations().exec(execSpec -> {
 			execSpec.setCommandLine(commandLine);
 			execSpec.setWorkingDir(getWorkingDir());
 			execSpec.setEnvironment(getEnvironment());

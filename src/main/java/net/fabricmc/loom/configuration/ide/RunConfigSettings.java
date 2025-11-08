@@ -131,13 +131,6 @@ public abstract class RunConfigSettings implements Named {
 
 	private final Map<String, Object> environmentVariables = new HashMap<>();
 
-	/**
-	 * When true, runs the client with XVFB (X Virtual Frame Buffer) on Linux.
-	 * This is useful for running client tests in headless environments like CI.
-	 * Has no effect on non-Linux platforms.
-	 */
-	private boolean useXvfb = false;
-
 	private final Project project;
 	private final LoomGradleExtension extension;
 
@@ -328,32 +321,6 @@ public abstract class RunConfigSettings implements Named {
 	}
 
 	/**
-	 * Enable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
-	 * This is useful for running client tests in CI environments on Linux.
-	 * Has no effect on non-Linux platforms.
-	 */
-	public void useXvfb() {
-		this.useXvfb = true;
-	}
-
-	/**
-	 * Enable or disable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
-	 *
-	 * @param useXvfb whether to use XVFB
-	 */
-	public void useXvfb(boolean useXvfb) {
-		this.useXvfb = useXvfb;
-	}
-
-	public boolean isUseXvfb() {
-		return useXvfb;
-	}
-
-	public void setUseXvfb(boolean useXvfb) {
-		this.useXvfb = useXvfb;
-	}
-
-	/**
 	 * Removes the {@code nogui} argument for the server configuration. By default {@code nogui} is specified, this is
 	 * a convenient way to remove it if wanted.
 	 */
@@ -396,7 +363,6 @@ public abstract class RunConfigSettings implements Named {
 		defaultMainClass = parent.defaultMainClass;
 		source = parent.source;
 		ideConfigGenerated = parent.ideConfigGenerated;
-		useXvfb = parent.useXvfb;
 		getIdeConfigFolder().set(parent.getIdeConfigFolder());
 	}
 

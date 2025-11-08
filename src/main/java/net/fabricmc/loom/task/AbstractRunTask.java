@@ -108,7 +108,10 @@ public abstract class AbstractRunTask extends JavaExec {
 		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
-		getUseXvfb().set(config.map(runConfig -> runConfig.useXvfb));
+		getUseXvfb().convention(getProject().getProviders().environmentVariable("CI")
+				.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
+				.orElse(false)
+		);
 
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();
 		File argFile = new File(buildCache, "argFiles/" + getName());
@@ -155,16 +158,11 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	private boolean shouldUseXvfb() {
-		return getUseXvfb().get() && Platform.CURRENT.getOperatingSystem().isLinux();
+		return getUseXvfb().get();
 	}
 
 	private void execWithXvfb() {
-		// Find xvfb-run
-		String xvfbRunPath = findExecutableOnPath("xvfb-run");
-
-		if (xvfbRunPath == null) {
-			throw new RuntimeException("xvfb-run not found on PATH. Please install xvfb.");
-		}
+		String xvfbRunPath = "/usr/bin/xvfb-run";
 
 		// Get the java executable path - try toolchain first, fallback to system property
 		String javaExec;
@@ -193,26 +191,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			execSpec.setEnvironment(getEnvironment());
 			// Standard streams are inherited from the Gradle process by default
 		});
-	}
-
-	private String findExecutableOnPath(String executableName) {
-		String path = System.getenv("PATH");
-
-		if (path == null) {
-			return null;
-		}
-
-		String[] pathDirs = path.split(File.pathSeparator);
-
-		for (String dir : pathDirs) {
-			File file = new File(dir, executableName);
-
-			if (file.exists() && file.canExecute()) {
-				return file.getAbsolutePath();
-			}
-		}
-
-		return null;
 	}
 
 	@Override

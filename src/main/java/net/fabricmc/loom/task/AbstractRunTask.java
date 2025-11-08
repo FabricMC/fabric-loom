@@ -176,7 +176,6 @@ public abstract class AbstractRunTask extends JavaExec {
 			execSpec.setStandardInput(getStandardInput());
 			execSpec.setStandardOutput(getStandardOutput());
 			execSpec.setErrorOutput(getErrorOutput());
-			execSpec.setIgnoreExitValue(getIgnoreExitValue());
 		});
 	}
 

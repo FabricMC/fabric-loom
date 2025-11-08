@@ -45,7 +45,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.processors.speccontext.DebofConfiguration;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -162,10 +161,6 @@ public abstract class LoomConfigurations implements Runnable {
 		extendsFrom(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES, Constants.Configurations.LOADER_DEPENDENCIES);
 
 		register(Constants.Configurations.PRODUCTION_RUNTIME_MODS, Role.RESOLVABLE);
-
-		if (extension.disableObfuscation()) {
-			DebofConfiguration.create(getProject());
-		}
 	}
 
 	private NamedDomainObjectProvider<Configuration> register(String name, Role role) {

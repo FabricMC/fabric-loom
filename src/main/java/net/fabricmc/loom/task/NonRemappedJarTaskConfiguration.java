@@ -71,8 +71,8 @@ public class NonRemappedJarTaskConfiguration {
 			task.doLast(new ManifestModificationAction(
 					manifestServiceProvider,
 					"official",
-					extension.areEnvironmentSourceSetsSplit(),
-					getClientOnlyEntries()
+					project.provider(extension::areEnvironmentSourceSetsSplit),
+					project.provider(this::getClientOnlyEntries)
 			));
 
 			task.usesService(manifestServiceProvider);

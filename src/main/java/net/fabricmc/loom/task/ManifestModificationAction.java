@@ -53,14 +53,14 @@ import net.fabricmc.loom.util.ZipUtils;
 public class ManifestModificationAction implements Action<Task>, Serializable {
 	private final Provider<JarManifestService> manifestService;
 	private final String targetNamespace;
-	private final boolean areEnvironmentSourceSetsSplit;
-	private final List<String> clientOnlyEntries;
+	private final Provider<Boolean> areEnvironmentSourceSetsSplit;
+	private final Provider<List<String>> clientOnlyEntries;
 
 	public ManifestModificationAction(
 			Provider<JarManifestService> manifestService,
 			String targetNamespace,
-			boolean areEnvironmentSourceSetsSplit,
-			List<String> clientOnlyEntries) {
+			Provider<Boolean> areEnvironmentSourceSetsSplit,
+			Provider<List<String>> clientOnlyEntries) {
 		this.manifestService = manifestService;
 		this.targetNamespace = targetNamespace;
 		this.areEnvironmentSourceSetsSplit = areEnvironmentSourceSetsSplit;
@@ -86,13 +86,13 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 		manifestAttributes.put(Constants.Manifest.MAPPING_NAMESPACE, targetNamespace);
 
 		// Set split environment flag if source sets are split (even for common-only jars)
-		if (areEnvironmentSourceSetsSplit) {
+		if (areEnvironmentSourceSetsSplit.get()) {
 			manifestAttributes.put(Constants.Manifest.SPLIT_ENV, "true");
 		}
 
 		// Add client-only entries list if present
-		if (clientOnlyEntries != null && !clientOnlyEntries.isEmpty()) {
-			manifestAttributes.put(Constants.Manifest.CLIENT_ENTRIES, String.join(";", clientOnlyEntries));
+		if (clientOnlyEntries != null && !clientOnlyEntries.get().isEmpty()) {
+			manifestAttributes.put(Constants.Manifest.CLIENT_ENTRIES, String.join(";", clientOnlyEntries.get()));
 		}
 
 		int count = ZipUtils.transform(jarFile.toPath(), Map.of(Constants.Manifest.PATH, bytes -> {

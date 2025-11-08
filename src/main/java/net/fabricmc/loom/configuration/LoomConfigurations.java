@@ -126,15 +126,15 @@ public abstract class LoomConfigurations implements Runnable {
 			});
 		});
 
-		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
-
-		register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {
-			configuration.extendsFrom(getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));
-		});
-
-		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
-
 		if (!extension.disableObfuscation()) {
+			registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
+
+			register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {
+				configuration.extendsFrom(getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));
+			});
+
+			extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
+
 			register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
 			register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
 			extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);

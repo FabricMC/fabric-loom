@@ -149,8 +149,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 		finalizedBy("eclipse", "genEclipseRuns");
 
-		// Add the "dev" jar to the "namedElements" configuration
-		getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));
+		if (!extension.disableObfuscation()) {
+			// Add the "dev" jar to the "namedElements" configuration
+			getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));
+		}
 
 		// Ensure that the encoding is set to UTF-8, no matter what the system default is
 		// this fixes some edge cases with special characters not displaying correctly

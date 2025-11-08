@@ -168,6 +168,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		// Get the java executable path - try toolchain first, fallback to system property
 		String javaExec;
+
 		if (getJavaLauncher().isPresent()) {
 			javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
 		} else {

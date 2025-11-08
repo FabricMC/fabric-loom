@@ -142,43 +142,42 @@ public abstract class AbstractRunTask extends JavaExec {
 		// Wrap with XVFB if enabled and on Linux
 		if (shouldUseXvfb()) {
 			LOGGER.info("Using XVFB for headless client execution");
-			setupXvfbExecution();
+			execWithXvfb();
+		} else {
+			super.exec();
 		}
-
-		super.exec();
 	}
 
 	private boolean shouldUseXvfb() {
 		return getUseXvfb().get() && Platform.CURRENT.getOperatingSystem().isLinux();
 	}
 
-	private void setupXvfbExecution() {
-		// Get the java executable path that would normally be used
-		String javaExec = getExecutable();
-
-		// Find the absolute path to xvfb-run
+	private void execWithXvfb() {
+		// Find xvfb-run
 		String xvfbRunPath = findExecutableOnPath("xvfb-run");
 
 		if (xvfbRunPath == null) {
 			throw new RuntimeException("xvfb-run not found on PATH. Please install xvfb.");
 		}
 
-		// Change the executable to xvfb-run with absolute path
-		setExecutable(xvfbRunPath);
+		// Build the complete command line: xvfb-run --auto-servernum java [args]
+		List<String> commandLine = new ArrayList<>();
+		commandLine.add(xvfbRunPath);
+		commandLine.add("--auto-servernum");
+		commandLine.add(getExecutable());
+		commandLine.addAll(getJvmArguments());
+		commandLine.addAll(getArgs());
 
-		// Build the argument list: xvfb-run options, then java, then all java arguments
-		List<String> xvfbArgs = new ArrayList<>();
-		// Add xvfb-run options for auto display selection
-		xvfbArgs.add("--auto-servernum");
-		// Add the java executable
-		xvfbArgs.add(javaExec);
-
-		// Add all JVM arguments (these are already handled by getGameJvmArgs via getJvmArguments())
-		// We need to prepend our xvfb args to the existing arguments
-		List<String> existingArgs = new ArrayList<>(getArgs());
-		getArgs().clear();
-		getArgs().addAll(xvfbArgs);
-		getArgs().addAll(existingArgs);
+		// Execute using Gradle's exec
+		getProject().exec(execSpec -> {
+			execSpec.setCommandLine(commandLine);
+			execSpec.setWorkingDir(getWorkingDir());
+			execSpec.setEnvironment(getEnvironment());
+			execSpec.setStandardInput(getStandardInput());
+			execSpec.setStandardOutput(getStandardOutput());
+			execSpec.setErrorOutput(getErrorOutput());
+			execSpec.setIgnoreExitValue(getIgnoreExitValue());
+		});
 	}
 
 	private String findExecutableOnPath(String executableName) {

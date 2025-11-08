@@ -44,7 +44,7 @@ class XvfbRunTest extends Specification implements GradleProjectTestTrait {
 	"""
 
 	@Unroll
-	@IgnoreIf({ !isLinux() || !hasXvfb() }) // Only run on Linux with xvfb-run available
+	@IgnoreIf({ !os.linux })
 	def "client game tests with XVFB (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)

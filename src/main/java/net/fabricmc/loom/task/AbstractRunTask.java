@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Platform;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
@@ -73,6 +74,8 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Input
 	// We use a string here, as it's technically an output, but we don't want to cache runs of this task by default.
 	protected abstract Property<String> getArgFilePath();
+	@Input
+	protected abstract Property<Boolean> getUseXvfb();
 
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	@InputFiles
@@ -99,6 +102,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
+		getUseXvfb().set(config.map(runConfig -> runConfig.useXvfb));
 
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();
 		File argFile = new File(buildCache, "argFiles/" + getName());
@@ -135,7 +139,39 @@ public abstract class AbstractRunTask extends JavaExec {
 		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
 
+		// Wrap with XVFB if enabled and on Linux
+		if (shouldUseXvfb()) {
+			LOGGER.info("Using XVFB for headless client execution");
+			setupXvfbExecution();
+		}
+
 		super.exec();
+	}
+
+	private boolean shouldUseXvfb() {
+		return getUseXvfb().get() && Platform.CURRENT.getOperatingSystem().isLinux();
+	}
+
+	private void setupXvfbExecution() {
+		// Get the java executable path that would normally be used
+		String javaExec = getExecutable();
+
+		// Change the executable to xvfb-run
+		setExecutable("xvfb-run");
+
+		// Build the argument list: xvfb-run options, then java, then all java arguments
+		List<String> xvfbArgs = new ArrayList<>();
+		// Add xvfb-run options for auto display selection
+		xvfbArgs.add("--auto-servernum");
+		// Add the java executable
+		xvfbArgs.add(javaExec);
+
+		// Add all JVM arguments (these are already handled by getGameJvmArgs via getJvmArguments())
+		// We need to prepend our xvfb args to the existing arguments
+		List<String> existingArgs = new ArrayList<>(getArgs());
+		getArgs().clear();
+		getArgs().addAll(xvfbArgs);
+		getArgs().addAll(existingArgs);
 	}
 
 	@Override

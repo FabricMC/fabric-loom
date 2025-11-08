@@ -75,6 +75,7 @@ public class RunConfig {
 	public Map<String, Object> environmentVariables;
 	public String projectName;
 	public String folderName;
+	public boolean useXvfb;
 
 	// Turns camelCase/PascalCase into Capital Case
 	// caseConversionExample -> Case Conversion Example
@@ -155,6 +156,7 @@ public class RunConfig {
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
+		runConfig.useXvfb = settings.isUseXvfb();
 
 		return runConfig;
 	}

@@ -87,9 +87,9 @@ public abstract class RunConfigSettings implements Named {
 	 * Whether to use XVFB to run the game, using a virtual framebuffer. This is useful for CI environments that don't have a display server.
 	 * Only applies to task execution, not IDE run configurations.
 	 *
-	 * <p>Defaults to true only on Linux and when the "CI" environment variable is set.
+	 * <p>This value is transferred to the task's useXvfb property when the task is created.
 	 */
-	private final Property<Boolean> useXvfb;
+	private Boolean useXvfb;
 
 	/**
 	 * The default main class of the run configuration.
@@ -155,7 +155,6 @@ public abstract class RunConfigSettings implements Named {
 			return RunConfig.getMainClass(environment, extension, defaultMainClass);
 		}));
 		this.devLaunchMainClass = project.getObjects().property(String.class).convention("net.fabricmc.devlaunchinjector.Main");
-		this.useXvfb = project.getObjects().property(Boolean.class);
 
 		setSource(p -> {
 			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
@@ -335,7 +334,7 @@ public abstract class RunConfigSettings implements Named {
 	 * Only applies to task execution, not IDE run configurations.
 	 */
 	public void useXvfb() {
-		this.useXvfb.set(true);
+		this.useXvfb = true;
 	}
 
 	/**
@@ -345,16 +344,16 @@ public abstract class RunConfigSettings implements Named {
 	 * @param useXvfb whether to use XVFB
 	 */
 	public void useXvfb(boolean useXvfb) {
-		this.useXvfb.set(useXvfb);
+		this.useXvfb = useXvfb;
 	}
 
 	/**
-	 * Get the useXvfb property.
+	 * Get the useXvfb value. May be null if not explicitly set.
 	 * Only applies to task execution, not IDE run configurations.
 	 *
-	 * @return the useXvfb property
+	 * @return the useXvfb value, or null if not set
 	 */
-	public Property<Boolean> getUseXvfb() {
+	public Boolean getUseXvfb() {
 		return useXvfb;
 	}
 

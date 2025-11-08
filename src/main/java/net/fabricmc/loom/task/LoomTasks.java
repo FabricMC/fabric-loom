@@ -237,9 +237,9 @@ public abstract class LoomTasks implements Runnable {
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
 			if (operatingSystem.isWindows()) {
-				task.from(getProject().zipTree(downloadRenderDoc.map(DownloadTask::getOutput)));
+				task.from(getProject().zipTree(downloadRenderDoc.flatMap(DownloadTask::getOutput)));
 			} else {
-				task.from(getProject().tarTree(downloadRenderDoc.map(DownloadTask::getOutput)));
+				task.from(getProject().tarTree(downloadRenderDoc.flatMap(DownloadTask::getOutput)));
 			}
 
 			task.into(getProject().getLayout().getBuildDirectory().dir("renderdoc"));

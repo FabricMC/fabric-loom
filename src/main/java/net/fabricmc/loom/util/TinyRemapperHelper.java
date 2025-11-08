@@ -46,9 +46,9 @@ import net.fabricmc.tinyremapper.TinyRemapper;
  */
 public final class TinyRemapperHelper {
 	private static final Map<String, String> JSR_TO_JETBRAINS = Map.of(
-			"javax/annotation/Nullable", "org/jetbrains/annotations/Nullable",
-			"javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull",
-			"javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable"
+				"javax/annotation/Nullable", "org/jetbrains/annotations/Nullable",
+				"javax/annotation/Nonnull", "org/jetbrains/annotations/NotNull",
+				"javax/annotation/concurrent/Immutable", "org/jetbrains/annotations/Unmodifiable"
 			);
 
 	/**

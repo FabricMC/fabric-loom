@@ -224,6 +224,8 @@ public interface LoomGradleExtensionAPI {
 
 	/**
 	 * Returns the tiny mappings file used to remap the game and mods.
+	 *
+	 * @return the mappings file, or null if in a non-obfuscated environment
 	 */
 	File getMappingsFile();
 

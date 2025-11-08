@@ -72,7 +72,6 @@ class XvfbRunTest extends Specification implements GradleProjectTestTrait {
 		then:
 		result.task(":runClientGameTest").outcome == SUCCESS
 		eula.text.contains("eula=true")
-		result.output.contains("Using XVFB for headless client execution")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

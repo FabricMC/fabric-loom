@@ -177,12 +177,13 @@ public abstract class AbstractRunTask extends JavaExec {
 			javaExec = javaHome + File.separator + "bin" + File.separator + "java";
 		}
 
-		// Build the complete command line: xvfb-run --auto-servernum java [args]
+		// Build the complete command line: xvfb-run --auto-servernum java [jvm-args] mainclass [program-args]
 		List<String> commandLine = new ArrayList<>();
 		commandLine.add(xvfbRunPath);
 		commandLine.add("--auto-servernum");
 		commandLine.add(javaExec);
 		commandLine.addAll(getJvmArguments().get());
+		commandLine.add(getMainClass().get());
 		commandLine.addAll(getArgs());
 
 		// Execute using Gradle's ExecOperations service (configuration cache safe)

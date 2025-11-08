@@ -190,9 +190,7 @@ public abstract class AbstractRunTask extends JavaExec {
 			execSpec.setCommandLine(commandLine);
 			execSpec.setWorkingDir(getWorkingDir());
 			execSpec.setEnvironment(getEnvironment());
-			execSpec.setStandardInput(getStandardInput());
-			execSpec.setStandardOutput(getStandardOutput());
-			execSpec.setErrorOutput(getErrorOutput());
+			// Standard streams are inherited from the Gradle process by default
 		});
 	}
 

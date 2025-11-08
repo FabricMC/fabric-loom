@@ -95,7 +95,7 @@ class XvfbRunTest extends Specification implements GradleProjectTestTrait {
 		expect:
 		// We just verify the configuration is accepted on all platforms
 		// The actual XVFB usage is platform-specific
-		gradle.buildGradle.contains("useXvfb()")
+		gradle.buildGradle.text.contains("useXvfb()")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

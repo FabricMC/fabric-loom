@@ -70,6 +70,7 @@ import org.gradle.workers.internal.WorkerDaemonClientsManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
@@ -140,6 +141,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	// Internal inputs
 	@ApiStatus.Internal
 	@Nested
+	@Optional
 	protected abstract Property<SourceMappingsService.Options> getMappings();
 
 	// Internal outputs
@@ -221,14 +223,15 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getUseCache().convention(true);
 		getResetCache().convention(getExtension().refreshDeps());
 
-		getMappings().set(SourceMappingsService.create(getProject()));
+		if (!LoomGradleExtension.get(getProject()).disableObfuscation()) {
+			getMappings().set(SourceMappingsService.create(getProject()));
+			getUnpickOptions().set(UnpickService.createOptions(this));
+		}
 
 		getMaxCachedFiles().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_FILES).orElse(50_000));
 		getMaxCacheFileAge().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_AGE).orElse(90));
 
 		getDaemonUtilsContext().set(getProject().getObjects().newInstance(DaemonUtils.Context.class, getProject()));
-
-		getUnpickOptions().set(UnpickService.createOptions(this));
 
 		mustRunAfter(getProject().getTasks().withType(AbstractRemapJarTask.class));
 	}
@@ -407,11 +410,13 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			sj.add(unpick.getUnpickCacheKey());
 		}
 
-		SourceMappingsService mappingsService = serviceFactory.get(getMappings());
-		String mappingsHash = mappingsService.getProcessorHash();
+		if (getMappings().isPresent()) {
+			SourceMappingsService mappingsService = serviceFactory.get(getMappings());
+			String mappingsHash = mappingsService.getProcessorHash();
 
-		if (mappingsHash != null) {
-			sj.add(mappingsHash);
+			if (mappingsHash != null) {
+				sj.add(mappingsHash);
+			}
 		}
 
 		getLogger().info("Decompile cache data: {}", sj);
@@ -484,7 +489,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getInputJar().set(inputJar.toFile());
 			params.getOutputJar().set(outputJar.toFile());
 			params.getLinemapFile().set(linemapFile.toFile());
-			params.getMappings().set(getMappings());
+
+			if (getMappings().isPresent()) {
+				params.getMappings().set(getMappings());
+			}
 
 			if (ipcServer != null) {
 				params.getIPCPath().set(ipcServer.getPath().toFile());
@@ -587,11 +595,16 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			}
 
 			try (var serviceFactory = new ScopedServiceFactory()) {
-				final SourceMappingsService mappingsService = serviceFactory.get(getParameters().getMappings());
+				Path javaDocs = null;
+
+				if (getParameters().getMappings().isPresent()) {
+					final SourceMappingsService mappingsService = serviceFactory.get(getParameters().getMappings());
+					javaDocs = mappingsService.getMappingsFile();
+				}
 
 				final var metadata = new DecompilationMetadata(
 						decompilerOptions.maxThreads(),
-						mappingsService.getMappingsFile(),
+						javaDocs,
 						getLibraries(),
 						logger,
 						decompilerOptions.options()

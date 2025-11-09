@@ -40,7 +40,7 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 
 // Used to abstract out the Gradle API usage to ease unit testing.
 public interface ProjectView {
-	// Returns a list of Loom Projects found in the specified Configuration
+	//Returns a list of Loom Projects found in the specified Configuration
 	Stream<Project> getLoomProjectDependencies(String name);
 
 	// Returns the mods defined in the current project

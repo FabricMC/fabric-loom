@@ -174,6 +174,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public MappingConfiguration getMappingConfiguration() {
 		if (disableObfuscation()) {
+			project.getLogger().lifecycle("help", new RuntimeException());
 			throw new UnsupportedOperationException("Cannot get mappings configuration in a non-obfuscated environment");
 		}
 
@@ -352,7 +353,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 				remapJarTask.getNestedJars().from(jars);
 			} else {
 				// For regular Jar tasks (non-remap mode), add a NestJarsAction with the FileCollection
-				task.doLast(new NestJarsAction(jars));
+				NestJarsAction.addToTask(task, jars);
 			}
 		});
 	}

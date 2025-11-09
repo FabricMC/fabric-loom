@@ -31,7 +31,7 @@ import org.gradle.api.Project;
  * A marker plugin to indicate to the main loom plugin not to setup for remapping.
  */
 public class LoomNoRemapGradlePlugin implements Plugin<Project> {
-	public static final String NAME = "net.fabricmc.fabric-loom-no-remap-experimental";
+	public static final String NAME = "net.fabricmc.fabric-loom-no-remap";
 
 	@Override
 	public void apply(Project target) {

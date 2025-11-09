@@ -73,6 +73,11 @@ public final class RemapConfigurations {
 
 	public static void configureClientConfigurations(Project project, SourceSet clientSourceSet) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.disableObfuscation()) {
+			return;
+		}
+
 		extension.createRemapConfigurations(clientSourceSet);
 
 		final NamedDomainObjectList<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();

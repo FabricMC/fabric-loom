@@ -366,7 +366,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public File getMappingsFile() {
 		if (notObfuscated()) {
-			throw new UnsupportedOperationException("Cannot get mappings file in a non-obfuscated environment");
+			return null;
 		}
 
 		return LoomGradleExtension.get(getProject()).getMappingConfiguration().tinyMappings.toFile();

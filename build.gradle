@@ -243,7 +243,7 @@ gradlePlugin {
 			implementationClass = 'net.fabricmc.loom.LoomCompanionGradlePlugin'
 		}
 		fabricLoomNoRemap {
-			id = 'net.fabricmc.fabric-loom-no-remap-experimental'
+			id = 'net.fabricmc.fabric-loom-no-remap'
 			implementationClass = 'net.fabricmc.loom.LoomNoRemapGradlePlugin'
 		}
 	}

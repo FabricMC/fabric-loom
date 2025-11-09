@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.processors.speccontext;
 
+import java.util.stream.Stream;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
@@ -31,6 +33,8 @@ import org.gradle.api.file.FileCollection;
 
 public interface DeobfProjectView extends ProjectView {
 	FileCollection getDependencies(DebofConfiguration debofConfiguration, DebofConfiguration.TargetSourceSet targetSourceSet);
+
+	Stream<Project> getProjectDependencies(DebofConfiguration debofConfiguration);
 
 	FileCollection getFullClasspath();
 
@@ -42,6 +46,12 @@ public interface DeobfProjectView extends ProjectView {
 		@Override
 		public FileCollection getDependencies(DebofConfiguration debofConfiguration, DebofConfiguration.TargetSourceSet targetSourceSet) {
 			return debofConfiguration.getConfiguration(project, targetSourceSet);
+		}
+
+		@Override
+		public Stream<Project> getProjectDependencies(DebofConfiguration debofConfiguration) {
+			return debofConfiguration.getConfigurations(project).stream()
+					.flatMap(configuration -> getLoomProjectDependencies(configuration.getName()));
 		}
 
 		@Override

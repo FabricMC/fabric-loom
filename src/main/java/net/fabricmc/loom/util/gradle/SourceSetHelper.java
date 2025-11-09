@@ -146,7 +146,9 @@ public final class SourceSetHelper {
 
 		// Add dev jars from dependency projects if the source set is "main".
 		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomCompanionProject(reference.project())) {
-			String configurationName = GradleUtils.isLoomProject(reference.project())
+			boolean isLoom = GradleUtils.isLoomProject(reference.project());
+			boolean isDebof = isLoom && LoomGradleExtension.get(reference.project()).disableObfuscation();
+			String configurationName = isLoom && !isDebof
 					? Constants.Configurations.NAMED_ELEMENTS : JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME;
 			final Configuration namedElements = reference.project().getConfigurations().getByName(configurationName);
 

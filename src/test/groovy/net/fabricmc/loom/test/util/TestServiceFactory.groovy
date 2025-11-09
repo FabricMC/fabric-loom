@@ -54,6 +54,8 @@ import org.gradle.cache.internal.DefaultCrossBuildInMemoryCacheFactory
 import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.instantiation.InstantiatorFactory
 import org.gradle.internal.instantiation.generator.DefaultInstantiatorFactory
+import org.gradle.internal.instantiation.managed.DefaultManagedObjectRegistry
+import org.gradle.internal.instantiation.managed.ManagedObjectRegistry
 import org.gradle.internal.nativeintegration.filesystem.FileSystem
 import org.gradle.internal.service.DefaultServiceRegistry
 import org.gradle.internal.service.Provides
@@ -74,7 +76,7 @@ class TestServiceFactory {
 	static ServiceRegistry createServiceRegistry(Project project = null) {
 		def services = new DefaultServiceRegistry()
 		services.register {
-			it.add(DefaultPropertyFactory)
+			it.add(PropertyFactory, new DefaultPropertyFactory(PropertyHost.NO_OP))
 			it.add(ProviderFactory, new DefaultProviderFactory())
 			it.add(PropertyHost, PropertyHost.NO_OP)
 			it.add(NamedObjectInstantiator)
@@ -91,13 +93,17 @@ class TestServiceFactory {
 			//noinspection unused
 			it.addProvider(new ServiceRegistrationProvider() {
 						@Provides
+						ManagedObjectRegistry createManagedObjectRegistry() {
+							new DefaultManagedObjectRegistry()
+						}
+
+						@Provides
 						InstantiatorFactory createInstantiatorFactory(
 								CrossBuildInMemoryCacheFactory crossBuildInMemoryCacheFactory) {
 							return new DefaultInstantiatorFactory(
 									crossBuildInMemoryCacheFactory,
 									[],
-									new OutputPropertyRoleAnnotationHandler([])
-									)
+									new OutputPropertyRoleAnnotationHandler([]))
 						}
 
 						@Provides

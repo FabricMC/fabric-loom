@@ -14,7 +14,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4

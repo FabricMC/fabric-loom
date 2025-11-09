@@ -24,7 +24,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4
@@ -39,7 +39,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
@@ -55,7 +55,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - uses: actions/checkout@v4
       - run: ./gradlew writeActionsTestMatrix --stacktrace --warning-mode fail
@@ -81,7 +81,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
@@ -117,7 +117,7 @@ jobs:
       - name: setup jdk
         uses: actions/setup-java@v4
         with:
-          java-version: 25
+          java-version: 21
           distribution: 'temurin'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:

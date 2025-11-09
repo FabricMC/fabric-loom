@@ -152,7 +152,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		environment(getInternalEnvironmentVars().get());
 
 		// Wrap with XVFB if enabled and on Linux
-		if (shouldUseXvfb()) {
+		if (getUseXvfb().get()) {
 			LOGGER.info("Using XVFB for headless client execution");
 			execWithXvfb();
 		} else {
@@ -160,23 +160,10 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 	}
 
-	private boolean shouldUseXvfb() {
-		return getUseXvfb().get();
-	}
-
 	private void execWithXvfb() {
 		String xvfbRunPath = "/usr/bin/xvfb-run";
 
-		// Get the java executable path - try toolchain first, fallback to system property
-		String javaExec;
-
-		if (getJavaLauncher().isPresent()) {
-			javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
-		} else {
-			// Fallback: construct path from JAVA_HOME
-			String javaHome = System.getProperty("java.home");
-			javaExec = javaHome + File.separator + "bin" + File.separator + "java";
-		}
+		String javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
 
 		// Build the complete command line: xvfb-run --auto-servernum java [jvm-args] mainclass [program-args]
 		List<String> commandLine = new ArrayList<>();
@@ -187,12 +174,10 @@ public abstract class AbstractRunTask extends JavaExec {
 		commandLine.add(getMainClass().get());
 		commandLine.addAll(getArgs());
 
-		// Execute using Gradle's ExecOperations service (configuration cache safe)
 		getExecOperations().exec(execSpec -> {
 			execSpec.setCommandLine(commandLine);
 			execSpec.setWorkingDir(getWorkingDir());
 			execSpec.setEnvironment(getEnvironment());
-			// Standard streams are inherited from the Gradle process by default
 		});
 	}
 

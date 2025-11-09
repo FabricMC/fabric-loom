@@ -263,12 +263,14 @@ public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleC
   private Ljava/lang/String; field2
   @Ljava/lang/Deprecated;() // invisible
   @Lorg/jetbrains/annotations/ApiStatus$Internal;() // invisible
+  @Lorg/jetbrains/annotations/Nullable;() : FIELD, null // invisible
 '''
 
 	private static final String EXPECTED_METHOD1 = '''
   // access flags 0x1
   public method1(Ljava/lang/String;)V
   @Lorg/jetbrains/annotations/ApiStatus$OverrideOnly;() // invisible
+  @Lorg/jetbrains/annotations/NotNull;() : METHOD_FORMAL_PARAMETER 0, null // invisible
     // annotable parameter count: 1 (invisible)
     @Lorg/jetbrains/annotations/UnknownNullability;() // invisible, parameter 0
 '''

@@ -84,14 +84,6 @@ public abstract class RunConfigSettings implements Named {
 	private final Property<Boolean> appendProjectPathToConfigName;
 
 	/**
-	 * Whether to use XVFB to run the game, using a virtual framebuffer. This is useful for CI environments that don't have a display server.
-	 * Only applies to task execution, not IDE run configurations.
-	 *
-	 * <p>This value is transferred to the task's useXvfb property when the task is created.
-	 */
-	private Boolean useXvfb;
-
-	/**
 	 * The default main class of the run configuration.
 	 *
 	 * <p>This can be overwritten in {@code fabric_installer.[method].json}. Note that this <em>doesn't</em> take
@@ -326,35 +318,6 @@ public abstract class RunConfigSettings implements Named {
 		if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
 			vmArg("-XstartOnFirstThread");
 		}
-	}
-
-	/**
-	 * Enable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
-	 * This is useful for running client tests in CI environments on Linux.
-	 * Only applies to task execution, not IDE run configurations.
-	 */
-	public void useXvfb() {
-		this.useXvfb = true;
-	}
-
-	/**
-	 * Enable or disable XVFB (X Virtual Frame Buffer) for running the client in headless environments.
-	 * Only applies to task execution, not IDE run configurations.
-	 *
-	 * @param useXvfb whether to use XVFB
-	 */
-	public void useXvfb(boolean useXvfb) {
-		this.useXvfb = useXvfb;
-	}
-
-	/**
-	 * Get the useXvfb value. May be null if not explicitly set.
-	 * Only applies to task execution, not IDE run configurations.
-	 *
-	 * @return the useXvfb value, or null if not set
-	 */
-	public Boolean getUseXvfb() {
-		return useXvfb;
 	}
 
 	/**

@@ -109,18 +109,12 @@ public abstract class AbstractRunTask extends JavaExec {
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
 
-		// Set up useXvfb: convention is CI + Linux, can be overridden by settings
+		// Set up useXvfb: convention is CI + Linux
 		getUseXvfb().convention(
 				getProject().getProviders().environmentVariable("CI")
 						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
 						.orElse(false)
 		);
-
-		// If the settings explicitly set useXvfb, use that value
-		getUseXvfb().set(config.map(runConfig -> {
-			Boolean settingsValue = runConfig.settings.getUseXvfb();
-			return settingsValue != null ? settingsValue : getUseXvfb().get();
-		}));
 
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();
 		File argFile = new File(buildCache, "argFiles/" + getName());

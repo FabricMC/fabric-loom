@@ -230,12 +230,8 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
                     }
                 }
 
-                loom {
-                    runs {
-                        clientGameTest {
-                            useXvfb()
-                        }
-                    }
+                tasks.named("runClientGameTest") {
+                    useXvfb.set(true)
                 }
             '''
 		when:

@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,8 +121,7 @@ record DownloadSourcesHook(Project project, Task task) {
 	}
 
 	// Return the jar type, or null when this jar isnt used by the project
-	@Nullable
-	private MinecraftJar.Type getJarType(String name) {
+	private MinecraftJar.@Nullable Type getJarType(String name) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final NamedMinecraftProvider<?> minecraftProvider = extension.getNamedMinecraftProvider();
 		final List<MinecraftJar.Type> dependencyTypes = minecraftProvider.getDependencyTypes();

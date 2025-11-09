@@ -30,7 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 

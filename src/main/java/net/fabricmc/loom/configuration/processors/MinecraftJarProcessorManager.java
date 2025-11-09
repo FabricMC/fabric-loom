@@ -36,7 +36,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,7 +162,7 @@ public final class MinecraftJarProcessorManager {
 		return transformed;
 	}
 
-	record ProcessorEntry<S extends MinecraftJarProcessor.Spec>(S spec, MinecraftJarProcessor<S> processor, @Nullable MinecraftJarProcessor.MappingsProcessor<S> mappingsProcessor) {
+	record ProcessorEntry<S extends MinecraftJarProcessor.Spec>(S spec, MinecraftJarProcessor<S> processor, MinecraftJarProcessor.@Nullable MappingsProcessor<S> mappingsProcessor) {
 		@SuppressWarnings("unchecked")
 		ProcessorEntry(MinecraftJarProcessor<?> processor, MinecraftJarProcessor.Spec spec) {
 			this((S) Objects.requireNonNull(spec), (MinecraftJarProcessor<S>) processor, (MinecraftJarProcessor.MappingsProcessor<S>) processor.processMappings());

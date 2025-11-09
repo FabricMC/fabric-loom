@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.extras.annotations;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.tinyremapper.TinyRemapper;
 

@@ -25,7 +25,7 @@
 package net.fabricmc.loom.util.service;
 
 import org.gradle.api.provider.Provider;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A factory for creating {@link Service} instances.

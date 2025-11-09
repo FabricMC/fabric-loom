@@ -26,7 +26,7 @@ package net.fabricmc.loom.util;
 
 import java.util.function.Supplier;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 // Can be replaced by Lazy Constants (https://openjdk.org/jeps/526) once available.
 public final class Lazy {

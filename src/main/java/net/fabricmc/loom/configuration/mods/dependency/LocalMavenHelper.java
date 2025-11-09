@@ -32,7 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root, @Nullable String snapshotVersion) {
 	public LocalMavenHelper(String group, String name, String version, @Nullable String baseClassifier, Path root) {

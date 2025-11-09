@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;

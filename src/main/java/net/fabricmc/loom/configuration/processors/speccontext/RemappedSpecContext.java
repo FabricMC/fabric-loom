@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import net.fabricmc.loom.api.RemapConfigurationSettings;

@@ -36,7 +36,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.gradle.api.file.RegularFileProperty;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -61,7 +61,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 	}
 
 	@Override
-	public @Nullable AccessWidenerJarProcessor.Spec buildSpec(SpecContext context) {
+	public AccessWidenerJarProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<AccessWidenerEntry> accessWideners = new ArrayList<>();
 
 		if (localAccessWidenerProperty.isPresent()) {

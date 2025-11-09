@@ -32,7 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -152,8 +152,7 @@ public class LayeredMappingsProcessor {
 		return Collections.unmodifiableMap(signatureFixes);
 	}
 
-	@Nullable
-	public UnpickLayer.UnpickData getUnpickData(List<MappingLayer> layers) throws IOException {
+	public UnpickLayer.@Nullable UnpickData getUnpickData(List<MappingLayer> layers) throws IOException {
 		List<UnpickLayer.UnpickData> unpickDataList = new ArrayList<>();
 
 		for (MappingLayer layer : layers) {

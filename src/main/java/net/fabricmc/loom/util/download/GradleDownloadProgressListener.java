@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.gradle.internal.logging.progress.ProgressLogger;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class GradleDownloadProgressListener implements DownloadProgressListener {
 	private final String name;

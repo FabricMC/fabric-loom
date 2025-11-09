@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.util.fmj.FabricModJson;

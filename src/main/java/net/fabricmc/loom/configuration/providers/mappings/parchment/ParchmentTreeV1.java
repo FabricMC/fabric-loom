@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.mappingio.MappedElementKind;
 import net.fabricmc.mappingio.MappingVisitor;

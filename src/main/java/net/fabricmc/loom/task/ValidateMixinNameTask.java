@@ -47,7 +47,7 @@ import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;

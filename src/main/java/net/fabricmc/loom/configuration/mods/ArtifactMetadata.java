@@ -36,7 +36,7 @@ import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;

@@ -26,7 +26,7 @@ package net.fabricmc.loom.api.mappings.layered;
 
 import java.util.Locale;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The standard namespaces used by loom.

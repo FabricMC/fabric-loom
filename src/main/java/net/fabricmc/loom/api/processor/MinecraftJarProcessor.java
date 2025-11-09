@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.gradle.api.Named;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 

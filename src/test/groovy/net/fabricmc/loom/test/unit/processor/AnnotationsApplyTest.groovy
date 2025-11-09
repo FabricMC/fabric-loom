@@ -28,7 +28,7 @@ import groovy.transform.CompileStatic
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.NotNull
-import org.jetbrains.annotations.Nullable
+import org.jspecify.annotations.Nullable
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode

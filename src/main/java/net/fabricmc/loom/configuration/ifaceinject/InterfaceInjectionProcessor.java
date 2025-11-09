@@ -41,7 +41,7 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -84,7 +84,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	@Override
-	public @Nullable InterfaceInjectionProcessor.Spec buildSpec(SpecContext context) {
+	public InterfaceInjectionProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<InjectedInterface> injectedInterfaces = new ArrayList<>();
 
 		injectedInterfaces.addAll(InjectedInterface.fromMods(context.localMods()));

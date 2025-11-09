@@ -35,7 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;

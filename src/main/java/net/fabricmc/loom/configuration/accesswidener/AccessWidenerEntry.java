@@ -26,7 +26,7 @@ package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.IOException;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.util.LazyCloseable;

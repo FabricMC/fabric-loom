@@ -40,7 +40,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 import com.google.gson.JsonElement;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +76,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 	}
 
 	@Override
-	public @Nullable ModJavadocProcessor.Spec buildSpec(SpecContext context) {
+	public ModJavadocProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<ModJavadoc> javadocs = new ArrayList<>();
 
 		for (FabricModJson fabricModJson : context.allMods()) {

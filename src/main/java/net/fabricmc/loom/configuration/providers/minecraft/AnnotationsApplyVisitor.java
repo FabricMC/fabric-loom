@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;

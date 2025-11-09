@@ -65,8 +65,8 @@ public class NonRemappedJarTaskConfiguration {
 		project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).configure(task -> {
 			task.dependsOn(processIncludeJarsTask);
 
-			task.doLast(new NestJarsAction(project.fileTree(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory))
-					.matching(pattern -> pattern.include("*.jar"))));
+			NestJarsAction.addToTask(task, project.fileTree(processIncludeJarsTask.flatMap(NestableJarGenerationTask::getOutputDirectory))
+					.matching(pattern -> pattern.include("*.jar")));
 
 			task.doLast(new ManifestModificationAction(
 					manifestServiceProvider,

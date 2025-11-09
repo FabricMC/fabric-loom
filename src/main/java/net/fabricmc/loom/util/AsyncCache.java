@@ -32,7 +32,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -42,10 +41,6 @@ public class AsyncCache<T> {
 
 	public CompletableFuture<T> get(Object cacheKey, Supplier<T> supplier) {
 		return cache.computeIfAbsent(cacheKey, $ -> CompletableFuture.supplyAsync(supplier, EXECUTOR));
-	}
-
-	public int getCacheSize() {
-		return cache.size();
 	}
 
 	public T getBlocking(Object cacheKey, Supplier<T> supplier) {

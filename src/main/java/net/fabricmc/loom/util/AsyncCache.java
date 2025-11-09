@@ -63,6 +63,7 @@ public class AsyncCache<T> {
 			));
 	}
 
+	// Rethrows the exception from the CompletableFuture, if it exists.
 	public static <T> T join(CompletableFuture<T> future) {
 		try {
 			return future.join();

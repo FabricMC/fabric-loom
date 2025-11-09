@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom-no-remap-experimental'
+	id 'net.fabricmc.fabric-loom-no-remap'
 }
 
 repositories {

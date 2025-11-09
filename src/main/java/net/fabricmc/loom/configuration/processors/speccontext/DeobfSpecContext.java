@@ -28,6 +28,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
@@ -89,10 +91,16 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 			clientTransformingModIds = Set.of();
 		}
 
+		// All dependency mods that are on both the compile and runtime classpath
+		List<FabricModJson> modDependenciesCompileRuntime = new ArrayList<>(getMods(mods, combine(mainTransformingModIds, clientTransformingModIds)));
+
+		// Add all of the project depedencies that are on both the compile and runtime classpath
+		modDependenciesCompileRuntime.addAll(getCompileRuntimeProjectMods(projectView, fmjCache));
+
 		return new DeobfSpecContext(
 				dependentMods,
 				projectView.getMods(),
-				getMods(mods, combine(mainTransformingModIds, clientTransformingModIds)),
+				modDependenciesCompileRuntime,
 				getMods(mods, onlyInLeft(clientTransformingModIds, mainTransformingModIds))
 		);
 	}
@@ -155,6 +163,34 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 		}
 
 		return result;
+	}
+
+	// Returns a list of mods that are on both to compile and runtime classpath
+	private static List<FabricModJson> getCompileRuntimeProjectMods(DeobfProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+		var mods = new ArrayList<FabricModJson>();
+
+		for (Project dependentProject : getCompileRuntimeProjectDependencies(projectView).toList()) {
+			List<FabricModJson> projectMods = fmjCache.getBlocking(dependentProject.getPath(), () -> {
+				return FabricModJsonHelpers.getModsInProject(dependentProject);
+			});
+
+			mods.addAll(projectMods);
+		}
+
+		return Collections.unmodifiableList(mods);
+	}
+
+	// Returns a list of Loom Projects found in both the runtime and compile classpath
+	private static Stream<Project> getCompileRuntimeProjectDependencies(DeobfProjectView projectView) {
+		if (projectView.disableProjectDependantMods()) {
+			return Stream.empty();
+		}
+
+		final Stream<Project> runtimeProjects = projectView.getProjectDependencies(DebofConfiguration.RUNTIME);
+		final List<Project> compileProjects = projectView.getProjectDependencies(DebofConfiguration.COMPILE).toList();
+
+		return runtimeProjects
+				.filter(compileProjects::contains); // Use the intersection of the two configurations.
 	}
 
 	private static Set<String> common(Set<String> a, Set<String> b) {

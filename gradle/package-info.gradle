@@ -1,17 +1,20 @@
 import java.nio.file.Files
 
-sourceSets.configureEach { sourceSet ->
+for (def sourceSet in [
+		sourceSets.main,
+		sourceSets.test
+]) {
 	def sourceSetName = sourceSet.name
 	def taskName = sourceSet.getTaskName('generate', 'PackageInfos')
 	tasks.register(taskName, GeneratePackageInfos) {
 		description = "Generates package-info files for $sourceSetName packages."
-		sourceRoot = sourceSet.java.srcDirs.first()
+		sourceRoot = file("src/$sourceSetName/java")
 		header = rootProject.file('HEADER')
 	}
 
 	def checkTask = tasks.register(sourceSet.getTaskName('check', 'PackageInfos'), CheckPackageInfos) {
 		description = "Checks that all $sourceSetName packages have package-info files."
-		sourceRoot = sourceSet.java.srcDirs.first()
+		sourceRoot = file("src/$sourceSetName/java")
 	}
 	tasks.check.dependsOn checkTask
 }
@@ -42,6 +45,7 @@ abstract class GeneratePackageInfos extends DefaultTask {
 
 			def relativePath = root.relativize(it)
 			def packageName = relativePath.toString().replace(File.separator, '.')
+			String year = Calendar.getInstance().get(Calendar.YEAR).toString()
 
 			it.resolve('package-info.java').withWriter {
 				it.write("""$headerText
@@ -49,7 +53,7 @@ abstract class GeneratePackageInfos extends DefaultTask {
 						|package $packageName;
 						|
 						|import org.jspecify.annotations.NullMarked;
-						|""".stripMargin())
+						|""".replace("\$YEAR", year).stripMargin())
 			}
 		}
 	}

@@ -316,7 +316,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 		if (job instanceof CachedJarProcessor.WorkToDoJob workToDoJob) {
 			Path workInputJar = workToDoJob.incomplete();
-			@Nullable Path existingClasses = (job instanceof CachedJarProcessor.PartialWorkJob partialWorkJob) ? partialWorkJob.existingClasses() : null;
+			Path existingClasses = (job instanceof CachedJarProcessor.PartialWorkJob partialWorkJob) ? partialWorkJob.existingClasses() : null;
 
 			if (usingUnpick()) {
 				try (var timer = new Timer("Unpick")) {

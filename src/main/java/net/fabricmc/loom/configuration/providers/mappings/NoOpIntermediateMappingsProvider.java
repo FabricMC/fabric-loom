@@ -29,8 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.jetbrains.annotations.NotNull;
-
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 
 /**
@@ -46,7 +44,7 @@ public abstract class NoOpIntermediateMappingsProvider extends IntermediateMappi
 	}
 
 	@Override
-	public @NotNull String getName() {
+	public String getName() {
 		return "empty-intermediate";
 	}
 }

@@ -416,3 +416,4 @@ abstract class PrintActionsTestName extends DefaultTask {
 }
 
 apply from: rootProject.file('gradle/versions.gradle')
+apply from: rootProject.file('gradle/package-info.gradle')

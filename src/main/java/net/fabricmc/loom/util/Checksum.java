@@ -39,7 +39,6 @@ import java.util.List;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
-import org.jetbrains.annotations.NotNull;
 
 public final class Checksum {
 	public static Checksum of(byte[] data) {
@@ -152,7 +151,7 @@ public final class Checksum {
 		}
 
 		@Override
-		public void write(byte @NotNull[] b, int off, int len) {
+		public void write(byte[] b, int off, int len) {
 			digest.update(b, off, len);
 		}
 

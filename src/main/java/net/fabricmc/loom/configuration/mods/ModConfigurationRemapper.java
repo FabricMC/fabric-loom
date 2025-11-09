@@ -278,7 +278,7 @@ public class ModConfigurationRemapper {
 		Map<ResolvedArtifact, Path> sourcesMap = downloadAllSources(project, resolvedArtifacts);
 
 		for (ResolvedArtifact artifact : resolvedArtifacts) {
-			@Nullable Path sources = sourcesMap.get(artifact);
+			Path sources = sourcesMap.get(artifact);
 			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
 		}
 

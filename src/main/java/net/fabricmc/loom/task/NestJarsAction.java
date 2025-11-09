@@ -41,7 +41,6 @@ import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +66,7 @@ public abstract class NestJarsAction implements Action<Task>, Serializable {
 	}
 
 	@Override
-	public void execute(@NotNull Task t) {
+	public void execute(Task t) {
 		final Jar jarTask = (Jar) t;
 
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();

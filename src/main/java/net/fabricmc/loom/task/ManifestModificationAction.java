@@ -39,7 +39,6 @@ import org.gradle.api.Action;
 import org.gradle.api.Task;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
-import org.jetbrains.annotations.NotNull;
 
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.Check;
@@ -68,7 +67,7 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 	}
 
 	@Override
-	public void execute(@NotNull Task t) {
+	public void execute(Task t) {
 		final Jar jarTask = (Jar) t;
 		final File jarFile = jarTask.getArchiveFile().get().getAsFile();
 

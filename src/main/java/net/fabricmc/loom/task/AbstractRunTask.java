@@ -51,7 +51,6 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.process.ExecOperations;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,13 +241,13 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	// https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/base/src/com/intellij/openapi/util/text/Strings.java#L100-L118
-	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars) {
+	public static boolean containsAnyChar(final String value, final String chars) {
 		return chars.length() > value.length()
 				? containsAnyChar(value, chars, 0, value.length())
 				: containsAnyChar(chars, value, 0, chars.length());
 	}
 
-	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars, final int start, final int end) {
+	public static boolean containsAnyChar(final String value, final String chars, final int start, final int end) {
 		for (int i = start; i < end; i++) {
 			if (chars.indexOf(value.charAt(i)) >= 0) {
 				return true;
@@ -259,19 +258,19 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	@Override
-	public @NotNull JavaExec setClasspath(@NotNull FileCollection classpath) {
+	public JavaExec setClasspath(FileCollection classpath) {
 		this.getInternalClasspath().setFrom(classpath);
 		return this;
 	}
 
 	@Override
-	public @NotNull JavaExec classpath(Object @NotNull... paths) {
+	public JavaExec classpath(Object... paths) {
 		this.getInternalClasspath().from(paths);
 		return this;
 	}
 
 	@Override
-	public @NotNull FileCollection getClasspath() {
+	public FileCollection getClasspath() {
 		return this.getInternalClasspath();
 	}
 

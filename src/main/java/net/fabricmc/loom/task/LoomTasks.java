@@ -37,7 +37,6 @@ import org.gradle.api.tasks.Sync;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
-import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
@@ -72,7 +71,7 @@ public abstract class LoomTasks implements Runnable {
 			t.setDescription("Generate the log4j config file");
 		});
 
-		@Nullable TaskProvider<GenerateRemapClasspathTask> generateRemapClasspath = null;
+		TaskProvider<GenerateRemapClasspathTask> generateRemapClasspath = null;
 
 		if (!extension.disableObfuscation()) {
 			generateRemapClasspath = getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
@@ -81,7 +80,7 @@ public abstract class LoomTasks implements Runnable {
 		}
 
 		// Make the lambda happy
-		final @Nullable TaskProvider<GenerateRemapClasspathTask> generateRemapClasspathTask = generateRemapClasspath;
+		final TaskProvider<GenerateRemapClasspathTask> generateRemapClasspathTask = generateRemapClasspath;
 
 		getTasks().register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");

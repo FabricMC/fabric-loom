@@ -50,8 +50,6 @@ public interface ProjectView {
 
 	boolean areEnvironmentSourceSetsSplit();
 
-	Project getProject();
-
 	enum ArtifactUsage {
 		RUNTIME(Usage.JAVA_RUNTIME),
 		COMPILE(Usage.JAVA_API);
@@ -102,11 +100,6 @@ public interface ProjectView {
 		@Override
 		public boolean areEnvironmentSourceSetsSplit() {
 			return extension.areEnvironmentSourceSetsSplit();
-		}
-
-		@Override
-		public Project getProject() {
-			return project;
 		}
 	}
 }

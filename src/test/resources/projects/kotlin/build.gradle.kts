@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-	kotlin("jvm") version "2.0.21"
-	kotlin("plugin.serialization") version "2.0.21"
+	kotlin("jvm") version "2.2.21"
+	kotlin("plugin.serialization") version "2.2.21"
 	id("fabric-loom")
 	`maven-publish`
 }
@@ -32,7 +32,7 @@ dependencies {
 	minecraft("com.mojang:minecraft:1.16.5")
 	mappings("net.fabricmc:yarn:1.16.5+build.5:v2")
 	modImplementation("net.fabricmc:fabric-loader:0.16.9")
-	modImplementation("net.fabricmc:fabric-language-kotlin:1.12.3+kotlin.2.0.21")
+	modImplementation("net.fabricmc:fabric-language-kotlin:1.13.7+kotlin.2.2.21")
 }
 
 publishing {

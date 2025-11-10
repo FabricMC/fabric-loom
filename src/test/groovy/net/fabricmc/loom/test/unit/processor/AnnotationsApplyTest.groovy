@@ -159,7 +159,7 @@ class AnnotationsApplyTest extends Specification {
 				},
 				"field2:Ljava/lang/String;": {
 					"remove": [
-						"org/jetbrains/annotations/Nullable"
+						"org/jspecify/annotations/Nullable"
 					],
 					"add": [
 						{
@@ -184,7 +184,7 @@ class AnnotationsApplyTest extends Specification {
 					"parameters": {
 						"0": {
 							"remove": [
-								"org/jetbrains/annotations/NotNull"
+								"org/jspecify/annotations/NotNull"
 							],
 							"add": [
 								{
@@ -263,7 +263,7 @@ public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleC
   private Ljava/lang/String; field2
   @Ljava/lang/Deprecated;() // invisible
   @Lorg/jetbrains/annotations/ApiStatus$Internal;() // invisible
-  @Lorg/jetbrains/annotations/Nullable;() : FIELD, null // invisible
+  @Lorg/jspecify/annotations/Nullable;() : FIELD, null
 '''
 
 	private static final String EXPECTED_METHOD1 = '''
@@ -272,6 +272,7 @@ public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleC
   @Lorg/jetbrains/annotations/ApiStatus$OverrideOnly;() // invisible
   @Lorg/jetbrains/annotations/NotNull;() : METHOD_FORMAL_PARAMETER 0, null // invisible
     // annotable parameter count: 1 (invisible)
+    @Lorg/jetbrains/annotations/NotNull;() // invisible, parameter 0
     @Lorg/jetbrains/annotations/UnknownNullability;() // invisible, parameter 0
 '''
 

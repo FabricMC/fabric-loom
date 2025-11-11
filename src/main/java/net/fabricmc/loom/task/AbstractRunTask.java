@@ -50,12 +50,15 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
 import org.gradle.process.ExecOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
@@ -81,6 +84,10 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Input
 	protected abstract Property<Boolean> getUseXvfb();
 
+	@Nested
+	@Optional
+	public abstract Property<TracyCapture> getTracyCapture();
+
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	@InputFiles
 	protected abstract ConfigurableFileCollection getInternalClasspath();
@@ -98,6 +105,13 @@ public abstract class AbstractRunTask extends JavaExec {
 				)));
 
 		getArgumentProviders().add(() -> config.get().programArgs);
+		getArgumentProviders().add(() -> {
+			if (getTracyCapture().isPresent()) {
+				return List.of("--tracy");
+			}
+
+			return List.of();
+		});
 		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
@@ -151,6 +165,21 @@ public abstract class AbstractRunTask extends JavaExec {
 		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
 
+		// Wrap with Tracy if enabled
+		if (getTracyCapture().isPresent()) {
+			try {
+				getTracyCapture().get().runWithTracy(this::execInternal);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to run with Tracy", e);
+			}
+
+			return;
+		}
+
+		execInternal();
+	}
+
+	private void execInternal() {
 		// Wrap with XVFB if enabled and on Linux
 		if (getUseXvfb().get()) {
 			LOGGER.info("Using XVFB for headless client execution");

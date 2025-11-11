@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -87,6 +88,18 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Nested
 	@Optional
 	public abstract Property<TracyCapture> getTracyCapture();
+
+	/**
+	 * Configures the tracy profiler to run alongside the game. See @{@link TracyCapture} for more information.
+	 *
+	 * @param action The configuration action.
+	 */
+	@SuppressWarnings("unused")
+	public void tracy(Action<? super TracyCapture> action) {
+		getTracyCapture().set(getProject().getObjects().newInstance(TracyCapture.class));
+		getTracyCapture().finalizeValue();
+		action.execute(getTracyCapture().get());
+	}
 
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	@InputFiles

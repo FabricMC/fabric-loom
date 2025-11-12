@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.speccontext.ProjectView;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 
@@ -51,6 +52,8 @@ public interface SpecContext {
 	 * Return a set of mods that should be used for transforms, that target ONLY the client.
 	 */
 	List<FabricModJson> modDependenciesCompileRuntimeClient();
+
+	MappingsNamespace productionNamespace();
 
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();

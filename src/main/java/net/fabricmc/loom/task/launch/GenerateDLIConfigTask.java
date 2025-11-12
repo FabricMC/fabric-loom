@@ -88,6 +88,9 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@Input
 	protected abstract Property<String> getNativesDirectoryPath();
 
+	@Input
+	protected abstract Property<String> getProductionNamespace();
+
 	@InputFile
 	@Optional
 	public abstract RegularFileProperty getRemapClasspathFile();
@@ -116,6 +119,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getAssetsDirectoryPath().set(new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
 		getNativesDirectoryPath().set(getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath());
 		getDevLauncherConfig().set(getExtension().getFiles().getDevLauncherConfig());
+		getProductionNamespace().set(getExtension().getProductionNamespaceEnum().toString());
 	}
 
 	@TaskAction
@@ -131,6 +135,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 				.property("fabric.development", "true")
 				.property("log4j.configurationFile", getLog4jConfigPaths().get())
 				.property("log4j2.formatMsgNoLookups", "true")
+				.property("fabric.defaultModDistributionNamespace", getProductionNamespace().get())
 
 				.argument("client", "--assetIndex")
 				.argument("client", versionInfo.assetIndex().fabricId(getMinecraftVersion().get()))

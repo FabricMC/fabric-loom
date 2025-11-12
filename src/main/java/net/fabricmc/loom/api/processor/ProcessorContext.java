@@ -44,4 +44,6 @@ public interface ProcessorContext {
 	MemoryMappingTree getMappings();
 
 	boolean disableObfuscation();
+
+	MappingsNamespace getProductionNamespace();
 }

@@ -42,6 +42,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -58,7 +59,8 @@ import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 public record RemappedSpecContext(
 		List<FabricModJson> modDependencies,
 		List<FabricModJson> localMods,
-		List<ModHolder> compileRuntimeMods) implements SpecContext {
+		List<ModHolder> compileRuntimeMods,
+		MappingsNamespace productionNamespace) implements SpecContext {
 	public static RemappedSpecContext create(Project project) {
 		return create(new RemappedProjectView.Impl(project));
 	}
@@ -69,7 +71,8 @@ public record RemappedSpecContext(
 		return new RemappedSpecContext(
 				getDependentMods(projectView, fmjCache),
 				projectView.getMods(),
-				getCompileRuntimeMods(projectView, fmjCache)
+				getCompileRuntimeMods(projectView, fmjCache),
+				projectView.getProductionNamespace()
 		);
 	}
 

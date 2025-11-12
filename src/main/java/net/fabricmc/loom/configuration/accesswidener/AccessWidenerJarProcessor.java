@@ -147,9 +147,9 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 			return classTweaker;
 		}
 
-		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry widener : accessWideners) {
-				widener.read(classTweaker, remapper);
+				widener.read(classTweaker, remapper, context.getProductionNamespace());
 			}
 		}
 

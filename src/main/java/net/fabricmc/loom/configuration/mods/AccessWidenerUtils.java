@@ -33,7 +33,6 @@ import org.objectweb.asm.commons.Remapper;
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.ClassTweakerWriter;
 import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
@@ -41,15 +40,15 @@ public class AccessWidenerUtils {
 	/**
 	 * Remap a mods access widener from intermediary to named, so that loader can apply it in our dev-env.
 	 */
-	public static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
+	public static byte[] remapAccessWidener(byte[] input, Remapper remapper, String fromNamespace, String toNamespace) {
 		int version = ClassTweakerReader.readVersion(input);
 
 		ClassTweakerWriter writer = ClassTweakerWriter.create(version);
 		ClassTweakerRemapperVisitor awRemapper = new ClassTweakerRemapperVisitor(
 				writer,
 				remapper,
-				MappingsNamespace.INTERMEDIARY.toString(),
-				MappingsNamespace.NAMED.toString()
+				fromNamespace,
+				toNamespace
 		);
 		ClassTweakerReader reader = ClassTweakerReader.create(awRemapper);
 		reader.read(input, null); // TODO pass modid

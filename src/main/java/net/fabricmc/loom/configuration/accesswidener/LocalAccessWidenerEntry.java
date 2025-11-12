@@ -44,7 +44,7 @@ public record LocalAccessWidenerEntry(Path path, String hash) implements AccessW
 	}
 
 	@Override
-	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper, MappingsNamespace productionNamespace) throws IOException {
 		var reader = ClassTweakerReader.create(visitor);
 		reader.read(Files.readAllBytes(path), null);
 	}

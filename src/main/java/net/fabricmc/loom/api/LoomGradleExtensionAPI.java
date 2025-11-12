@@ -47,6 +47,7 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.remapping.RemapperExtension;
@@ -241,6 +242,13 @@ public interface LoomGradleExtensionAPI {
 	 * @return the intermediary url template
 	 */
 	Property<String> getIntermediaryUrl();
+
+	/**
+	 * @return the production namespace
+	 */
+	Property<String> getProductionNamespace();
+
+	MappingsNamespace getProductionNamespaceEnum();
 
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();

@@ -125,12 +125,12 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			return spec.injectedInterfaces();
 		}
 
-		// Remap from intermediary->named
+		// Remap from productionNamespace->named
 		final MemoryMappingTree mappings = context.getMappings();
-		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+		final int productionIndex = mappings.getNamespaceId(context.getProductionNamespace().toString());
 		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
 
-		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
 			final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
 					.filter(injectedInterface -> {
 						return context.includesClient() // The client jar depends on the server, so always apply all to it
@@ -138,7 +138,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 					})
 					.map(injectedInterface -> remap(
 							injectedInterface,
-							s -> mappings.mapClassName(s, intermediaryIndex, namedIndex),
+							s -> mappings.mapClassName(s, productionIndex, namedIndex),
 							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();

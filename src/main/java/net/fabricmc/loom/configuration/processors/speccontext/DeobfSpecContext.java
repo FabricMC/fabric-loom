@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -229,5 +230,10 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 		Set<String> copy = new HashSet<>(left);
 		copy.removeAll(right);
 		return copy;
+	}
+
+	@Override
+	public MappingsNamespace productionNamespace() {
+		return MappingsNamespace.OFFICIAL;
 	}
 }

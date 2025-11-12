@@ -80,7 +80,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		List<ModJavadoc> javadocs = new ArrayList<>();
 
 		for (FabricModJson fabricModJson : context.allMods()) {
-			ModJavadoc javadoc = ModJavadoc.create(fabricModJson);
+			ModJavadoc javadoc = ModJavadoc.create(fabricModJson, context.productionNamespace());
 
 			if (javadoc != null) {
 				javadocs.add(javadoc);
@@ -116,7 +116,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 	public record ModJavadoc(String modId, MemoryMappingTree mappingTree, String mappingsHash) {
 		@Nullable
-		public static ModJavadoc create(FabricModJson fabricModJson) {
+		public static ModJavadoc create(FabricModJson fabricModJson, MappingsNamespace productionNamespace) {
 			final String modId = fabricModJson.getId();
 			final JsonElement customElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.PROVIDED_JAVADOC);
 
@@ -137,7 +137,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 					// if the format doesn't have them (this includes the Enigma format, which we want to
 					// support since it's produced by ModEnigmaTask).
 					final Map<String, String> fallbackNamespaceReplacements = Map.of(
-							MappingUtil.NS_SOURCE_FALLBACK, MappingsNamespace.INTERMEDIARY.toString(),
+							MappingUtil.NS_SOURCE_FALLBACK, productionNamespace.toString(),
 							MappingUtil.NS_TARGET_FALLBACK, MappingsNamespace.NAMED.toString()
 					);
 					final MappingNsRenamer renamer = new MappingNsRenamer(mappings, fallbackNamespaceReplacements);
@@ -148,8 +148,8 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				throw new UncheckedIOException("Failed to read javadoc from mod: " + modId, e);
 			}
 
-			if (!mappings.getSrcNamespace().equals(MappingsNamespace.INTERMEDIARY.toString())) {
-				throw new IllegalStateException("Javadoc provided by mod (%s) must be have an intermediary source namespace".formatted(modId));
+			if (!mappings.getSrcNamespace().equals(productionNamespace.toString())) {
+				throw new IllegalStateException("Javadoc provided by mod (%s) must be have an %s source namespace".formatted(modId, productionNamespace.toString()));
 			}
 
 			return new ModJavadoc(modId, mappings, mappingsHash);

@@ -35,6 +35,7 @@ public class Constants {
 	public static final String FABRIC_REPOSITORY = "https://maven.fabricmc.net/";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
+	public static final String RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS = "2025-11-01T00:00:00+00:00";
 	public static final String RELEASE_TIME_1_3 = "2012-07-25T22:00:00+00:00";
 	public static final String RELEASE_TIME_BETA_1_0 = "2010-12-19T22:00:00+00:00";
 

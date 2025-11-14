@@ -69,7 +69,7 @@ public class JsrAnnotationRemapperProcessor implements MinecraftJarProcessor<Jsr
 			tinyRemapper.readInputs(jar);
 			tinyRemapper.apply(outputConsumer);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to remap annotations to JSR in " + jar, e);
+			throw new RuntimeException("Failed to remap JAR " + jar + " with mapping " + spec.annotationMapping(), e);
 		} finally {
 			tinyRemapper.finish();
 		}

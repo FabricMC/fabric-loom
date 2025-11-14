@@ -223,7 +223,7 @@ public abstract class CompileConfiguration implements Runnable {
 			extension.addMinecraftJarProcessor(InterfaceInjectionProcessor.class, "fabric-loom:interface-inject", interfaceInjection.getEnableDependencyInterfaceInjection().get());
 		}
 
-		if (extension.getUseJsrAnnotations().get()) {
+		if (!extension.getRemapJsrAnnotationsToJetBrains().get()) {
 			extension.addMinecraftJarProcessor(JsrAnnotationRemapperProcessor.class, "fabric-loom:jsr-annotations");
 		}
 	}

@@ -257,7 +257,7 @@ public interface LoomGradleExtensionAPI {
 
 	boolean areEnvironmentSourceSetsSplit();
 
-	Property<Boolean> getUseJsrAnnotations();
+	Property<Boolean> getRemapJsrAnnotationsToJetBrains();
 
 	Property<Boolean> getRuntimeOnlyLog4j();
 

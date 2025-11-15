@@ -76,6 +76,7 @@ public final class MappingsMerger {
 		intermediaryTree.accept(nsSwitch);
 
 		inheritMappedNamesOfEnclosingClasses(officialTree);
+		cleanupMappingLeakageToOfficial(officialTree);
 
 		try (var writer = new Tiny2FileWriter(Files.newBufferedWriter(out, StandardCharsets.UTF_8), false)) {
 			officialTree.accept(writer);
@@ -115,5 +116,28 @@ public final class MappingsMerger {
 		tree.setIndexByDstNames(true);
 
 		tree.propagateOuterClassNames("intermediary", List.of("named"), false);
+	}
+
+	/**
+	 * When merging mappings, intermediary names for methods can ended up leaking into the official namespace.
+	 * This is because mapping-io does not have class inheritance information when doing so.
+	 * Workaround this problem by deleting invalid mapping entries.
+	 */
+	private static void cleanupMappingLeakageToOfficial(MemoryMappingTree tree) {
+		for (MappingTree.ClassMapping classMapping : tree.getClasses()) {
+			loop0: while (true) {
+				for (MappingTree.MethodMapping methodMapping : classMapping.getMethods()) {
+					String intermediary = methodMapping.getName("intermediary");
+					String official = methodMapping.getName("official");
+
+					if (intermediary != null && official != null && intermediary.startsWith("method_") && intermediary.equals(official)) {
+						classMapping.removeMethod(methodMapping.getSrcName(), methodMapping.getSrcDesc());
+						continue loop0;
+					}
+				}
+
+				break loop0;
+			}
+		}
 	}
 }

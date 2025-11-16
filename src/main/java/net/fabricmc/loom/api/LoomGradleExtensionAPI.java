@@ -257,6 +257,15 @@ public interface LoomGradleExtensionAPI {
 
 	boolean areEnvironmentSourceSetsSplit();
 
+	/**
+	 * When enabled, Loom remaps JSR {@code Nullable}, {@code Nonnull}, and {@code Immutable} annotations to their JetBrains counterparts in the Minecraft JAR.
+	 * <p>When disabled, Loom keeps JSR annotations as-is, and remaps any JetBrains {@code Nullable}, {@code NotNull}, and {@code Unmodifiable} annotations to their JSR counterparts in the Minecraft JAR.
+	 * <p>This has no effect on Minecraft versions that solely use JSpecify annotations.
+	 *
+	 * <p>Default: true
+	 *
+	 * @return the property controlling the remapping of JSR annotations
+	 */
 	Property<Boolean> getRemapJsrAnnotationsToJetBrains();
 
 	Property<Boolean> getRuntimeOnlyLog4j();

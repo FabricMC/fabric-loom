@@ -123,6 +123,19 @@ public abstract class FabricModJsonV1Spec {
 	}
 
 	/**
+	 * Add a new entrypoint with the given name, value, and language adapter.
+	 *
+	 * @param entrypoint The name of the entrypoint, such as "main" or "client"
+	 * @param value The value of the entrypoint, typically a fully qualified class name
+	 * @param adapter The language adapter of the entrypoint, such as "kotlin" or "scala"
+	 */
+	public void entrypoint(String entrypoint, String value, String adapter) {
+		entrypoint(entrypoint, value, metadata -> {
+			metadata.getAdapter().set(adapter);
+		});
+	}
+
+	/**
 	 * Add a new entrypoint with the given name and value, and configure it with the given action.
 	 *
 	 * @param entrypoint The name of the entrypoint, such as "main" or "client"

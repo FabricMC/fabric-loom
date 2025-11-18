@@ -84,6 +84,8 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	void setIntermediaryMinecraftProvider(IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider);
 
+	MappingsNamespace getProductionNamespaceEnum();
+
 	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
 		return switch (mappingsNamespace) {
 		case NAMED -> getNamedMinecraftProvider().getMinecraftJarPaths();

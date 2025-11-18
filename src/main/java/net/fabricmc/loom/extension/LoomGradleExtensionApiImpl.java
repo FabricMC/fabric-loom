@@ -350,11 +350,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public MappingsNamespace getProductionNamespaceEnum() {
-		return Objects.requireNonNull(MappingsNamespace.of(getProductionNamespace().get()), "Invalid production namespace");
-	}
-
-	@Override
 	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
 		if (LoomGradleExtension.get(getProject()).disableObfuscation()) {
 			throw new UnsupportedOperationException("Cannot get intermediate mappings provider in a non-obfuscated environment");

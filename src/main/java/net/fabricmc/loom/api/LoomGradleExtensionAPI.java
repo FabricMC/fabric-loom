@@ -248,8 +248,6 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<String> getProductionNamespace();
 
-	MappingsNamespace getProductionNamespaceEnum();
-
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
 

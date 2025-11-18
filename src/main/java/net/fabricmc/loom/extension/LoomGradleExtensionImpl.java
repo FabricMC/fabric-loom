@@ -346,6 +346,11 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	}
 
 	@Override
+	public MappingsNamespace getProductionNamespaceEnum() {
+		return Objects.requireNonNull(MappingsNamespace.of(getProductionNamespace().get()), "Invalid production namespace");
+	}
+
+	@Override
 	public void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars) {
 		jarTask.configure(task -> {
 			if (task instanceof RemapJarTask remapJarTask) {

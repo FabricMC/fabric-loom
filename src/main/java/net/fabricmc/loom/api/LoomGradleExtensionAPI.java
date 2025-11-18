@@ -47,7 +47,6 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.remapping.RemapperExtension;

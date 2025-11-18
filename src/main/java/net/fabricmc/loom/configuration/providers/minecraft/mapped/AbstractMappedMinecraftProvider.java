@@ -173,15 +173,19 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	protected String getName(MinecraftJar.Type type) {
-		final String intermediateName = extension.getIntermediateMappingsProvider().getName();
-
 		var sj = new StringJoiner("-");
 		sj.add("minecraft");
 		sj.add(type.toString());
 
-		// Include the intermediate mapping name if it's not the default intermediary
-		if (!intermediateName.equals(IntermediaryMappingsProvider.NAME)) {
-			sj.add(intermediateName);
+		if (!extension.disableObfuscation()) {
+			// Include the intermediate mapping name if it's not the default intermediary
+			final String intermediateName = extension.getIntermediateMappingsProvider().getName();
+
+			if (!intermediateName.equals(IntermediaryMappingsProvider.NAME)) {
+				sj.add(intermediateName);
+			}
+		} else {
+			sj.add("deobf");
 		}
 
 		if (getTargetNamespace() != MappingsNamespace.NAMED) {
@@ -192,6 +196,10 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	protected String getVersion() {
+		if (extension.disableObfuscation()) {
+			return extension.getMinecraftProvider().minecraftVersion();
+		}
+
 		return "%s-%s".formatted(extension.getMinecraftProvider().minecraftVersion(), extension.getMappingConfiguration().mappingsIdentifier());
 	}
 
@@ -237,7 +245,15 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
-	private void remapJar(RemappedJars remappedJars, ConfigContext configContext) throws IOException {
+	protected void remapJar(RemappedJars remappedJars, ConfigContext configContext) throws IOException {
+		if (extension.disableObfuscation()) {
+			// TODO debof - can we skip this?
+			Files.createDirectories(remappedJars.outputJarPath().getParent());
+			Files.copy(remappedJars.inputJar(), remappedJars.outputJarPath(), StandardCopyOption.REPLACE_EXISTING);
+			getMavenHelper(remappedJars.type()).savePom();
+			return;
+		}
+
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 		final String fromM = remappedJars.sourceNamespace().toString();
 		final String toM = getTargetNamespace().toString();

@@ -30,4 +30,6 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public interface MappingProcessorContext {
 	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
+
+	MappingsNamespace getProductionNamespace();
 }

@@ -71,7 +71,6 @@ import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 public class ModProcessor {
-	private static final String fromM = MappingsNamespace.INTERMEDIARY.toString();
 	private static final String toM = MappingsNamespace.NAMED.toString();
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ModProcessor.class);
@@ -140,6 +139,8 @@ public class ModProcessor {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
+		MappingsNamespace productionNamespace = extension.getProductionNamespaceEnum();
+
 		Set<String> knownIndyBsms = new HashSet<>(extension.getKnownIndyBsms().get());
 
 		for (ModDependency modDependency : remapList) {
@@ -148,9 +149,9 @@ public class ModProcessor {
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withKnownIndyBsm(knownIndyBsms)
-				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(project, serviceFactory).getMappingTree(), fromM, toM, false))
+				.withMappings(TinyRemapperHelper.create(mappingConfiguration.getMappingsService(project, serviceFactory).getMappingTree(), productionNamespace.toString(), toM, false))
 				.renameInvalidLocals(false)
-				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(fromM, remapList));
+				.extraAnalyzeVisitor(AccessWidenerAnalyzeVisitorProvider.createFromMods(productionNamespace.toString(), remapList));
 
 		final KotlinClasspathService kotlinClasspathService = serviceFactory.getOrNull(KotlinClasspathService.createOptions(project));
 		KotlinRemapperClassloader kotlinRemapperClassloader = null;
@@ -164,7 +165,7 @@ public class ModProcessor {
 		final List<ModProcessorExtension> activeExtensions = ModProcessorExtension.EXTENSIONS.stream()
 				.filter(e -> remapList.stream().anyMatch(e::appliesTo))
 				.toList();
-		final ModProcessorExtension.Context context = new ModProcessorExtension.Context(fromM, toM, remapList);
+		final ModProcessorExtension.Context context = new ModProcessorExtension.Context(productionNamespace.toString(), toM, remapList);
 
 		for (ModProcessorExtension modProcessorExtension : activeExtensions) {
 			LOGGER.info("Applying mod processor extension: {}", modProcessorExtension.getClass().getSimpleName());
@@ -178,12 +179,12 @@ public class ModProcessor {
 		}
 
 		for (RemapperExtensionHolder holder : extension.getRemapperExtensions().get()) {
-			holder.apply(builder, fromM, toM);
+			holder.apply(builder, productionNamespace.toString(), toM);
 		}
 
 		final TinyRemapper remapper = builder.build();
 
-		remapper.readClassPath(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY).toArray(Path[]::new));
+		remapper.readClassPath(extension.getMinecraftJars(productionNamespace).toArray(Path[]::new));
 
 		final Map<ModDependency, OutputConsumerPath> outputConsumerMap = new HashMap<>();
 		final Map<ModDependency, Pair<byte[], String>> accessWidenerMap = new HashMap<>();
@@ -220,7 +221,7 @@ public class ModProcessor {
 
 					if (accessWidenerData != null) {
 						LOGGER.debug("Remapping access widener in {}", dependency.getInputFile());
-						byte[] remappedAw = AccessWidenerUtils.remapAccessWidener(accessWidenerData.content(), remapper.getEnvironment().getRemapper());
+						byte[] remappedAw = AccessWidenerUtils.remapAccessWidener(accessWidenerData.content(), remapper.getEnvironment().getRemapper(), productionNamespace.toString(), toM);
 						accessWidenerMap.put(dependency, new Pair<>(remappedAw, accessWidenerData.path()));
 					}
 

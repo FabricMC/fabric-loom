@@ -303,6 +303,7 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		spec.entrypoint("client", "com.example.KotlinClient::init") {
 			it.adapter.set("kotlin")
 		}
+		spec.entrypoint("client", "com.example.KotlinClient", "kotlin")
 		spec.entrypoint("client") {
 			it.value.set("com.example.Client")
 		}
@@ -320,6 +321,10 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		    "client": [
 		      {
 		        "value": "com.example.KotlinClient::init",
+		        "adapter": "kotlin"
+		      },
+		      {
+		        "value": "com.example.KotlinClient",
 		        "adapter": "kotlin"
 		      },
 		      "com.example.Client"

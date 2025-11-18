@@ -208,4 +208,41 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	@IgnoreIf({ !os.linux })
+	def "client game tests with XVFB (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.21.4"
+                    mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.16.9"
+                    modImplementation "net.fabricmc.fabric-api:fabric-api:0.114.0+1.21.4"
+                }
+
+                fabricApi {
+                    configureTests {
+                    	createSourceSet = true
+                    	modId = "example-test"
+                    	eula = true
+                    }
+                }
+
+                tasks.named("runClientGameTest") {
+                    useXvfb.set(true)
+                }
+            '''
+		when:
+		def result = gradle.run(task: "runClientGameTest")
+		def eula = new File(gradle.projectDir, "build/run/clientGameTest/eula.txt")
+
+		then:
+		result.task(":runClientGameTest").outcome == SUCCESS
+		eula.text.contains("eula=true")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@
 package net.fabricmc.loom.task;
 
 import java.io.File;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -49,6 +50,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.GradleUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class LoomTasks implements Runnable {
 	@Inject
@@ -59,16 +61,27 @@ public abstract class LoomTasks implements Runnable {
 
 	@Override
 	public void run() {
-		getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
-			t.setDescription("Migrates mappings to a new version.");
-		});
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		if (!extension.disableObfuscation()) {
+			registerMigrateMappingsTasks();
+		}
 
 		var generateLog4jConfig = getTasks().register("generateLog4jConfig", GenerateLog4jConfigTask.class, t -> {
 			t.setDescription("Generate the log4j config file");
 		});
-		var generateRemapClasspath = getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
-			t.setDescription("Generate the remap classpath file");
-		});
+
+		TaskProvider<GenerateRemapClasspathTask> generateRemapClasspath = null;
+
+		if (!extension.disableObfuscation()) {
+			generateRemapClasspath = getTasks().register("generateRemapClasspath", GenerateRemapClasspathTask.class, t -> {
+				t.setDescription("Generate the remap classpath file");
+			});
+		}
+
+		// Make the lambda happy
+		final TaskProvider<GenerateRemapClasspathTask> generateRemapClasspathTask = generateRemapClasspath;
+
 		getTasks().register("generateDLIConfig", GenerateDLIConfigTask.class, t -> {
 			t.setDescription("Generate the DevLaunchInjector config file");
 
@@ -76,13 +89,20 @@ public abstract class LoomTasks implements Runnable {
 			t.mustRunAfter("eclipse");
 
 			t.dependsOn(generateLog4jConfig);
-			t.getRemapClasspathFile().set(generateRemapClasspath.get().getRemapClasspathFile());
+
+			if (!extension.disableObfuscation()) {
+				GenerateRemapClasspathTask remapClasspath = Objects.requireNonNull(generateRemapClasspathTask.get());
+				t.getRemapClasspathFile().set(remapClasspath.getRemapClasspathFile());
+			}
 		});
 
 		getTasks().register("configureLaunch", task -> {
 			task.dependsOn(getTasks().named("generateDLIConfig"));
 			task.dependsOn(getTasks().named("generateLog4jConfig"));
-			task.dependsOn(getTasks().named("generateRemapClasspath"));
+
+			if (!extension.disableObfuscation()) {
+				task.dependsOn(getTasks().named("generateRemapClasspath"));
+			}
 
 			task.setDescription("Setup the required files to launch Minecraft");
 			task.setGroup(Constants.TaskGroup.FABRIC);
@@ -100,8 +120,6 @@ public abstract class LoomTasks implements Runnable {
 
 		// Must be done in afterEvaluate to allow time for the build script to configure the jar config.
 		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
-			LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-
 			if (extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY) {
 				// Server only, nothing more to do.
 				return;
@@ -115,6 +133,32 @@ public abstract class LoomTasks implements Runnable {
 			}
 
 			registerClientSetupTasks(getTasks(), versionInfo.hasNativesToExtract());
+		});
+	}
+
+	private void registerMigrateMappingsTasks() {
+		SourceSetHelper.getSourceSets(getProject()).all(sourceSet -> {
+			if (SourceSetHelper.isMainSourceSet(sourceSet)) {
+				getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
+					t.setDescription("Migrates source code mappings to a new version.");
+				});
+
+				return;
+			}
+
+			if (!SourceSetHelper.getFirstSrcDir(sourceSet).exists()) {
+				return;
+			}
+
+			getTasks().register(sourceSet.getTaskName("migrate", "mappings"), MigrateMappingsTask.class, t -> {
+				t.setDescription("Migrates source code mappings to a new version.");
+				t.getInputDir().set(SourceSetHelper.getFirstSrcDir(sourceSet));
+				t.getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir(sourceSet.getTaskName("remapped", "src")));
+			});
+		});
+
+		getTasks().register("migrateClassTweakerMappings", MigrateClassTweakerMappingsTask.class, t -> {
+			t.setDescription("Migrates access widener and class tweaker mappings to a new version.");
 		});
 	}
 

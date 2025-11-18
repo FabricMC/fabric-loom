@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record CachedFileStoreImpl<T>(Path root, EntrySerializer<T> entrySerializer, CacheRules cacheRules) implements CachedFileStore<T> {
 	public CachedFileStoreImpl {

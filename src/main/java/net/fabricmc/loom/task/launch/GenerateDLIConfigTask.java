@@ -88,7 +88,11 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@Input
 	protected abstract Property<String> getNativesDirectoryPath();
 
+	@Input
+	protected abstract Property<String> getProductionNamespace();
+
 	@InputFile
+	@Optional
 	public abstract RegularFileProperty getRemapClasspathFile();
 
 	@OutputFile
@@ -115,6 +119,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getAssetsDirectoryPath().set(new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
 		getNativesDirectoryPath().set(getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath());
 		getDevLauncherConfig().set(getExtension().getFiles().getDevLauncherConfig());
+		getProductionNamespace().set(getExtension().getProductionNamespaceEnum().toString());
 	}
 
 	@TaskAction
@@ -128,14 +133,18 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
-				.property("fabric.remapClasspathFile", getRemapClasspathFile().get().getAsFile().getAbsolutePath())
 				.property("log4j.configurationFile", getLog4jConfigPaths().get())
 				.property("log4j2.formatMsgNoLookups", "true")
+				.property("fabric.defaultModDistributionNamespace", getProductionNamespace().get())
 
 				.argument("client", "--assetIndex")
 				.argument("client", versionInfo.assetIndex().fabricId(getMinecraftVersion().get()))
 				.argument("client", "--assetsDir")
 				.argument("client", assetsDirectory.getAbsolutePath());
+
+		if (getRemapClasspathFile().isPresent()) {
+			launchConfig.property("fabric.remapClasspathFile", getRemapClasspathFile().get().getAsFile().getAbsolutePath());
+		}
 
 		if (versionInfo.hasNativesToExtract()) {
 			String nativesPath = getNativesDirectoryPath().get();

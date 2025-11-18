@@ -33,7 +33,7 @@ jobs:
   build_windows:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.extended_tests == 'true' }}
 
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
       - name: setup jdk
@@ -142,8 +142,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 21 ]
-        os: [ windows-2025, ubuntu-24.04, macos-15 ]
+        java: [ 21, 25 ]
+        os: [ windows-2025, ubuntu-24.04, macos-26 ]
 
     runs-on: ${{ matrix.os }}
     steps:

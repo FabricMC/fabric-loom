@@ -39,7 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ import net.fabricmc.loom.decompilers.ClassLineNumbers;
 // Serialised data for a class entry in the cache
 // Uses the RIFF format, allows for appending the line numbers to the end of the file
 // Stores the source code and line numbers for the class
-public record CachedData(String className, String sources, @Nullable ClassLineNumbers.Entry lineNumbers) {
+public record CachedData(String className, String sources, ClassLineNumbers.@Nullable Entry lineNumbers) {
 	public static final CachedFileStore.EntrySerializer<CachedData> SERIALIZER = new EntrySerializer();
 
 	private static final String HEADER_ID = "LOOM";

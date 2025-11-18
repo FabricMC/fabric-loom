@@ -58,7 +58,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -278,7 +278,7 @@ public class ModConfigurationRemapper {
 		Map<ResolvedArtifact, Path> sourcesMap = downloadAllSources(project, resolvedArtifacts);
 
 		for (ResolvedArtifact artifact : resolvedArtifacts) {
-			@Nullable Path sources = sourcesMap.get(artifact);
+			Path sources = sourcesMap.get(artifact);
 			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
 		}
 

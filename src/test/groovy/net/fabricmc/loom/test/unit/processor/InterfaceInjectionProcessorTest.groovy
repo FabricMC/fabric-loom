@@ -74,9 +74,11 @@ class InterfaceInjectionProcessorTest extends Specification {
 		specContext.localMods() >> [fmj]
 		specContext.modDependenciesCompileRuntime() >> []
 		specContext.modDependenciesCompileRuntimeClient() >> []
+		specContext.productionNamespace() >> MappingsNamespace.INTERMEDIARY
 
 		def processorContext = Mock(ProcessorContext)
 		processorContext.getMappings() >> createMappings()
+		processorContext.getProductionNamespace() >> MappingsNamespace.INTERMEDIARY
 
 		def jar = tempDir.resolve("test.jar")
 		packageJar(jar)

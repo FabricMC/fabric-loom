@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "nestedmod",
+  "version": "1.0.0",
+  "name": "Nested Mod",
+  "description": "This mod will be nested using the nestJars API",
+  "environment": "*"
+}

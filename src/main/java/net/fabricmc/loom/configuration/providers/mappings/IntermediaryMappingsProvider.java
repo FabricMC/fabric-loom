@@ -41,8 +41,7 @@ import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyFactory;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +107,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 	}
 
 	@Override
-	public @NotNull String getName() {
+	public String getName() {
 		final String encodedMcVersion = URLEncoder.encode(getMinecraftVersion().get(), StandardCharsets.UTF_8);
 		final String urlRaw = getIntermediaryUrl().get();
 

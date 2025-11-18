@@ -40,7 +40,6 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.api.RemapConfigurationSettings;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
@@ -60,7 +59,7 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 				.map(configurations::named)
 				.forEach(getRemapClasspath()::from);
 
-		for (Path minecraftJar : getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+		for (Path minecraftJar : getExtension().getMinecraftJars(getExtension().getProductionNamespaceEnum())) {
 			getRemapClasspath().from(minecraftJar.toFile());
 		}
 

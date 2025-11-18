@@ -1,0 +1,91 @@
+import java.nio.file.Files
+
+for (def sourceSet in [
+		sourceSets.main,
+		sourceSets.test
+]) {
+	def sourceSetName = sourceSet.name
+	def taskName = sourceSet.getTaskName('generate', 'PackageInfos')
+	tasks.register(taskName, GeneratePackageInfos) {
+		description = "Generates package-info files for $sourceSetName packages."
+		sourceRoot = file("src/$sourceSetName/java")
+		header = rootProject.file('HEADER')
+	}
+
+	def checkTask = tasks.register(sourceSet.getTaskName('check', 'PackageInfos'), CheckPackageInfos) {
+		description = "Checks that all $sourceSetName packages have package-info files."
+		sourceRoot = file("src/$sourceSetName/java")
+	}
+	tasks.check.dependsOn checkTask
+}
+
+abstract class GeneratePackageInfos extends DefaultTask {
+	@InputFile
+	File header
+
+	@InputDirectory
+	abstract DirectoryProperty getSourceRoot()
+
+	GeneratePackageInfos() {
+	}
+
+	@TaskAction
+	def run() {
+		def headerText = header.readLines().join("\n") // normalize line endings
+		def root = sourceRoot.get().asFile.toPath()
+
+		root.eachDirRecurse {
+			def containsJava = Files.list(it).any {
+				Files.isRegularFile(it) && it.fileName.toString().endsWith('.java')
+			}
+
+			if (!containsJava) {
+				return
+			}
+
+			def relativePath = root.relativize(it)
+			def packageName = relativePath.toString().replace(File.separator, '.')
+			String year = Calendar.getInstance().get(Calendar.YEAR).toString()
+
+			it.resolve('package-info.java').withWriter {
+				it.write("""$headerText
+						|@NullMarked
+						|package $packageName;
+						|
+						|import org.jspecify.annotations.NullMarked;
+						|""".replace("\$YEAR", year).stripMargin())
+			}
+		}
+	}
+}
+
+abstract class CheckPackageInfos extends DefaultTask {
+	@InputDirectory
+	abstract DirectoryProperty getSourceRoot()
+
+	@TaskAction
+	def run() {
+		def root = sourceRoot.get().asFile.toPath()
+		def errors = []
+
+		root.eachDirRecurse {
+			def containsJava = Files.list(it).any {
+				Files.isRegularFile(it) && it.fileName.toString().endsWith('.java')
+			}
+
+			if (!containsJava) {
+				return
+			}
+
+			def packageInfoPath = it.resolve('package-info.java')
+			if (!Files.exists(packageInfoPath)) {
+				errors << "Missing package-info.java in package: " + root.relativize(it).toString().replace(File.separator, '.')
+				return
+			}
+		}
+
+		if (!errors.isEmpty()) {
+			throw new GradleException("Package info check failed:\n" + errors.join("\n"))
+		}
+	}
+}

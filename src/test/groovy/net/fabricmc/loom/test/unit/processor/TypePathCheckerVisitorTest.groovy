@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.test.unit.processor
 
-import org.jetbrains.annotations.Nullable
+import org.jspecify.annotations.Nullable
 import org.objectweb.asm.TypePath
 import org.objectweb.asm.signature.SignatureReader
 import spock.lang.Specification

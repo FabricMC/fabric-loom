@@ -36,7 +36,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.gradle.api.file.RegularFileProperty;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -61,7 +61,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 	}
 
 	@Override
-	public @Nullable AccessWidenerJarProcessor.Spec buildSpec(SpecContext context) {
+	public AccessWidenerJarProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<AccessWidenerEntry> accessWideners = new ArrayList<>();
 
 		if (localAccessWidenerProperty.isPresent()) {
@@ -129,18 +129,31 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 
 	@Override
 	public void processJar(Path jar, AccessWidenerJarProcessor.Spec spec, ProcessorContext context) throws IOException {
+		ClassTweaker classTweaker = getClassTweaker(spec, context);
+		AccessWidenerTransformer transformer = new AccessWidenerTransformer(classTweaker);
+		transformer.apply(jar);
+	}
+
+	private ClassTweaker getClassTweaker(AccessWidenerJarProcessor.Spec spec, ProcessorContext context) throws IOException {
 		final List<AccessWidenerEntry> accessWideners = spec.accessWidenersForContext(context);
 
-		final var accessWidener = ClassTweaker.newInstance();
+		final var classTweaker = ClassTweaker.newInstance();
 
-		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+		if (context.disableObfuscation()) {
 			for (AccessWidenerEntry widener : accessWideners) {
-				widener.read(accessWidener, remapper);
+				widener.readOfficial(classTweaker);
+			}
+
+			return classTweaker;
+		}
+
+		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
+			for (AccessWidenerEntry widener : accessWideners) {
+				widener.read(classTweaker, remapper, context.getProductionNamespace());
 			}
 		}
 
-		AccessWidenerTransformer transformer = new AccessWidenerTransformer(accessWidener);
-		transformer.apply(jar);
+		return classTweaker;
 	}
 
 	@Override

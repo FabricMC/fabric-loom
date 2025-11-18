@@ -27,7 +27,7 @@ package net.fabricmc.loom.decompilers.cache;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface CachedFileStore<T> {
 	@Nullable T getEntry(String key) throws IOException;

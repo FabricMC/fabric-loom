@@ -35,7 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A node in the certificate chain.
@@ -142,7 +142,7 @@ public interface CertificateChain {
 
 	class Impl implements CertificateChain {
 		X509Certificate certificate;
-		@Nullable CertificateChain.Impl issuer;
+		CertificateChain.@Nullable Impl issuer;
 		List<CertificateChain> children = new ArrayList<>();
 
 		private Impl() {

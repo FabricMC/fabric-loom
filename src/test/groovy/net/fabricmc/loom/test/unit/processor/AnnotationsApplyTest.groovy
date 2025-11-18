@@ -28,7 +28,7 @@ import groovy.transform.CompileStatic
 import org.intellij.lang.annotations.Language
 import org.jetbrains.annotations.ApiStatus
 import org.jetbrains.annotations.NotNull
-import org.jetbrains.annotations.Nullable
+import org.jspecify.annotations.Nullable
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.ClassNode
 import org.objectweb.asm.tree.FieldNode
@@ -159,7 +159,7 @@ class AnnotationsApplyTest extends Specification {
 				},
 				"field2:Ljava/lang/String;": {
 					"remove": [
-						"org/jetbrains/annotations/Nullable"
+						"org/jspecify/annotations/Nullable"
 					],
 					"add": [
 						{
@@ -184,7 +184,7 @@ class AnnotationsApplyTest extends Specification {
 					"parameters": {
 						"0": {
 							"remove": [
-								"org/jetbrains/annotations/NotNull"
+								"org/jspecify/annotations/NotNull"
 							],
 							"add": [
 								{
@@ -263,13 +263,16 @@ public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleC
   private Ljava/lang/String; field2
   @Ljava/lang/Deprecated;() // invisible
   @Lorg/jetbrains/annotations/ApiStatus$Internal;() // invisible
+  @Lorg/jspecify/annotations/Nullable;() : FIELD, null
 '''
 
 	private static final String EXPECTED_METHOD1 = '''
   // access flags 0x1
   public method1(Ljava/lang/String;)V
   @Lorg/jetbrains/annotations/ApiStatus$OverrideOnly;() // invisible
+  @Lorg/jetbrains/annotations/NotNull;() : METHOD_FORMAL_PARAMETER 0, null // invisible
     // annotable parameter count: 1 (invisible)
+    @Lorg/jetbrains/annotations/NotNull;() // invisible, parameter 0
     @Lorg/jetbrains/annotations/UnknownNullability;() // invisible, parameter 0
 '''
 

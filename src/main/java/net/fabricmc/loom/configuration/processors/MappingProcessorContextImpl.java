@@ -35,4 +35,9 @@ public record MappingProcessorContextImpl(ConfigContext configContext) implement
 	public LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to) {
 		return ContextImplHelper.createRemapper(configContext, from, to);
 	}
+
+	@Override
+	public MappingsNamespace getProductionNamespace() {
+		return configContext().extension().getProductionNamespaceEnum();
+	}
 }

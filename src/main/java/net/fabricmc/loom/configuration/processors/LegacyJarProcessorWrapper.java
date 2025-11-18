@@ -30,7 +30,7 @@ import java.nio.file.Path;
 import javax.inject.Inject;
 
 import org.gradle.api.Project;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
@@ -56,7 +56,7 @@ public abstract class LegacyJarProcessorWrapper implements MinecraftJarProcessor
 	}
 
 	@Override
-	public @Nullable LegacyJarProcessorWrapper.Spec buildSpec(SpecContext context) {
+	public LegacyJarProcessorWrapper.@Nullable Spec buildSpec(SpecContext context) {
 		delegate.setup();
 		return new Spec(delegate.getId());
 	}

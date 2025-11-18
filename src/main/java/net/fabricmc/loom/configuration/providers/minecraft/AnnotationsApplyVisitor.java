@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -318,8 +318,8 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 		}
 
 		@Override
-		public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-			if (fieldData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath.toString(), Type.getType(descriptor).getInternalName()))) {
+		public AnnotationVisitor visitTypeAnnotation(int typeRef, @Nullable TypePath typePath, String descriptor, boolean visible) {
+			if (fieldData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath != null ? typePath.toString() : null, Type.getType(descriptor).getInternalName()))) {
 				return null;
 			}
 
@@ -388,8 +388,8 @@ public record AnnotationsApplyVisitor(AnnotationsData annotationsData) implement
 		}
 
 		@Override
-		public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
-			if (methodData != null && methodData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath.toString(), Type.getType(descriptor).getInternalName()))) {
+		public AnnotationVisitor visitTypeAnnotation(int typeRef, @Nullable TypePath typePath, String descriptor, boolean visible) {
+			if (methodData != null && methodData.typeAnnotationsToRemove().contains(new TypeAnnotationKey(typeRef, typePath != null ? typePath.toString() : null, Type.getType(descriptor).getInternalName()))) {
 				return null;
 			}
 

@@ -37,7 +37,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
-import org.jetbrains.annotations.Nullable
+import org.jspecify.annotations.Nullable
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 

@@ -27,7 +27,7 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record VersionsManifest(List<Version> versions, Map<String, String> latest) {
 	public static class Version {

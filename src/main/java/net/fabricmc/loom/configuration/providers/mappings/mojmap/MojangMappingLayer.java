@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.gradle.api.logging.Logger;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;

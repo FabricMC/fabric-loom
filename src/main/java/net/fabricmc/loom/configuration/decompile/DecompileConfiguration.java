@@ -27,7 +27,6 @@ package net.fabricmc.loom.configuration.decompile;
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 
@@ -37,13 +36,11 @@ public abstract class DecompileConfiguration<T extends MappedMinecraftProvider> 
 	protected final Project project;
 	protected final T minecraftProvider;
 	protected final LoomGradleExtension extension;
-	protected final MappingConfiguration mappingConfiguration;
 
 	public DecompileConfiguration(Project project, T minecraftProvider) {
 		this.project = project;
 		this.minecraftProvider = minecraftProvider;
 		this.extension = LoomGradleExtension.get(project);
-		this.mappingConfiguration = extension.getMappingConfiguration();
 	}
 
 	public abstract String getTaskName(MinecraftJar.Type type);

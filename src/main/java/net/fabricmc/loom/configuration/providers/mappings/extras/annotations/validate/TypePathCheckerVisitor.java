@@ -27,7 +27,7 @@ package net.fabricmc.loom.configuration.providers.mappings.extras.annotations.va
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureVisitor;
 

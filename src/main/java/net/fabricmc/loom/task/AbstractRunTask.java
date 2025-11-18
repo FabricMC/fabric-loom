@@ -37,6 +37,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -48,17 +51,23 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
-import org.jetbrains.annotations.NotNull;
+import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.Optional;
+import org.gradle.process.ExecOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Platform;
 
 public abstract class AbstractRunTask extends JavaExec {
-	private static final CharsetEncoder ASCII_ENCODER = StandardCharsets.US_ASCII.newEncoder();
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRunTask.class);
+
+	@Inject
+	protected abstract ExecOperations getExecOperations();
 
 	@Input
 	protected abstract Property<String> getInternalRunDir();
@@ -73,6 +82,24 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Input
 	// We use a string here, as it's technically an output, but we don't want to cache runs of this task by default.
 	protected abstract Property<String> getArgFilePath();
+	@Input
+	protected abstract Property<Boolean> getUseXvfb();
+
+	@Nested
+	@Optional
+	public abstract Property<TracyCapture> getTracyCapture();
+
+	/**
+	 * Configures the tracy profiler to run alongside the game. See @{@link TracyCapture} for more information.
+	 *
+	 * @param action The configuration action.
+	 */
+	@SuppressWarnings("unused")
+	public void tracy(Action<? super TracyCapture> action) {
+		getTracyCapture().set(getProject().getObjects().newInstance(TracyCapture.class));
+		getTracyCapture().finalizeValue();
+		action.execute(getTracyCapture().get());
+	}
 
 	// We control the classpath, as we use a ArgFile to pass it over the command line: https://docs.oracle.com/javase/7/docs/technotes/tools/windows/javac.html#commandlineargfile
 	@InputFiles
@@ -91,6 +118,13 @@ public abstract class AbstractRunTask extends JavaExec {
 				)));
 
 		getArgumentProviders().add(() -> config.get().programArgs);
+		getArgumentProviders().add(() -> {
+			if (getTracyCapture().isPresent()) {
+				return List.of("--tracy");
+			}
+
+			return List.of();
+		});
 		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
@@ -99,6 +133,13 @@ public abstract class AbstractRunTask extends JavaExec {
 		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
+
+		// Set up useXvfb: convention is CI + Linux
+		getUseXvfb().convention(
+				getProject().getProviders().environmentVariable("CI")
+						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
+						.orElse(false)
+		);
 
 		File buildCache = LoomGradleExtension.get(getProject()).getFiles().getProjectBuildCache();
 		File argFile = new File(buildCache, "argFiles/" + getName());
@@ -116,8 +157,10 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	private boolean canPathBeASCIIEncoded() {
-		return ASCII_ENCODER.canEncode(getProject().getProjectDir().getAbsolutePath())
-				&& ASCII_ENCODER.canEncode(getProject().getGradle().getGradleUserHomeDir().getAbsolutePath());
+		CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+
+		return asciiEncoder.canEncode(getProject().getProjectDir().getAbsolutePath())
+				&& asciiEncoder.canEncode(getProject().getGradle().getGradleUserHomeDir().getAbsolutePath());
 	}
 
 	@Override
@@ -135,7 +178,49 @@ public abstract class AbstractRunTask extends JavaExec {
 		setWorkingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
 		environment(getInternalEnvironmentVars().get());
 
-		super.exec();
+		// Wrap with Tracy if enabled
+		if (getTracyCapture().isPresent()) {
+			try {
+				getTracyCapture().get().runWithTracy(this::execInternal);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to run with Tracy", e);
+			}
+
+			return;
+		}
+
+		execInternal();
+	}
+
+	private void execInternal() {
+		// Wrap with XVFB if enabled and on Linux
+		if (getUseXvfb().get()) {
+			LOGGER.info("Using XVFB for headless client execution");
+			execWithXvfb();
+		} else {
+			super.exec();
+		}
+	}
+
+	private void execWithXvfb() {
+		String xvfbRunPath = "/usr/bin/xvfb-run";
+
+		String javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
+
+		// Build the complete command line: xvfb-run --auto-servernum java [jvm-args] mainclass [program-args]
+		List<String> commandLine = new ArrayList<>();
+		commandLine.add(xvfbRunPath);
+		commandLine.add("--auto-servernum");
+		commandLine.add(javaExec);
+		commandLine.addAll(getJvmArguments().get());
+		commandLine.add(getMainClass().get());
+		commandLine.addAll(getArgs());
+
+		getExecOperations().exec(execSpec -> {
+			execSpec.setCommandLine(commandLine);
+			execSpec.setWorkingDir(getWorkingDir());
+			execSpec.setEnvironment(getEnvironment());
+		});
 	}
 
 	@Override
@@ -198,13 +283,13 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	// https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/base/src/com/intellij/openapi/util/text/Strings.java#L100-L118
-	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars) {
+	public static boolean containsAnyChar(final String value, final String chars) {
 		return chars.length() > value.length()
 				? containsAnyChar(value, chars, 0, value.length())
 				: containsAnyChar(chars, value, 0, chars.length());
 	}
 
-	public static boolean containsAnyChar(final @NotNull String value, final @NotNull String chars, final int start, final int end) {
+	public static boolean containsAnyChar(final String value, final String chars, final int start, final int end) {
 		for (int i = start; i < end; i++) {
 			if (chars.indexOf(value.charAt(i)) >= 0) {
 				return true;
@@ -215,19 +300,19 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	@Override
-	public @NotNull JavaExec setClasspath(@NotNull FileCollection classpath) {
+	public JavaExec setClasspath(FileCollection classpath) {
 		this.getInternalClasspath().setFrom(classpath);
 		return this;
 	}
 
 	@Override
-	public @NotNull JavaExec classpath(Object @NotNull... paths) {
+	public JavaExec classpath(Object... paths) {
 		this.getInternalClasspath().from(paths);
 		return this;
 	}
 
 	@Override
-	public @NotNull FileCollection getClasspath() {
+	public FileCollection getClasspath() {
 		return this.getInternalClasspath();
 	}
 

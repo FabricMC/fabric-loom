@@ -29,9 +29,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -110,32 +109,11 @@ public final class MappingsMerger {
 	 * Currently, Yarn does not export mappings for these inner classes.
 	 */
 	private static void inheritMappedNamesOfEnclosingClasses(MemoryMappingTree tree) {
-		int intermediaryIdx = tree.getNamespaceId("intermediary");
-		int namedIdx = tree.getNamespaceId("named");
+		assert tree.getNamespaceId("intermediary") > MappingTree.SRC_NAMESPACE_ID;
 
-		// The tree does not have an index by intermediary names by default
+		// Create an index by intermediary names for faster lookups during the propagation
 		tree.setIndexByDstNames(true);
 
-		for (MappingTree.ClassMapping classEntry : tree.getClasses()) {
-			String intermediaryName = classEntry.getDstName(intermediaryIdx);
-			String namedName = classEntry.getDstName(namedIdx);
-
-			if (intermediaryName.equals(namedName) && intermediaryName.contains("$")) {
-				String[] path = intermediaryName.split(Pattern.quote("$"));
-				int parts = path.length;
-
-				for (int i = parts - 2; i >= 0; i--) {
-					String currentPath = String.join("$", Arrays.copyOfRange(path, 0, i + 1));
-					String namedParentClass = tree.mapClassName(currentPath, intermediaryIdx, namedIdx);
-
-					if (!namedParentClass.equals(currentPath)) {
-						classEntry.setDstName(namedParentClass
-										+ "$" + String.join("$", Arrays.copyOfRange(path, i + 1, path.length)),
-								namedIdx);
-						break;
-					}
-				}
-			}
-		}
+		tree.propagateOuterClassNames("intermediary", List.of("named"), false);
 	}
 }

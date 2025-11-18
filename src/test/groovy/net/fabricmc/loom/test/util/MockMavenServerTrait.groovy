@@ -27,9 +27,11 @@ package net.fabricmc.loom.test.util
 import io.javalin.Javalin
 import org.apache.commons.io.IOUtils
 
+import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper
+
 trait MockMavenServerTrait {
 	public final int mavenServerPort = 9876
-	public final File testMavenDir = File.createTempDir()
+	public static final File testMavenDir = File.createTempDir()
 	private Javalin server
 
 	@SuppressWarnings('unused')
@@ -85,6 +87,21 @@ trait MockMavenServerTrait {
 
 	String port() {
 		"${mavenServerPort}"
+	}
+
+	String getRepositoriesBlock() {
+		"""
+			repositories {
+				maven {
+					url = "http://localhost:${port()}/"
+					allowInsecureProtocol = true
+				}
+			}
+		"""
+	}
+
+	LocalMavenHelper mavenHelper(String group, String name, String version) {
+		return new LocalMavenHelper(group, name, version, null, getMavenDirectory().toPath(), null)
 	}
 
 	String getLatestSnapshotVersion(String group, String artifact, String version) {

@@ -24,7 +24,7 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.library;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record Library(String group, String name, String version, @Nullable String classifier, Target target) {
 	public enum Target {

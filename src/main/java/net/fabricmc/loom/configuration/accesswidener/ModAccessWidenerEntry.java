@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
@@ -67,7 +67,7 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 	}
 
 	@Override
-	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper) throws IOException {
+	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper, MappingsNamespace productionNamespace) throws IOException {
 		if (transitiveOnly) {
 			// Filter for only transitive rules
 			visitor = new TransitiveOnlyFilter(visitor);
@@ -78,18 +78,36 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 
 		if (!header.getNamespace().equals(MappingsNamespace.NAMED.toString())) {
 			// Remap the AW if needed
-			visitor = getRemapper(visitor, remapper.get());
+			visitor = getRemapper(visitor, remapper.get(), productionNamespace);
 		}
 
 		var reader = ClassTweakerReader.create(visitor);
 		reader.read(data, mod.getId());
 	}
 
-	private static ClassTweakerRemapperVisitor getRemapper(ClassTweakerVisitor visitor, TinyRemapper tinyRemapper) {
+	@Override
+	public void readOfficial(ClassTweakerVisitor visitor) throws IOException {
+		if (transitiveOnly) {
+			// Filter for only transitive rules
+			visitor = new TransitiveOnlyFilter(visitor);
+		}
+
+		final byte[] data = readRaw();
+		final ClassTweakerReader.Header header = ClassTweakerReader.readHeader(data);
+
+		if (!header.getNamespace().equals(MappingsNamespace.OFFICIAL.toString())) {
+			throw new IOException("Expected official namespace for access widener entry, found: " + header.getNamespace());
+		}
+
+		var reader = ClassTweakerReader.create(visitor);
+		reader.read(data, mod.getId());
+	}
+
+	private static ClassTweakerRemapperVisitor getRemapper(ClassTweakerVisitor visitor, TinyRemapper tinyRemapper, MappingsNamespace productionNamespace) {
 		return new ClassTweakerRemapperVisitor(
 				visitor,
 				tinyRemapper.getEnvironment().getRemapper(),
-				MappingsNamespace.INTERMEDIARY.toString(),
+				productionNamespace.toString(),
 				MappingsNamespace.NAMED.toString()
 		);
 	}

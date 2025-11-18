@@ -36,7 +36,7 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import org.gradle.api.Project;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,8 @@ import net.fabricmc.loom.api.processor.MappingProcessorContext;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.DeobfSpecContext;
+import net.fabricmc.loom.configuration.processors.speccontext.RemappedSpecContext;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -66,7 +68,15 @@ public final class MinecraftJarProcessorManager {
 			processors.add(project.getObjects().newInstance(LegacyJarProcessorWrapper.class, legacyProcessor));
 		}
 
-		return MinecraftJarProcessorManager.create(processors, SpecContextImpl.create(project));
+		SpecContext specContext;
+
+		if (extension.disableObfuscation()) {
+			specContext = DeobfSpecContext.create(project);
+		} else {
+			specContext = RemappedSpecContext.create(project);
+		}
+
+		return MinecraftJarProcessorManager.create(processors, specContext);
 	}
 
 	@Nullable
@@ -152,7 +162,7 @@ public final class MinecraftJarProcessorManager {
 		return transformed;
 	}
 
-	record ProcessorEntry<S extends MinecraftJarProcessor.Spec>(S spec, MinecraftJarProcessor<S> processor, @Nullable MinecraftJarProcessor.MappingsProcessor<S> mappingsProcessor) {
+	record ProcessorEntry<S extends MinecraftJarProcessor.Spec>(S spec, MinecraftJarProcessor<S> processor, MinecraftJarProcessor.@Nullable MappingsProcessor<S> mappingsProcessor) {
 		@SuppressWarnings("unchecked")
 		ProcessorEntry(MinecraftJarProcessor<?> processor, MinecraftJarProcessor.Spec spec) {
 			this((S) Objects.requireNonNull(spec), (MinecraftJarProcessor<S>) processor, (MinecraftJarProcessor.MappingsProcessor<S>) processor.processMappings());

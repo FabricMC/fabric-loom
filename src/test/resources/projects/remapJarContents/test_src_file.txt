@@ -1,0 +1,1 @@
+This file should end up inside the output file of remapSourcesJar.

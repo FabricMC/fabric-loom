@@ -39,6 +39,7 @@ import org.gradle.api.tasks.Optional;
 import org.gradle.process.ExecSpec;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
@@ -99,7 +100,11 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 
 		getClasspath().from(getExtension().getMinecraftProvider().getMinecraftClientJar());
 		getClasspath().from(detachedConfigurationProvider("net.fabricmc:fabric-loader:%s", getProjectLoaderVersion()));
-		getClasspath().from(detachedConfigurationProvider("net.fabricmc:intermediary:%s", getExtension().getMinecraftVersion()));
+
+		if (getExtension().getProductionNamespaceEnum() == MappingsNamespace.INTERMEDIARY) {
+			getClasspath().from(detachedConfigurationProvider("net.fabricmc:intermediary:%s", getExtension().getMinecraftVersion()));
+		}
+
 		getClasspath().from(getProject().getConfigurations().named(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES));
 
 		dependsOn("downloadAssets");

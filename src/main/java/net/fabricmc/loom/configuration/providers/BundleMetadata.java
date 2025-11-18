@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.gradle.api.Project;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.AttributeHelper;

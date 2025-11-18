@@ -23,7 +23,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 group = 'net.fabricmc'
-def baseVersion = '1.12'
+def baseVersion = '1.14'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -58,11 +58,11 @@ configurations.configureEach {
 	resolutionStrategy {
 		failOnNonReproducibleResolution()
 	}
+}
 
-	if (canBeConsumed)  {
-		attributes {
-			attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, objects.named(GradlePluginApiVersion, GradleVersion.current().getVersion()))
-		}
+configurations.named(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME) {
+	attributes {
+		attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, objects.named(GradlePluginApiVersion, GradleVersion.current().getVersion()))
 	}
 }
 
@@ -132,6 +132,7 @@ dependencies {
 
 	// source code remapping
 	implementation libs.fabric.mercury
+	implementation libs.fabric.mercury.mixin
 
 	implementation libs.fabric.unpick
 	implementation libs.fabric.unpick.utils
@@ -240,6 +241,10 @@ gradlePlugin {
 		fabricLoomCompanion {
 			id = 'net.fabricmc.fabric-loom-companion'
 			implementationClass = 'net.fabricmc.loom.LoomCompanionGradlePlugin'
+		}
+		fabricLoomNoRemap {
+			id = 'net.fabricmc.fabric-loom-no-remap'
+			implementationClass = 'net.fabricmc.loom.LoomNoRemapGradlePlugin'
 		}
 	}
 }
@@ -352,6 +357,8 @@ tasks.register('writeActionsTestMatrix') {
 
 				def className = it.name.replace(".groovy", "")
 				testMatrix.add("net.fabricmc.loom.test.integration.${className}")
+			} else if (it.name.endsWith("noRemap")) {
+				testMatrix.add("net.fabricmc.loom.test.integration.noRemap.*")
 			}
 		}
 
@@ -409,3 +416,4 @@ abstract class PrintActionsTestName extends DefaultTask {
 }
 
 apply from: rootProject.file('gradle/versions.gradle')
+apply from: rootProject.file('gradle/package-info.gradle')

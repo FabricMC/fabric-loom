@@ -76,7 +76,9 @@ abstract class FabricApiAbstractSourceSet {
 			mod.sourceSet(getSourceSetName());
 		});
 
-		extension.createRemapConfigurations(sourceSets.getByName(getSourceSetName()));
+		if (!extension.disableObfuscation()) {
+			extension.createRemapConfigurations(sourceSets.getByName(getSourceSetName()));
+		}
 
 		return sourceSet;
 	}

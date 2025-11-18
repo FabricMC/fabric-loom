@@ -53,6 +53,7 @@ import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.build.mixin.GroovyApInvoker;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
@@ -63,6 +64,7 @@ import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JsrAnnotationRemapperProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
+import net.fabricmc.loom.configuration.processors.speccontext.DebofConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
@@ -74,6 +76,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraft
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.ClasspathGroupService;
 import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -103,6 +106,10 @@ public abstract class CompileConfiguration implements Runnable {
 		afterEvaluationWithService((serviceFactory) -> {
 			final ConfigContext configContext = new ConfigContextImpl(getProject(), serviceFactory, extension);
 
+			if (extension.disableObfuscation()) {
+				DebofConfiguration.create(getProject());
+			}
+
 			MinecraftSourceSets.get(getProject()).afterEvaluate(getProject());
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
@@ -121,9 +128,8 @@ public abstract class CompileConfiguration implements Runnable {
 					setupMinecraft(configContext);
 				}
 
-				LoomDependencyManager dependencyManager = new LoomDependencyManager();
-				extension.setDependencyManager(dependencyManager);
-				dependencyManager.handleDependencies(getProject(), serviceFactory);
+				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
+				dependencyManager.handleDependencies();
 			} catch (Exception e) {
 				ExceptionUtil.processException(e, DaemonUtils.Context.fromProject(getProject()));
 				disownLock();
@@ -145,8 +151,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 		finalizedBy("eclipse", "genEclipseRuns");
 
-		// Add the "dev" jar to the "namedElements" configuration
-		getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));
+		if (!extension.disableObfuscation()) {
+			// Add the "dev" jar to the "namedElements" configuration
+			getProject().artifacts(artifactHandler -> artifactHandler.add(Configurations.NAMED_ELEMENTS, getTasks().named("jar")));
+		}
 
 		// Ensure that the encoding is set to UTF-8, no matter what the system default is
 		// this fixes some edge cases with special characters not displaying correctly
@@ -167,6 +175,14 @@ public abstract class CompileConfiguration implements Runnable {
 		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
 		extension.setMetadataProvider(metadataProvider);
 
+		if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS) && !metadataProvider.getVersionMeta().downloads().containsKey("client_mappings")) {
+			extension.getProductionNamespace().convention(MappingsNamespace.OFFICIAL.toString());
+		} else {
+			extension.getProductionNamespace().convention(MappingsNamespace.INTERMEDIARY.toString());
+		}
+
+		extension.getProductionNamespace().finalizeValue();
+
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
 		// Provide the vanilla mc jars
@@ -174,20 +190,22 @@ public abstract class CompileConfiguration implements Runnable {
 		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
-		// Realise the dependencies without actually resolving them, this forces any lazy providers to be created, populating the layered mapping factories.
-		project.getConfigurations().getByName(Configurations.MAPPINGS).getDependencies().toArray();
+		if (!extension.disableObfuscation()) {
+			// Realise the dependencies without actually resolving them, this forces any lazy providers to be created, populating the layered mapping factories.
+			project.getConfigurations().getByName(Configurations.MAPPINGS).getDependencies().toArray();
 
-		// Created any layered mapping files.
-		LayeredMappingsFactory.afterEvaluate(configContext);
+			// Created any layered mapping files.
+			LayeredMappingsFactory.afterEvaluate(configContext);
 
-		// Resolve the mapping files from the configuration
-		final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
-		final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
-		extension.setMappingConfiguration(mappingConfiguration);
-		mappingConfiguration.applyToProject(getProject(), mappingsDep);
+			// Resolve the mapping files from the configuration
+			final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
+			final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
+			extension.setMappingConfiguration(mappingConfiguration);
+			mappingConfiguration.applyToProject(getProject(), mappingsDep);
+		}
 
 		// Provide the remapped mc jars
-		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = jarConfiguration.createIntermediaryMinecraftProvider(project);
+		IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : jarConfiguration.createIntermediaryMinecraftProvider(project);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
 		registerGameProcessors(configContext);
@@ -200,8 +218,10 @@ public abstract class CompileConfiguration implements Runnable {
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
 
-		extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
-		intermediaryMinecraftProvider.provide(provideContext);
+		if (intermediaryMinecraftProvider != null) {
+			extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
+			intermediaryMinecraftProvider.provide(provideContext);
+		}
 
 		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 		namedMinecraftProvider.provide(provideContext);

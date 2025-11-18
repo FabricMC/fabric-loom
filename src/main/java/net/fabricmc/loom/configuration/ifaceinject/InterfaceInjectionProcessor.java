@@ -41,7 +41,7 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -84,7 +84,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	@Override
-	public @Nullable InterfaceInjectionProcessor.Spec buildSpec(SpecContext context) {
+	public InterfaceInjectionProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<InjectedInterface> injectedInterfaces = new ArrayList<>();
 
 		injectedInterfaces.addAll(InjectedInterface.fromMods(context.localMods()));
@@ -111,12 +111,26 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
-		// Remap from intermediary->named
+		List<InjectedInterface> injectedInterfaces = getInjectedInterfaces(spec, context);
+
+		try {
+			ZipUtils.transform(jar, getTransformers(injectedInterfaces));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
+		}
+	}
+
+	private List<InjectedInterface> getInjectedInterfaces(Spec spec, ProcessorContext context) throws IOException {
+		if (context.disableObfuscation()) {
+			return spec.injectedInterfaces();
+		}
+
+		// Remap from productionNamespace->named
 		final MemoryMappingTree mappings = context.getMappings();
-		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+		final int productionIndex = mappings.getNamespaceId(context.getProductionNamespace().toString());
 		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
 
-		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
 			final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
 					.filter(injectedInterface -> {
 						return context.includesClient() // The client jar depends on the server, so always apply all to it
@@ -124,15 +138,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 					})
 					.map(injectedInterface -> remap(
 							injectedInterface,
-							s -> mappings.mapClassName(s, intermediaryIndex, namedIndex),
+							s -> mappings.mapClassName(s, productionIndex, namedIndex),
 							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();
-			try {
-				ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to apply interface injections to " + jar, e);
-			}
+			return remappedInjectedInterfaces;
 		}
 	}
 

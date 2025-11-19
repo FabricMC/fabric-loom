@@ -41,7 +41,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		setup:
 		def mappings = Path.of("src/test/resources/mappings/25w46a_unobfuscated-intermediary-minimal.tiny").toAbsolutePath()
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << """                
+		gradle.buildGradle << """
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
 					mappings 'net.fabricmc:yarn:25w46a+build.2:v2'
@@ -69,13 +69,13 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		when:
 		def result = gradle.run(
 				tasks: [
-						"build",
-						"configureClientLaunch"
+					"build",
+					"configureClientLaunch"
 				],
 				args: [
-						"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
+					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
 				]
-		)
+				)
 
 		then:
 		result.task(":build").outcome == SUCCESS
@@ -120,9 +120,9 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		def result = gradle.run(
 				task: "build",
 				args: [
-						"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
+					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
 				]
-		)
+				)
 
 		then:
 		result.task(":build").outcome == SUCCESS

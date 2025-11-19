@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import net.fabricmc.loom.util.Pair;
 
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -124,19 +127,23 @@ public final class MappingsMerger {
 	 * Workaround this problem by deleting invalid mapping entries.
 	 */
 	private static void cleanupMappingLeakageToOfficial(MemoryMappingTree tree) {
+		int intermediaryId = tree.getNamespaceId("intermediary");
+		int officialId = tree.getNamespaceId("official");
+
+		List<Pair<String, String>> entriesToRemove = new ArrayList<>();
+
 		for (MappingTree.ClassMapping classMapping : tree.getClasses()) {
-			loop0: while (true) {
-				for (MappingTree.MethodMapping methodMapping : classMapping.getMethods()) {
-					String intermediary = methodMapping.getName("intermediary");
-					String official = methodMapping.getName("official");
+			for (MappingTree.MethodMapping methodMapping : classMapping.getMethods()) {
+				String intermediary = methodMapping.getName(intermediaryId);
+				String official = methodMapping.getName(officialId);
 
-					if (intermediary != null && official != null && intermediary.startsWith("method_") && intermediary.equals(official)) {
-						classMapping.removeMethod(methodMapping.getSrcName(), methodMapping.getSrcDesc());
-						continue loop0;
-					}
+				if (intermediary != null && official != null && intermediary.startsWith("method_") && intermediary.equals(official)) {
+					entriesToRemove.add(new Pair<>(methodMapping.getSrcName(), methodMapping.getSrcDesc()));
 				}
+			}
 
-				break loop0;
+			for (Pair<String, String> entry : entriesToRemove) {
+				classMapping.removeMethod(entry.left(), entry.right());
 			}
 		}
 	}

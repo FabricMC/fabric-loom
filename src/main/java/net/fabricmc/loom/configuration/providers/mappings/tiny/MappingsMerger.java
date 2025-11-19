@@ -33,8 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import net.fabricmc.loom.util.Pair;
-
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsService;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.Pair;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;

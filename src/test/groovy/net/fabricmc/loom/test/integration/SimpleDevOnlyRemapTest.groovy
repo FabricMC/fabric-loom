@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration.devOnlyRemap
+package net.fabricmc.loom.test.integration
 
 import java.nio.file.Path
 

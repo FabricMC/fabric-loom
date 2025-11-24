@@ -159,7 +159,7 @@ public class Constants {
 		/**
 		 * Skip the signature verification of the Minecraft jar after downloading it.
 		 */
-		public static final String DISABLE_MINECRAFT_VERIFICATION = "fabric.loom.disableMinecraftVerification";
+		public static final String ENABLE_MINECRAFT_VERIFICATION = "fabric.loom.enableMinecraftVerification";
 		/**
 		 * When using the MojangMappingLayer this will remove names for non root methods by using the intermediary mappings.
 		 */

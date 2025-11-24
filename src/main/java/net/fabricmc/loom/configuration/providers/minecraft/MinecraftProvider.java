@@ -122,7 +122,7 @@ public abstract class MinecraftProvider {
 	}
 
 	private void verifyJars() throws IOException, SignatureVerificationFailure {
-		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_MINECRAFT_VERIFICATION, true)) {
+		if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.ENABLE_MINECRAFT_VERIFICATION)) {
 			LOGGER.info("Skipping Minecraft jar verification!");
 			return;
 		}

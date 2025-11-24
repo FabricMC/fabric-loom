@@ -53,6 +53,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,13 +118,21 @@ public abstract class AbstractRunTask extends JavaExec {
 						config.get().configName)
 				)));
 
-		getArgumentProviders().add(() -> config.get().programArgs);
-		getArgumentProviders().add(() -> {
-			if (getTracyCapture().isPresent()) {
-				return List.of("--tracy");
+		getArgumentProviders().add(new CommandLineArgumentProvider() {
+			@Override
+			public Iterable<String> asArguments() {
+				return config.get().programArgs;
 			}
+		});
+		getArgumentProviders().add(new CommandLineArgumentProvider() {
+			@Override
+			public Iterable<String> asArguments() {
+				if (AbstractRunTask.this.getTracyCapture().isPresent()) {
+					return List.of("--tracy");
+				}
 
-			return List.of();
+				return List.of();
+			}
 		});
 		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));

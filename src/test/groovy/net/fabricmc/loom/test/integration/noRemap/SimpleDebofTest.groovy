@@ -42,6 +42,7 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
 					implementation "net.fabricmc:fabric-loader:0.17.3"
+					implementation "net.fabricmc.fabric-api:fabric-api:0.138.3+1.21.11_unobfuscated"
                 }
 		'''
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")

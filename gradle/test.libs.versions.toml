@@ -7,8 +7,8 @@ java-debug = "0.53.1"
 mixin = "0.15.3+mixin.0.8.7"
 bouncycastle = "1.82"
 
-gradle-nightly = "9.3.0-20251108020513+0000"
-fabric-loader = "0.16.14"
+gradle-nightly = "9.4.0-20251123003120+0000"
+fabric-loader = "0.18.1"
 
 [libraries]
 spock = { module = "org.spockframework:spock-core", version.ref = "spock" }

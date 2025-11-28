@@ -45,6 +45,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
+import net.fabricmc.loom.task.mcp.MCPServerTask;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
@@ -114,6 +115,7 @@ public abstract class LoomTasks implements Runnable {
 		});
 
 		getTasks().named("check").configure(task -> task.dependsOn(validateAccessWidener));
+		getTasks().register("runMCPServer", MCPServerTask.class);
 
 		registerIDETasks();
 		registerRunTasks();

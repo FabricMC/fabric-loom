@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.decompile;
 
+import java.io.File;
 import java.util.List;
 
 import org.gradle.api.Project;
@@ -32,6 +33,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.task.mcp.MCPServerTask;
 import net.fabricmc.loom.util.Constants;
 
 public class SingleJarDecompileConfiguration extends DecompileConfiguration<MappedMinecraftProvider> {
@@ -51,13 +53,15 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 		final MinecraftJar minecraftJar = minecraftJars.get(0);
 		final String taskBaseName = getTaskName(minecraftJar.getType());
 
+		final File sourcesJar = GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", minecraftJar.getPath());
+
 		LoomGradleExtension.get(project).getDecompilerOptions().forEach(options -> {
 			final String decompilerName = options.getFormattedName();
 			String taskName = "%sWith%s".formatted(taskBaseName, decompilerName);
 			// Decompiler will be passed to the constructor of GenerateSourcesTask
 			project.getTasks().register(taskName, GenerateSourcesTask.class, options).configure(task -> {
 				task.getInputJarName().set(minecraftJar.getName());
-				task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", minecraftJar.getPath()));
+				task.getSourcesOutputJar().fileValue(sourcesJar);
 
 				task.dependsOn(project.getTasks().named("validateAccessWidener"));
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
@@ -70,6 +74,10 @@ public class SingleJarDecompileConfiguration extends DecompileConfiguration<Mapp
 			task.setGroup(Constants.TaskGroup.FABRIC);
 
 			task.dependsOn(project.getTasks().named("genSourcesWith" + DecompileConfiguration.DEFAULT_DECOMPILER));
+		});
+
+		project.getTasks().withType(MCPServerTask.class, task -> {
+			task.getSourceJars().from(sourcesJar);
 		});
 	}
 }

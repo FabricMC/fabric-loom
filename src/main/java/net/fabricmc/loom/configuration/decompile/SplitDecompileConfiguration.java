@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.decompile;
 
+import java.io.File;
+
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -33,6 +35,7 @@ import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.task.mcp.MCPServerTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Strings;
 
@@ -51,14 +54,17 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		final MinecraftJar commonJar = minecraftProvider.getCommonJar();
 		final MinecraftJar clientOnlyJar = minecraftProvider.getClientOnlyJar();
 
+		final File commonSourcesJar = GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", commonJar.getPath());
+		final File clientOnlySourcesJar = GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", clientOnlyJar.getPath());
+
 		final TaskProvider<Task> commonDecompileTask = createDecompileTasks("Common", task -> {
 			task.getInputJarName().set(commonJar.getName());
-			task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", commonJar.getPath()));
+			task.getSourcesOutputJar().fileValue(commonSourcesJar);
 		});
 
 		final TaskProvider<Task> clientOnlyDecompileTask = createDecompileTasks("ClientOnly", task -> {
 			task.getInputJarName().set(clientOnlyJar.getName());
-			task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", clientOnlyJar.getPath()));
+			task.getSourcesOutputJar().fileValue(clientOnlySourcesJar);
 
 			// Don't allow them to run at the same time.
 			task.mustRunAfter(commonDecompileTask);
@@ -89,6 +95,10 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 			task.dependsOn(commonDecompileTask);
 			task.dependsOn(clientOnlyDecompileTask);
+		});
+
+		project.getTasks().withType(MCPServerTask.class, task -> {
+			task.getSourceJars().from(commonSourcesJar, clientOnlySourcesJar);
 		});
 	}
 

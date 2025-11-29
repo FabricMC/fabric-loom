@@ -181,9 +181,9 @@ class SpecContextTest extends Specification {
 	}
 
 	private void dependencies(Map<Object, List<Path>> files) {
-		configureDependencies("implementation", files.implementation, this.implementation)
-		configureDependencies("runtimeOnly", files.runtimeOnly, this.runtimeOnly)
-		configureDependencies("compileOnly", files.compileOnly, this.compileOnly)
+		configureDependencies(files.implementation, this.implementation)
+		configureDependencies(files.runtimeOnly, this.runtimeOnly)
+		configureDependencies(files.compileOnly, this.compileOnly)
 
 		runtimeArtifacts[this.implementation].addAll(files.implementation)
 		runtimeArtifacts[this.runtimeOnly].addAll(files.runtimeOnly)
@@ -191,9 +191,9 @@ class SpecContextTest extends Specification {
 		apiArtifacts[this.compileOnly].addAll(files.compileOnly)
 	}
 
-	private void configureDependencies(String name, List<Path> files, RemapConfigurationSettings settings) {
-		project.configurations.register(name)
-		project.dependencies.add(name, project.files(files))
+	private void configureDependencies(List<Path> files, RemapConfigurationSettings settings) {
+		project.configurations.register(settings.name)
+		project.dependencies.add(settings.name, project.files(files))
 	}
 
 	private Path mod(String modId) {

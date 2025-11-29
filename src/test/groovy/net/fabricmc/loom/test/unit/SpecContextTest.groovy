@@ -30,9 +30,7 @@ import java.util.stream.Stream
 
 import groovy.transform.CompileStatic
 import org.gradle.api.NamedDomainObjectList
-import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -183,9 +181,9 @@ class SpecContextTest extends Specification {
 	}
 
 	private void dependencies(Map<Object, List<Path>> files) {
-		configureDependencies(files.implementation, this.implementation)
-		configureDependencies(files.runtimeOnly, this.runtimeOnly)
-		configureDependencies(files.compileOnly, this.compileOnly)
+		configureDependencies("implementation", files.implementation, this.implementation)
+		configureDependencies("runtimeOnly", files.runtimeOnly, this.runtimeOnly)
+		configureDependencies("compileOnly", files.compileOnly, this.compileOnly)
 
 		runtimeArtifacts[this.implementation].addAll(files.implementation)
 		runtimeArtifacts[this.runtimeOnly].addAll(files.runtimeOnly)
@@ -193,14 +191,9 @@ class SpecContextTest extends Specification {
 		apiArtifacts[this.compileOnly].addAll(files.compileOnly)
 	}
 
-	private static void configureDependencies(List<Path> files, RemapConfigurationSettings settings) {
-		def configuration = mock(Configuration.class)
-		when(configuration.resolve()).thenReturn(files*.toFile() as Set)
-
-		def provider = mock(NamedDomainObjectProvider.class)
-		when(provider.get()).thenReturn(configuration)
-
-		when(settings.getSourceConfiguration()).thenReturn(provider)
+	private void configureDependencies(String name, List<Path> files, RemapConfigurationSettings settings) {
+		project.configurations.register(name)
+		project.dependencies.add(name, project.files(files))
 	}
 
 	private Path mod(String modId) {

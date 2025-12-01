@@ -1,7 +1,7 @@
 // This is used by a range of tests that append to this file before running the gradle tasks.
 // Can be used for tests that require minimal custom setup
 plugins {
-	id 'net.fabricmc.fabric-loom-no-remap'
+	id 'net.fabricmc.fabric-loom'
 	id 'maven-publish'
 }
 

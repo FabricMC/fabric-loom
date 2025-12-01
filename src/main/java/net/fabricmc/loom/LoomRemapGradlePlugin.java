@@ -28,17 +28,13 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
 /**
- * A marker plugin to indicate to the main loom plugin not to setup for remapping.
+ * An alias for `net.fabricmc.fabric-loom-remap` to `fabric-loom`.
  */
-public class LoomNoRemapGradlePlugin implements Plugin<Project> {
-	public static final String NAME = "net.fabricmc.fabric-loom";
+public class LoomRemapGradlePlugin implements Plugin<Project> {
+	public static final String NAME = "net.fabricmc.fabric-loom-remap";
 
 	@Override
 	public void apply(Project target) {
-		if (target.getPluginManager().hasPlugin(LoomGradlePlugin.NAME)) {
-			throw new IllegalStateException(NAME + " must be applied before " + LoomGradlePlugin.NAME);
-		}
-
 		target.getPlugins().apply(LoomGradlePlugin.NAME);
 	}
 }

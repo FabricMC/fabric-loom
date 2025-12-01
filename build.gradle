@@ -235,16 +235,21 @@ codenarc {
 gradlePlugin {
 	plugins {
 		fabricLoom {
+			id = 'net.fabricmc.fabric-loom'
+			implementationClass = 'net.fabricmc.loom.LoomNoRemapGradlePlugin'
+		}
+		fabricLoomRemap {
+			id = 'net.fabricmc.fabric-loom-remap'
+			implementationClass = 'net.fabricmc.loom.LoomRemapGradlePlugin'
+		}
+		fabricLoomLegacy {
+			// Legacy plugin id, remove in 2.0. Use `net.fabricmc.fabric-loom-remap`
 			id = 'fabric-loom'
 			implementationClass = 'net.fabricmc.loom.LoomGradlePlugin'
 		}
 		fabricLoomCompanion {
 			id = 'net.fabricmc.fabric-loom-companion'
 			implementationClass = 'net.fabricmc.loom.LoomCompanionGradlePlugin'
-		}
-		fabricLoomNoRemap {
-			id = 'net.fabricmc.fabric-loom-no-remap'
-			implementationClass = 'net.fabricmc.loom.LoomNoRemapGradlePlugin'
 		}
 	}
 }

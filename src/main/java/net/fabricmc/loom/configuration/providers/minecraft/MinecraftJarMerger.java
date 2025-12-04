@@ -183,7 +183,6 @@ public class MinecraftJarMerger implements AutoCloseable {
 		List<Entry> entries = entriesAll.parallelStream().map((entry) -> {
 			boolean isClass = entry.endsWith(".class");
 			boolean isMinecraft = entriesClient.containsKey(entry) || entry.startsWith("net/minecraft") || !entry.contains("/");
-			boolean isUnobfuscated = entry.startsWith("net/minecraft") || entry.contains("/");
 			Entry result;
 			String side = null;
 
@@ -227,7 +226,7 @@ public class MinecraftJarMerger implements AutoCloseable {
 						visitor = new SnowmanClassVisitor(Constants.ASM_VERSION, visitor);
 					}
 
-					if (offsetSyntheticsParams && !isUnobfuscated) {
+					if (offsetSyntheticsParams && !entry.contains("/")) {
 						visitor = new SyntheticParameterClassVisitor(Constants.ASM_VERSION, visitor);
 					}
 

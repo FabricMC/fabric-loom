@@ -225,6 +225,12 @@ public abstract class AbstractRunTask extends JavaExec {
 		commandLine.add(getMainClass().get());
 		commandLine.addAll(getArgs());
 
+		for (CommandLineArgumentProvider provider : getArgumentProviders()) {
+			for (String arg : provider.asArguments()) {
+				commandLine.add(arg);
+			}
+		}
+
 		getExecOperations().exec(execSpec -> {
 			execSpec.setCommandLine(commandLine);
 			execSpec.setWorkingDir(getWorkingDir());

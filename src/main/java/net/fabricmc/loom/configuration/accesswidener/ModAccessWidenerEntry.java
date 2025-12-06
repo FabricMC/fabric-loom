@@ -96,7 +96,7 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 		final ClassTweakerReader.Header header = ClassTweakerReader.readHeader(data);
 
 		if (!header.getNamespace().equals(MappingsNamespace.OFFICIAL.toString())) {
-			throw new IOException("Expected official namespace for access widener entry, found: " + header.getNamespace());
+			throw new IOException("Expected official namespace for access widener entry, found: " + header.getNamespace() + " in mod: " + mod.getId());
 		}
 
 		var reader = ClassTweakerReader.create(visitor);

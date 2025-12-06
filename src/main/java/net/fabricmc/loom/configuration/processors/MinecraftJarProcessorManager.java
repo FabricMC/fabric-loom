@@ -145,7 +145,7 @@ public final class MinecraftJarProcessorManager {
 			try {
 				entry.processJar(jar, context);
 			} catch (IOException e) {
-				throw new IOException("Failed to process jar when running jar processor: %s".formatted(entry.name()), e);
+				throw new IOException("Failed to process jar when running jar processor: %s - %s".formatted(entry.name(), e.getMessage()), e);
 			}
 		}
 	}

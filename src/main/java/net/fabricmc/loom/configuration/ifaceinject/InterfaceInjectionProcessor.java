@@ -114,7 +114,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		List<InjectedInterface> injectedInterfaces = getInjectedInterfaces(spec, context);
 
 		try {
-			ZipUtils.transform(jar, getTransformers(injectedInterfaces));
+			ZipUtils.transformAsync(jar, getTransformers(injectedInterfaces));
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
 		}

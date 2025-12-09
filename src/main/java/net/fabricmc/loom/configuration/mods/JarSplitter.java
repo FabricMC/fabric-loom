@@ -30,11 +30,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.jar.Attributes;
@@ -73,7 +73,7 @@ public class JarSplitter {
 				return Target.COMMON_ONLY;
 			}
 
-			final List<String> entries = new LinkedList<>();
+			final List<String> entries = new ArrayList<>();
 
 			// Must collect all the input entries to see if this might be a client only jar.
 			try (Stream<Path> walk = Files.walk(input.get().getPath("/"))) {

@@ -46,10 +46,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntConsumer;
 import java.util.zip.GZIPInputStream;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ public final class Download {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
 	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+			.executor(Executors.newVirtualThreadPerTaskExecutor())
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.proxy(ProxySelector.getDefault())
 			.connectTimeout(TIMEOUT)
@@ -71,7 +74,7 @@ public final class Download {
 	}
 
 	private final URI url;
-	private final String expectedHash;
+	private final @Nullable String expectedHash;
 	private final boolean useEtag;
 	private final boolean forceDownload;
 	private final boolean offline;
@@ -80,7 +83,7 @@ public final class Download {
 	private final HttpClient.Version httpVersion;
 	private final int downloadAttempt;
 
-	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
+	Download(URI url, @Nullable String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
 		this.url = url;
 		this.expectedHash = expectedHash;
 		this.useEtag = useEtag;

@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.util.download;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,7 +42,7 @@ public class DownloadBuilder {
 	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
-	private String expectedHash = null;
+	private @Nullable String expectedHash = null;
 	private boolean useEtag = true;
 	private boolean forceDownload = false;
 	private boolean offline = false;

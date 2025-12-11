@@ -4,7 +4,7 @@ asm = "9.9"
 gson = "2.10.1"
 
 stitch = "0.6.2"
-tiny-remapper = "0.12.0"
+tiny-remapper = "0.12.1"
 clazz-tweaker = "0.1.1"
 mapping-io = "0.8.0"
 lorenz-tiny = "4.0.2"

@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.util.download;
 
-import org.jspecify.annotations.Nullable;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,6 +34,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
+
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {

@@ -45,7 +45,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
                 loom {
                     useIntermediateMappings = true
                 }
-                
+
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
 					mappings 'net.fabricmc:yarn:25w46a+build.2:v2'

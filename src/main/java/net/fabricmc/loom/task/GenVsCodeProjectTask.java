@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -121,7 +120,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			JsonObject configurationJson = LoomGradlePlugin.GSON.toJsonTree(configuration).getAsJsonObject();
 			configurationJson.remove("runDir");
 
-			final List<JsonElement> toRemove = new LinkedList<>();
+			final List<JsonElement> toRemove = new ArrayList<>();
 
 			// Remove any existing with the same name
 			for (JsonElement jsonElement : configurations) {

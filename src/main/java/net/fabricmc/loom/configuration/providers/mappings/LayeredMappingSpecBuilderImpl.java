@@ -24,8 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.mappings;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.gradle.api.Action;
@@ -43,7 +43,7 @@ import net.fabricmc.loom.configuration.providers.mappings.mojmap.MojangMappingsS
 import net.fabricmc.loom.configuration.providers.mappings.parchment.ParchmentMappingsSpecBuilderImpl;
 
 public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder {
-	private final List<MappingsSpec<?>> layers = new LinkedList<>();
+	private final List<MappingsSpec<?>> layers = new ArrayList<>();
 
 	@Override
 	public LayeredMappingSpecBuilder addLayer(MappingsSpec<?> mappingSpec) {
@@ -78,7 +78,7 @@ public class LayeredMappingSpecBuilderImpl implements LayeredMappingSpecBuilder 
 	}
 
 	public LayeredMappingSpec build() {
-		List<MappingsSpec<?>> builtLayers = new LinkedList<>();
+		List<MappingsSpec<?>> builtLayers = new ArrayList<>(layers.size() + 1);
 		// Intermediary is always the base layer
 		builtLayers.add(new IntermediaryMappingsSpec());
 		builtLayers.addAll(layers);

@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.benf.cfr.reader.bytecode.analysis.types.JavaRefTypeInstance;
@@ -87,7 +86,7 @@ public class CFRObfuscationMapping extends NullMapping {
 				return this;
 			}
 
-			List<String> recordComponentDocs = new LinkedList<>();
+			List<String> recordComponentDocs = new ArrayList<>();
 
 			if (isRecord(owner)) {
 				ClassFile classFile = ((JavaRefTypeInstance) owner).getClassFile();

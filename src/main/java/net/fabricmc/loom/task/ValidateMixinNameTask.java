@@ -29,7 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -106,7 +106,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 		@Override
 		public void execute() {
 			final Set<File> files = getParameters().getInputClasses().getAsFileTree().getFiles();
-			final List<String> errors = new LinkedList<>();
+			final List<String> errors = new ArrayList<>();
 
 			for (File file : files) {
 				final Mixin mixin = getMixin(file);

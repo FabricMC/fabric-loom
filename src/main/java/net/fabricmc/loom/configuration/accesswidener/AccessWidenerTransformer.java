@@ -57,7 +57,7 @@ final class AccessWidenerTransformer {
 	void apply(Path jarFile) {
 		try {
 			Set<String> targets = accessWidener.getTargets();
-			int transformed = ZipUtils.transform(jarFile, getTransformers(targets));
+			int transformed = ZipUtils.transformAsync(jarFile, getTransformers(targets));
 
 			LOGGER.debug("Applied access wideners to {} classes in {}", transformed, jarFile);
 

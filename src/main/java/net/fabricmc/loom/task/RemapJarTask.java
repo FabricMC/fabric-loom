@@ -240,7 +240,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 							(ZipUtils.AsmClassOperator) classVisitor -> SidedClassVisitor.CLIENT.insertApplyVisitor(null, classVisitor)
 					));
 
-			ZipUtils.transform(outputFile, tranformers);
+			ZipUtils.transformAsync(outputFile, tranformers);
 		}
 
 		private void remapAccessWidener() throws IOException {

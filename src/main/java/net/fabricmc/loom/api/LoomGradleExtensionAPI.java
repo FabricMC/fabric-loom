@@ -219,6 +219,7 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	default void noIntermediateMappings() {
+		getUseIntermediateMappings().set(false);
 		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
 	}
 
@@ -246,6 +247,11 @@ public interface LoomGradleExtensionAPI {
 	 * @return the production namespace
 	 */
 	Property<String> getProductionNamespace();
+
+	/**
+	 * @return whether to use intermediate mappings
+	 */
+	Property<Boolean> getUseIntermediateMappings();
 
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();

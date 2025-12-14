@@ -178,11 +178,14 @@ public abstract class CompileConfiguration implements Runnable {
 
 		if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS) && !metadataProvider.getVersionMeta().downloads().containsKey("client_mappings")) {
 			extension.getProductionNamespace().convention(MappingsNamespace.OFFICIAL.toString());
+			extension.getUseIntermediateMappings().convention(false);
 		} else {
 			extension.getProductionNamespace().convention(MappingsNamespace.INTERMEDIARY.toString());
+			extension.getUseIntermediateMappings().convention(true);
 		}
 
 		extension.getProductionNamespace().finalizeValue();
+		extension.getUseIntermediateMappings().finalizeValue();
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 

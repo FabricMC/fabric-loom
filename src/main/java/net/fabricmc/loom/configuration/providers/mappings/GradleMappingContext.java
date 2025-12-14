@@ -88,7 +88,12 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public boolean isUsingIntermediateMappings() {
-		return !(extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider);
+		return extension.getUseIntermediateMappings().get();
+	}
+
+	@Override
+	public String productionNamespace() {
+		return extension.getProductionNamespaceEnum().toString();
 	}
 
 	@Override

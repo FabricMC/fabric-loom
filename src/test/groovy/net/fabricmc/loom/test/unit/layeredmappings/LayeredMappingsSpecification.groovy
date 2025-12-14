@@ -186,6 +186,11 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		}
 
 		@Override
+		String productionNamespace() {
+			return "intermediary"
+		}
+
+		@Override
 		MinecraftProvider minecraftProvider() {
 			return mockMinecraftProvider
 		}

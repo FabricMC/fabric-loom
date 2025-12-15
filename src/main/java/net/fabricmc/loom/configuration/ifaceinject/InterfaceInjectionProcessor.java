@@ -186,10 +186,6 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	@Override
 	public MappingsProcessor<Spec> processMappings() {
 		return (mappings, spec, context) -> {
-			if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
-				throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
-			}
-
 			Map<String, List<InjectedInterface>> map = spec.injectedInterfaces().stream()
 					.collect(Collectors.groupingBy(InjectedInterface::className));
 

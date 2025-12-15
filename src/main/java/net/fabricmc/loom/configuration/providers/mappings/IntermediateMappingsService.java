@@ -76,6 +76,11 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 
 	public static Provider<Options> createOptions(Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (!extension.getUseIntermediateMappings().get()) {
+			throw new IllegalStateException("Intermediary mappings is disabled");
+		}
+
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		final Path intermediaryTiny = minecraftProvider.file(intermediateProvider.getName() + ".tiny").toPath();
 

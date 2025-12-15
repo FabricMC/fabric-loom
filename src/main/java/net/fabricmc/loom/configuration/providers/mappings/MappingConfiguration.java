@@ -46,6 +46,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
@@ -184,10 +185,16 @@ public class MappingConfiguration {
 		}
 
 		if (areMappingsV2(baseTinyMappings)) {
-			// These are unmerged v2 mappings
-			IntermediateMappingsService intermediateMappingsService = serviceFactory.get(IntermediateMappingsService.createOptions(project, minecraftProvider));
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-			MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, minecraftProvider, intermediateMappingsService);
+			if (extension.getUseIntermediateMappings().get()) {
+				// These are unmerged v2 mappings
+				IntermediateMappingsService intermediateMappingsService = serviceFactory.get(IntermediateMappingsService.createOptions(project, minecraftProvider));
+
+				MappingsMerger.mergeAndSaveMappings(baseTinyMappings, tinyMappings, minecraftProvider, intermediateMappingsService);
+			} else {
+				Files.copy(baseTinyMappings, tinyMappings, StandardCopyOption.REPLACE_EXISTING);
+			}
 		} else {
 			final List<Path> minecraftJars = minecraftProvider.getMinecraftJars();
 

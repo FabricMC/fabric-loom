@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2021 FabricMC
+ * Copyright (c) 2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,17 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.configuration.providers.mappings.intermediary;
+package net.fabricmc.loom.configuration.providers.mappings;
 
-import net.fabricmc.loom.api.mappings.layered.MappingContext;
+import java.io.IOException;
+
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
-import net.fabricmc.loom.api.mappings.layered.spec.MappingsSpec;
-import net.fabricmc.loom.configuration.providers.mappings.NoOpMappingLayer;
+import net.fabricmc.mappingio.MappingVisitor;
 
-public record IntermediaryMappingsSpec() implements MappingsSpec<MappingLayer> {
+public class NoOpMappingLayer implements MappingLayer {
+	public static final MappingLayer INSTANCE = new NoOpMappingLayer();
+
 	@Override
-	public MappingLayer createLayer(MappingContext context) {
-		if (context.isUsingIntermediateMappings()) {
-			return new IntermediaryMappingLayer(context.intermediaryTree());
-		} else {
-			return NoOpMappingLayer.INSTANCE;
-		}
+	public void visit(MappingVisitor mappingVisitor) throws IOException {
 	}
 }

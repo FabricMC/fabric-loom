@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "owndummy",
+  "version": "1",
+  "name": "Own Dummy Mod",
+  "custom": {
+    "loom:injected_interfaces": {
+      "bzp": [
+        "OwnInjectedInterface<Ljava/lang/String;>"
+      ],
+      "wv": [
+        "GenericInjectedInterface<TT;>"
+      ]
+    }
+  }
+}

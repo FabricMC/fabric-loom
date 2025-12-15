@@ -120,6 +120,6 @@ public record MojangMappingLayer(Path clientMappings, Path serverMappings, boole
 
 	@Override
 	public List<Class<? extends MappingLayer>> dependsOn() {
-		return List.of(IntermediaryMappingLayer.class);
+		return intermediarySupplier != null ? List.of(IntermediaryMappingLayer.class) : List.of();
 	}
 }

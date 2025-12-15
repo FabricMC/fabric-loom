@@ -29,7 +29,7 @@ import java.io.IOException;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.mappingio.MappingVisitor;
 
-public class NoOpMappingLayer implements MappingLayer {
+public record NoOpMappingLayer() implements MappingLayer {
 	public static final MappingLayer INSTANCE = new NoOpMappingLayer();
 
 	@Override

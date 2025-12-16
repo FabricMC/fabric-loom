@@ -146,6 +146,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		Files.copy(mappings, gradle.projectDir.toPath().resolve('mappings.tiny'))
 		gradle.buildGradle << """
 				loom.noIntermediateMappings()
+				loom.productionNamespace = "official"
 
 				dependencies {
 					minecraft "com.mojang:minecraft:c0.30_01c"

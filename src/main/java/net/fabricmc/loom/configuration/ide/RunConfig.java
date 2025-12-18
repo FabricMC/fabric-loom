@@ -156,6 +156,11 @@ public class RunConfig {
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 
+		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
+			runConfig.vmArgs.add("--sun-misc-unsafe-memory-access=allow");
+			runConfig.vmArgs.add("--enable-native-access=ALL-UNNAMED");
+		}
+
 		return runConfig;
 	}
 

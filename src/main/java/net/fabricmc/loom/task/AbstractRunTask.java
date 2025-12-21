@@ -66,6 +66,7 @@ import net.fabricmc.loom.util.Platform;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRunTask.class);
+	private static final String XVFB_PATH = "/usr/bin/xvfb-run";
 
 	@Inject
 	protected abstract ExecOperations getExecOperations();
@@ -143,10 +144,12 @@ public abstract class AbstractRunTask extends JavaExec {
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
 
-		// Set up useXvfb: convention is CI + Linux
+		// Set up useXvfb: convention is CI + Linux + client run config + xvfb exists
 		getUseXvfb().convention(
 				getProject().getProviders().environmentVariable("CI")
 						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
+						.zip(config, (enabled, runConfig) -> enabled && runConfig.environment.equals("client"))
+						.map(enabled -> enabled && Files.exists(Path.of(XVFB_PATH)))
 						.orElse(false)
 		);
 
@@ -212,13 +215,11 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	private void execWithXvfb() {
-		String xvfbRunPath = "/usr/bin/xvfb-run";
-
 		String javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
 
 		// Build the complete command line: xvfb-run --auto-servernum java [jvm-args] mainclass [program-args]
 		List<String> commandLine = new ArrayList<>();
-		commandLine.add(xvfbRunPath);
+		commandLine.add(XVFB_PATH);
 		commandLine.add("--auto-servernum");
 		commandLine.add(javaExec);
 		commandLine.addAll(getJvmArguments().get());

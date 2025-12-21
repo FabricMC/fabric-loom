@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -91,6 +92,9 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@Input
 	protected abstract Property<String> getProductionNamespace();
 
+	@Input
+	protected abstract Property<String> getDefaultMixinRemapType();
+
 	@InputFile
 	@Optional
 	public abstract RegularFileProperty getRemapClasspathFile();
@@ -120,6 +124,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getNativesDirectoryPath().set(getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath());
 		getDevLauncherConfig().set(getExtension().getFiles().getDevLauncherConfig());
 		getProductionNamespace().set(getExtension().getProductionNamespaceEnum().toString());
+		getDefaultMixinRemapType().set(getExtension().getDefaultMixinRemapTypeEnum().toString().toLowerCase(Locale.ROOT));
 	}
 
 	@TaskAction
@@ -136,6 +141,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 				.property("log4j.configurationFile", getLog4jConfigPaths().get())
 				.property("log4j2.formatMsgNoLookups", "true")
 				.property("fabric.defaultModDistributionNamespace", getProductionNamespace().get())
+				.property("fabric.defaultMixinRemapType", getDefaultMixinRemapType().get())
 
 				.argument("client", "--assetIndex")
 				.argument("client", versionInfo.assetIndex().fabricId(getMinecraftVersion().get()))

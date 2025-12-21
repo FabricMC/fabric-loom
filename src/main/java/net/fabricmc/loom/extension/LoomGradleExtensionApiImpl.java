@@ -96,6 +96,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<String> productionNamespace;
+	private final Property<String> defaultMixinRemapType;
 	private final Property<Boolean> remapJsrAnnotationsToJetBrains;
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> splitModDependencies;
@@ -143,6 +144,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.convention(DEFAULT_INTERMEDIARY_URL);
 		this.productionNamespace = project.getObjects().property(String.class);
 		this.productionNamespace.finalizeValueOnRead();
+		this.defaultMixinRemapType = project.getObjects().property(String.class);
+		this.defaultMixinRemapType.finalizeValueOnRead();
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
 		this.intermediateMappingsProvider.finalizeValueOnRead();
@@ -351,6 +354,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<String> getProductionNamespace() {
 		return productionNamespace;
+	}
+
+	@Override
+	public Property<String> getDefaultMixinRemapType() {
+		return defaultMixinRemapType;
 	}
 
 	@Override

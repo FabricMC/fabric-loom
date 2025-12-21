@@ -62,6 +62,7 @@ import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.processors.JsrAnnotationRemapperProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
@@ -178,11 +179,14 @@ public abstract class CompileConfiguration implements Runnable {
 
 		if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS) && !metadataProvider.getVersionMeta().downloads().containsKey("client_mappings")) {
 			extension.getProductionNamespace().convention(MappingsNamespace.OFFICIAL.toString());
+			extension.getDefaultMixinRemapType().convention(ArtifactMetadata.MixinRemapType.STATIC.name());
 		} else {
 			extension.getProductionNamespace().convention(MappingsNamespace.INTERMEDIARY.toString());
+			extension.getDefaultMixinRemapType().convention(ArtifactMetadata.MixinRemapType.MIXIN.name());
 		}
 
 		extension.getProductionNamespace().finalizeValue();
+		extension.getDefaultMixinRemapType().finalizeValue();
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 

@@ -164,7 +164,7 @@ public class ModConfigurationRemapper {
 			 */
 			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
 			List<ArtifactRef> artifactRefs = resolveArtifacts(project, sourceConfig);
-			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache);
+			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache, extension.getDefaultMixinRemapTypeEnum());
 			final List<ModDependency> modDependencies = new ArrayList<>();
 
 			for (ArtifactRef artifact : artifactRefs) {
@@ -232,13 +232,13 @@ public class ModConfigurationRemapper {
 		});
 	}
 
-	private static Map<ArtifactRef, ArtifactMetadata> getMetadata(List<ArtifactRef> artifacts, AsyncCache<ArtifactMetadata> cache) {
+	private static Map<ArtifactRef, ArtifactMetadata> getMetadata(List<ArtifactRef> artifacts, AsyncCache<ArtifactMetadata> cache, ArtifactMetadata.MixinRemapType defaultMixinRemapType) {
 		var futures = new HashMap<ArtifactRef, CompletableFuture<ArtifactMetadata>>();
 
 		for (ArtifactRef artifact : artifacts) {
 			CompletableFuture<ArtifactMetadata> future = cache.get(artifact, () -> {
 				try {
-					return ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION);
+					return ArtifactMetadata.create(artifact, LoomGradlePlugin.LOOM_VERSION, defaultMixinRemapType);
 				} catch (IOException e) {
 					throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Failed to read metadata from " + artifact.path(), e);
 				}

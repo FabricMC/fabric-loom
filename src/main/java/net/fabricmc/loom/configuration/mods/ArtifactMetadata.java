@@ -44,11 +44,11 @@ import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, MixinRemapType mixinRemapType, List<String> knownIdyBsms) {
-	public static ArtifactMetadata create(ArtifactRef artifact, String currentLoomVersion) throws IOException {
+	public static ArtifactMetadata create(ArtifactRef artifact, String currentLoomVersion, MixinRemapType defaultMixinRemapType) throws IOException {
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
-		MixinRemapType refmapRemapType = MixinRemapType.MIXIN;
+		MixinRemapType refmapRemapType = defaultMixinRemapType;
 		List<String> knownIndyBsms = new ArrayList<>();
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {

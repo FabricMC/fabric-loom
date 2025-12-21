@@ -247,6 +247,11 @@ public interface LoomGradleExtensionAPI {
 	 */
 	Property<String> getProductionNamespace();
 
+	/**
+	 * @return the default mixin remap type
+	 */
+	Property<String> getDefaultMixinRemapType();
+
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
 

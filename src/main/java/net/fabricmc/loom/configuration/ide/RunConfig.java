@@ -56,6 +56,7 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -156,7 +157,10 @@ public class RunConfig {
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 
-		if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_25)) {
+
+		MinecraftVersionMeta.JavaVersion javaVersion = extension.getMinecraftProvider().getVersionInfo().javaVersion();
+
+		if (javaVersion != null && javaVersion.majorVersion() >= 25) {
 			runConfig.vmArgs.add("--sun-misc-unsafe-memory-access=allow");
 			runConfig.vmArgs.add("--enable-native-access=ALL-UNNAMED");
 		}

@@ -157,7 +157,6 @@ public class RunConfig {
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 
-
 		MinecraftVersionMeta.JavaVersion javaVersion = extension.getMinecraftProvider().getVersionInfo().javaVersion();
 
 		if (javaVersion != null && javaVersion.majorVersion() >= 25) {

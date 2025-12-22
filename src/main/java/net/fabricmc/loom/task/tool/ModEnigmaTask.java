@@ -46,7 +46,6 @@ import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.process.ExecOperations;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.LoomProblems;
 import net.fabricmc.loom.util.LoomVersions;
@@ -93,7 +92,7 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	protected abstract Problems getProblems();
 
 	public ModEnigmaTask() {
-		getMinecraftJars().convention(getProject().provider(() -> getExtension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)));
+		getMinecraftJars().convention(getProject().provider(() -> getExtension().getMinecraftJars(getExtension().getProductionNamespaceEnum())));
 		getToolClasspath().from(getEnigmaClasspath(getProject()));
 	}
 

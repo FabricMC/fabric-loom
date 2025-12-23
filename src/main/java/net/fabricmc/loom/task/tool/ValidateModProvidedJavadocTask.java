@@ -37,11 +37,9 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.ProblemReporter;
-import org.gradle.api.problems.ProblemSpec;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
@@ -50,6 +48,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -111,38 +110,64 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 
 	@TaskAction
 	protected void check() throws IOException {
-		try (var index = new GameJarIndex(getMinecraftJars().getFiles())) {
+		try (var validator = new Validator(this::reportError, getMinecraftJars().getFiles())) {
 			for (File mappingFile : getMappingFiles()) {
-				check(index, mappingFile.toPath());
+				validator.check(mappingFile.toPath(), getExpectedNamespace().get());
 			}
 		}
 	}
 
-	private void check(GameJarIndex index, Path path) throws IOException {
-		try {
-			final MappingVisitor visitor = new MappingChecker(new FlatAsRegularMappingVisitor(new StructuralChecker(index, path)), path);
-			MappingReader.read(path, visitor);
-		} catch (IOException e) {
-			reportError(MAPPING_PARSING_ERROR, path, "Cannot parse mappings, " + e.getClass().getSimpleName() + ": " + e.getMessage(), spec -> spec.withException(e));
-		}
-	}
-
-	private void reportError(ProblemId problemId, Path currentPath, String details) throws IOException {
-		reportError(problemId, currentPath, details, spec -> { });
-	}
-
-	private void reportError(ProblemId problemId, Path currentPath, @Nullable String details, Action<? super ProblemSpec> specConfiguration) throws IOException {
+	private void reportError(ProblemId problemId, Path currentPath, @Nullable String details, @Nullable Exception cause) throws IOException {
 		final ProblemReporter reporter = getProblems().getReporter();
 		final String message = details != null ? details : problemId.getDisplayName();
-		reporter.throwing(new IOException(message), problemId,
+		reporter.throwing(new IOException(message, cause), problemId,
 				spec -> {
 					spec.fileLocation(currentPath.toAbsolutePath().toString());
-					specConfiguration.execute(spec);
 
 					if (details != null) {
 						spec.details(details);
 					}
+
+					if (cause != null) {
+						spec.withException(cause);
+					}
 				});
+	}
+
+	@VisibleForTesting
+	@FunctionalInterface
+	public interface ErrorReporter {
+		void reportError(ProblemId problemId, Path currentPath, @Nullable String details, @Nullable Exception cause) throws IOException;
+
+		default void reportError(ProblemId problemId, Path currentPath, @Nullable String details) throws IOException {
+			reportError(problemId, currentPath, details, null);
+		}
+	}
+
+	@VisibleForTesting
+	public static final class Validator implements Closeable {
+		private final ErrorReporter errorReporter;
+		private final GameJarIndex jarIndex;
+
+		public Validator(ErrorReporter errorReporter, Collection<File> targetJars) throws IOException {
+			this.errorReporter = errorReporter;
+			this.jarIndex = new GameJarIndex(targetJars);
+		}
+
+		public void check(Path mappingFile, String expectedNamespace) throws IOException {
+			try {
+				final var structuralChecker = new StructuralChecker(jarIndex, errorReporter, mappingFile);
+				final MappingVisitor visitor = new MappingChecker(new FlatAsRegularMappingVisitor(structuralChecker), expectedNamespace, errorReporter, mappingFile);
+				MappingReader.read(mappingFile, visitor);
+			} catch (IOException e) {
+				errorReporter.reportError(MAPPING_PARSING_ERROR, mappingFile, "Cannot parse mappings, " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
+			}
+		}
+
+		@Override
+		public void close() throws IOException {
+			jarIndex.close();
+		}
 	}
 
 	private static final class GameJarIndex implements Closeable {
@@ -223,18 +248,22 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		}
 	}
 
-	private final class MappingChecker extends ForwardingMappingVisitor {
+	private static final class MappingChecker extends ForwardingMappingVisitor {
+		private final String expectedNamespace;
+		private final ErrorReporter errorReporter;
 		private final Path currentPath;
 
-		private MappingChecker(MappingVisitor next, Path currentPath) {
+		private MappingChecker(MappingVisitor next, String expectedNamespace, ErrorReporter errorReporter, Path currentPath) {
 			super(next);
+			this.expectedNamespace = expectedNamespace;
+			this.errorReporter = errorReporter;
 			this.currentPath = currentPath;
 		}
 
 		@Override
 		public void visitNamespaces(String srcNamespace, List<String> dstNamespaces) throws IOException {
-			if (!getExpectedNamespace().get().equals(srcNamespace) && !MappingUtil.NS_SOURCE_FALLBACK.equals(srcNamespace)) {
-				reportError(INCORRECT_MAPPING_SRC_NAME, currentPath, "Expected %s or %s for the source namespace, but found %s.".formatted(getExpectedNamespace().get(), MappingUtil.NS_SOURCE_FALLBACK, srcNamespace));
+			if (!expectedNamespace.equals(srcNamespace) && !MappingUtil.NS_SOURCE_FALLBACK.equals(srcNamespace)) {
+				errorReporter.reportError(INCORRECT_MAPPING_SRC_NAME, currentPath, "Expected %s or %s for the source namespace, but found %s.".formatted(expectedNamespace, MappingUtil.NS_SOURCE_FALLBACK, srcNamespace));
 			}
 
 			super.visitNamespaces(srcNamespace, dstNamespaces);
@@ -242,16 +271,18 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 
 		@Override
 		public void visitDstName(MappedElementKind targetKind, int namespace, String name) throws IOException {
-			reportError(MAPPINGS_CONTAIN_DST_NAMES, currentPath, "These mappings cannot contain any destination names. They can only contain javadoc.");
+			errorReporter.reportError(MAPPINGS_CONTAIN_DST_NAMES, currentPath, "These mappings cannot contain any destination names. They can only contain javadoc.");
 		}
 	}
 
-	private final class StructuralChecker implements FlatMappingVisitor {
+	private static final class StructuralChecker implements FlatMappingVisitor {
 		private final GameJarIndex jarIndex;
+		private final ErrorReporter errorReporter;
 		private final Path currentPath;
 
-		private StructuralChecker(GameJarIndex jarIndex, Path currentPath) {
+		private StructuralChecker(GameJarIndex jarIndex, ErrorReporter errorReporter, Path currentPath) {
 			this.jarIndex = jarIndex;
+			this.errorReporter = errorReporter;
 			this.currentPath = currentPath;
 		}
 
@@ -267,7 +298,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		@Override
 		public void visitClassComment(String srcName, String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.classExists(srcName)) {
-				reportError(CODE_ELEMENT_MISSING, currentPath, "Class " + srcName + " does not exist");
+				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Class " + srcName + " does not exist");
 			}
 		}
 
@@ -279,7 +310,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		@Override
 		public void visitFieldComment(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs, String comment) throws IOException {
 			if (!jarIndex.fieldExists(srcClsName, srcName, srcDesc)) {
-				reportError(CODE_ELEMENT_MISSING, currentPath, "Field %s.%s:%s does not exist".formatted(srcClsName, srcName, srcDesc));
+				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Field %s.%s:%s does not exist".formatted(srcClsName, srcName, srcDesc));
 			}
 		}
 
@@ -291,7 +322,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		@Override
 		public void visitMethodComment(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcName, srcDesc)) {
-				reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcName, srcDesc));
+				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcName, srcDesc));
 			}
 		}
 
@@ -303,7 +334,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		@Override
 		public void visitMethodArgComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int argPosition, int lvIndex, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcMethodName, srcMethodDesc)) {
-				reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
+				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
 			}
 		}
 
@@ -315,7 +346,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		@Override
 		public void visitMethodVarComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int lvtRowIndex, int lvIndex, int startOpIdx, int endOpIdx, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcMethodName, srcMethodDesc)) {
-				reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
+				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
 			}
 		}
 	}

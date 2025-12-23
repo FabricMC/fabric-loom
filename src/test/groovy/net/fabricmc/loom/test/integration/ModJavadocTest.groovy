@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,19 +32,18 @@ import spock.lang.Unroll
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "mod javadoc (gradle #version)"() {
+	def "mod javadoc (#projectName)"() {
 		setup:
-		def gradle = gradleProject(project: "modJavadoc", version: version)
+		def gradle = gradleProject(project: projectName)
 		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
 
 		when:
 		def result = gradle.run(task: "genSources")
-		def blocks = getClassSource(gradle, "net/minecraft/block/Blocks.java")
+		def blocks = getClassSource(gradle, targetSourceFile, targetSourceJar)
 
 		then:
 		result.task(":genSources").outcome == SUCCESS
@@ -53,11 +52,13 @@ class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 		blocks.contains("An example of a mod added method javadoc")
 
 		where:
-		version << STANDARD_TEST_VERSIONS
+		projectName | targetSourceFile | targetSourceJar
+		'modJavadoc' | 'net/minecraft/block/Blocks.java' | '1.17.1-net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2'
+		'modJavadocNoRemap' | 'net/minecraft/world/level/block/Blocks.java' | '26.1-snapshot-1'
 	}
 
-	private static String getClassSource(GradleProject gradle, String classname) {
-		File sourcesJar = gradle.getGeneratedLocalSources("1.17.1-net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2")
+	private static String getClassSource(GradleProject gradle, String classname, String gameVersion) {
+		File sourcesJar = gradle.getGeneratedLocalSources(gameVersion)
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)
 	}
 }

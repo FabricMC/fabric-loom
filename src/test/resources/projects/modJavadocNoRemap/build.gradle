@@ -1,0 +1,8 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:26.1-snapshot-1"
+	implementation files("dummy.jar")
+}

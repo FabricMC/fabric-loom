@@ -291,60 +291,60 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 		}
 
 		@Override
-		public boolean visitClass(String srcName, String @Nullable [] dstNames) {
+		public boolean visitClass(String srcName, @Nullable String @Nullable [] dstNames) {
 			return true;
 		}
 
 		@Override
-		public void visitClassComment(String srcName, String @Nullable [] dstNames, String comment) throws IOException {
+		public void visitClassComment(String srcName, @Nullable String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.classExists(srcName)) {
 				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Class " + srcName + " does not exist");
 			}
 		}
 
 		@Override
-		public boolean visitField(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs) {
+		public boolean visitField(String srcClsName, String srcName, @Nullable String srcDesc, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstNames, @Nullable String @Nullable [] dstDescs) {
 			return true;
 		}
 
 		@Override
-		public void visitFieldComment(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs, String comment) throws IOException {
+		public void visitFieldComment(String srcClsName, String srcName, @Nullable String srcDesc, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstNames, @Nullable String @Nullable [] dstDescs, String comment) throws IOException {
 			if (!jarIndex.fieldExists(srcClsName, srcName, srcDesc)) {
 				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Field %s.%s:%s does not exist".formatted(srcClsName, srcName, srcDesc));
 			}
 		}
 
 		@Override
-		public boolean visitMethod(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs) {
+		public boolean visitMethod(String srcClsName, String srcName, @Nullable String srcDesc, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstNames, @Nullable String @Nullable [] dstDescs) {
 			return true;
 		}
 
 		@Override
-		public void visitMethodComment(String srcClsName, String srcName, @Nullable String srcDesc, String @Nullable [] dstClsNames, String @Nullable [] dstNames, String @Nullable [] dstDescs, String comment) throws IOException {
+		public void visitMethodComment(String srcClsName, String srcName, @Nullable String srcDesc, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstNames, @Nullable String @Nullable [] dstDescs, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcName, srcDesc)) {
 				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcName, srcDesc));
 			}
 		}
 
 		@Override
-		public boolean visitMethodArg(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int argPosition, int lvIndex, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String[] dstNames) {
+		public boolean visitMethodArg(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int argPosition, int lvIndex, @Nullable String srcName, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstMethodNames, @Nullable String @Nullable [] dstMethodDescs, String[] dstNames) {
 			return true;
 		}
 
 		@Override
-		public void visitMethodArgComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int argPosition, int lvIndex, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String @Nullable [] dstNames, String comment) throws IOException {
+		public void visitMethodArgComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int argPosition, int lvIndex, @Nullable String srcName, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstMethodNames, @Nullable String @Nullable [] dstMethodDescs, @Nullable String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcMethodName, srcMethodDesc)) {
 				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
 			}
 		}
 
 		@Override
-		public boolean visitMethodVar(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int lvtRowIndex, int lvIndex, int startOpIdx, int endOpIdx, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String[] dstNames) {
+		public boolean visitMethodVar(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int lvtRowIndex, int lvIndex, int startOpIdx, int endOpIdx, @Nullable String srcName, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstMethodNames, @Nullable String @Nullable [] dstMethodDescs, String[] dstNames) {
 			return true;
 		}
 
 		@Override
-		public void visitMethodVarComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int lvtRowIndex, int lvIndex, int startOpIdx, int endOpIdx, @Nullable String srcName, String @Nullable [] dstClsNames, String @Nullable [] dstMethodNames, String @Nullable [] dstMethodDescs, String @Nullable [] dstNames, String comment) throws IOException {
+		public void visitMethodVarComment(String srcClsName, String srcMethodName, @Nullable String srcMethodDesc, int lvtRowIndex, int lvIndex, int startOpIdx, int endOpIdx, @Nullable String srcName, @Nullable String @Nullable [] dstClsNames, @Nullable String @Nullable [] dstMethodNames, @Nullable String @Nullable [] dstMethodDescs, @Nullable String @Nullable [] dstNames, String comment) throws IOException {
 			if (!jarIndex.methodExists(srcClsName, srcMethodName, srcMethodDesc)) {
 				errorReporter.reportError(CODE_ELEMENT_MISSING, currentPath, "Method %s.%s%s does not exist".formatted(srcClsName, srcMethodName, srcMethodDesc));
 			}

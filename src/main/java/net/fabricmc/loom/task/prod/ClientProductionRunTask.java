@@ -101,7 +101,7 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 		getClasspath().from(getExtension().getMinecraftProvider().getMinecraftClientJar());
 		getClasspath().from(detachedConfigurationProvider("net.fabricmc:fabric-loader:%s", getProjectLoaderVersion()));
 
-		if (getExtension().getProductionNamespaceEnum() == MappingsNamespace.INTERMEDIARY) {
+		if (getExtension().getProductionNamespace().get() == MappingsNamespace.INTERMEDIARY) {
 			getClasspath().from(detachedConfigurationProvider("net.fabricmc:intermediary:%s", getExtension().getMinecraftVersion()));
 		}
 

@@ -38,7 +38,6 @@ import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
@@ -84,10 +83,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	void setNamedMinecraftProvider(NamedMinecraftProvider<?> namedMinecraftProvider);
 
 	void setIntermediaryMinecraftProvider(IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider);
-
-	MappingsNamespace getProductionNamespaceEnum();
-
-	ArtifactMetadata.MixinRemapType getDefaultMixinRemapTypeEnum();
 
 	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
 		return switch (mappingsNamespace) {

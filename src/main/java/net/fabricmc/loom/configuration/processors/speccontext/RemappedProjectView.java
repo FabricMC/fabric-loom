@@ -83,7 +83,7 @@ public interface RemappedProjectView extends ProjectView {
 
 		@Override
 		public MappingsNamespace getProductionNamespace() {
-			return extension.getProductionNamespaceEnum();
+			return extension.getProductionNamespace().get();
 		}
 	}
 }

@@ -50,7 +50,6 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
-import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
@@ -343,16 +342,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public boolean disableObfuscation() {
 		return disableObfuscation.get();
-	}
-
-	@Override
-	public MappingsNamespace getProductionNamespaceEnum() {
-		return Objects.requireNonNull(MappingsNamespace.of(getProductionNamespace().get()), "Invalid production namespace");
-	}
-
-	@Override
-	public ArtifactMetadata.MixinRemapType getDefaultMixinRemapTypeEnum() {
-		return ArtifactMetadata.MixinRemapType.valueOf(getDefaultMixinRemapType().get());
 	}
 
 	@Override

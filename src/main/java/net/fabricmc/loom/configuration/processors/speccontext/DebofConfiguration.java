@@ -35,6 +35,7 @@ import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.LoomConfigurations;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Strings;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
@@ -46,12 +47,14 @@ public record DebofConfiguration(String name, List<Function<SourceSet, String>> 
 	public static final DebofConfiguration COMPILE = new DebofConfiguration("compile", List.of(
 			SourceSet::getImplementationConfigurationName,
 			SourceSet::getApiConfigurationName,
-			SourceSet::getCompileOnlyConfigurationName
+			SourceSet::getCompileOnlyConfigurationName,
+			SourceSet::getCompileOnlyApiConfigurationName
 	));
 	public static final DebofConfiguration RUNTIME = new DebofConfiguration("runtime", List.of(
 			SourceSet::getImplementationConfigurationName,
 			SourceSet::getApiConfigurationName,
-			SourceSet::getRuntimeOnlyConfigurationName
+			SourceSet::getRuntimeOnlyConfigurationName,
+			s -> Constants.Configurations.LOCAL_RUNTIME
 	));
 	public static final List<DebofConfiguration> ALL = List.of(COMPILE, RUNTIME);
 

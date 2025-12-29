@@ -92,9 +92,9 @@ public record FileMappingsLayer(
 	public List<Class<? extends MappingLayer>> dependsOn() {
 		if (mergeNamespace.equals(MappingsNamespace.INTERMEDIARY.toString()) || fallbackSourceNamespace.equals(MappingsNamespace.INTERMEDIARY.toString())) {
 			return List.of(IntermediaryMappingLayer.class);
-		} else {
-			return List.of();
 		}
+
+		return List.of();
 	}
 
 	@Override

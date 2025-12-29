@@ -32,10 +32,10 @@ import net.fabricmc.loom.configuration.providers.mappings.NoOpMappingLayer;
 public record IntermediaryMappingsSpec() implements MappingsSpec<MappingLayer> {
 	@Override
 	public MappingLayer createLayer(MappingContext context) {
-		if (context.isUsingIntermediateMappings()) {
-			return new IntermediaryMappingLayer(context.intermediaryTree());
-		} else {
+		if (!context.isUsingIntermediateMappings()) {
 			return NoOpMappingLayer.INSTANCE;
 		}
+
+		return new IntermediaryMappingLayer(context.intermediaryTree());
 	}
 }

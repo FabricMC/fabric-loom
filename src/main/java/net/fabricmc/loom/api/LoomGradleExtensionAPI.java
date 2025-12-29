@@ -219,6 +219,7 @@ public interface LoomGradleExtensionAPI {
 	@ApiStatus.Experimental
 	default void noIntermediateMappings() {
 		getUseIntermediateMappings().set(false);
+		getUseIntermediateMappings().finalizeValue();
 	}
 
 	/**

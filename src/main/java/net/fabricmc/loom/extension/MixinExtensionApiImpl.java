@@ -39,6 +39,8 @@ import org.gradle.api.tasks.util.PatternSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
 
 public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
@@ -57,6 +59,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 				.convention(false);
 
 		this.refmapTargetNamespace = project.getObjects().property(String.class);
+		this.refmapTargetNamespace.convention(project.provider(() -> LoomGradleExtension.get(project)).flatMap(LoomGradleExtensionAPI::getProductionNamespace));
 		this.refmapTargetNamespace.finalizeValueOnRead();
 
 		this.messages = project.getObjects().mapProperty(String.class, String.class);

@@ -89,18 +89,11 @@ class NativesTest extends Specification implements GradleProjectTestTrait  {
 	@Unroll
 	def "1.19 classpath natives (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "minimalBase", version: version)
+		def gradle = gradleProject(project: "minimalBaseNoRemap", version: version)
 
 		gradle.buildGradle << '''
-                loom {
-                    noIntermediateMappings()
-                }
-
                 dependencies {
                     minecraft "com.mojang:minecraft:1.19-pre1"
-                    mappings loom.layered() {
-                        // No names
-                    }
                 }
                 '''
 

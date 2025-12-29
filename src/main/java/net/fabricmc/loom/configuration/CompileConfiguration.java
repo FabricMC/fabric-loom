@@ -55,14 +55,12 @@ import org.gradle.api.tasks.testing.Test;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.mixin.GroovyApInvoker;
 import net.fabricmc.loom.build.mixin.JavaApInvoker;
 import net.fabricmc.loom.build.mixin.KaptApInvoker;
 import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.processors.JsrAnnotationRemapperProcessor;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
@@ -78,7 +76,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraft
 import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.ClasspathGroupService;
 import net.fabricmc.loom.util.Checksum;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -176,17 +173,6 @@ public abstract class CompileConfiguration implements Runnable {
 
 		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
 		extension.setMetadataProvider(metadataProvider);
-
-		if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS) && !metadataProvider.getVersionMeta().downloads().containsKey("client_mappings")) {
-			extension.getProductionNamespace().convention(MappingsNamespace.OFFICIAL.toString());
-			extension.getDefaultMixinRemapType().convention(ArtifactMetadata.MixinRemapType.STATIC.name());
-		} else {
-			extension.getProductionNamespace().convention(MappingsNamespace.INTERMEDIARY.toString());
-			extension.getDefaultMixinRemapType().convention(ArtifactMetadata.MixinRemapType.MIXIN.name());
-		}
-
-		extension.getProductionNamespace().finalizeValue();
-		extension.getDefaultMixinRemapType().finalizeValue();
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 

@@ -55,19 +55,12 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	@Unroll
 	def "Unsupported minecraft (minecraft #version)"() {
 		setup:
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
-				loom {
-                    noIntermediateMappings()
-                }
-
                 dependencies {
                     minecraft "com.mojang:minecraft:${version}"
-                    mappings loom.layered() {
-						// No names
-					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    implementation "net.fabricmc:fabric-loader:0.12.12"
                 }
 			"""
 
@@ -92,20 +85,16 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 	@Unroll
 	def "Ancient minecraft (minecraft #version)"() {
 		setup:
-		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
 				loom {
-                    noIntermediateMappings()
 					clientOnlyMinecraftJar()
                 }
 
                 dependencies {
                     minecraft "com.mojang:minecraft:${version}"
-                    mappings loom.layered() {
-						// No names
-					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    implementation "net.fabricmc:fabric-loader:0.12.12"
                 }
 			"""
 
@@ -157,6 +146,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		Files.copy(mappings, gradle.projectDir.toPath().resolve('mappings.tiny'))
 		gradle.buildGradle << """
 				loom.noIntermediateMappings()
+				loom.productionNamespace = "official"
 
 				dependencies {
 					minecraft "com.mojang:minecraft:c0.30_01c"

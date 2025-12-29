@@ -77,6 +77,10 @@ public class GradleMappingContext implements MappingContext {
 	@Override
 	public Supplier<MemoryMappingTree> intermediaryTree() {
 		return () -> {
+			if (!extension.getUseIntermediateMappings().get()) {
+				throw new IllegalStateException("Intermediary mappings is disabled");
+			}
+
 			try (var serviceFactory = new ScopedServiceFactory()) {
 				IntermediateMappingsService intermediateMappingsService = serviceFactory.get(IntermediateMappingsService.createOptions(project, minecraftProvider()));
 				return intermediateMappingsService.getMemoryMappingTree();
@@ -88,7 +92,12 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public boolean isUsingIntermediateMappings() {
-		return !(extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider);
+		return extension.getUseIntermediateMappings().get();
+	}
+
+	@Override
+	public String productionNamespace() {
+		return extension.getProductionNamespaceEnum().toString();
 	}
 
 	@Override

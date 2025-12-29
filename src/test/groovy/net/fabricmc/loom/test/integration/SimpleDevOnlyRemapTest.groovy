@@ -42,6 +42,10 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		def mappings = Path.of("src/test/resources/mappings/25w46a_unobfuscated-intermediary-minimal.tiny").toAbsolutePath()
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
 		gradle.buildGradle << """
+                loom {
+                    useIntermediateMappings = true
+                }
+
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
 					mappings 'net.fabricmc:yarn:25w46a+build.2:v2'
@@ -90,6 +94,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		gradle.buildGradle << """
 				loom {
 					splitEnvironmentSourceSets()
+					useIntermediateMappings = true
 				}
 
 				dependencies {
@@ -126,5 +131,56 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 
 		then:
 		result.task(":build").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "build with official to named"() {
+		setup:
+		def mappings = Path.of("src/test/resources/mappings/25w46a_unobfuscated-named-minimal.tiny").toAbsolutePath()
+		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
+		gradle.buildGradle << """
+				dependencies {
+					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
+					mappings loom.layered {
+					    it.mappings file("${mappings}")
+					}
+					modImplementation "net.fabricmc:fabric-loader:0.18.0"
+                }
+
+                loom {
+                    noIntermediateMappings()
+                }
+		"""
+		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
+		sourceFile.parentFile.mkdirs()
+		@Language("JAVA") String src =  """
+		package example;
+
+		import net.minecraft.util.Identifier;
+
+		import org.spongepowered.asm.mixin.Mixin; // Make sure we applied loaders deps via the installer data
+
+		public class Test {
+			public static void main(String[] args) {
+			    Identifier id = Identifier.of("loom", "test");
+			}
+		}
+		"""
+		sourceFile.text = src
+
+		when:
+		def result = gradle.run(
+				tasks: [
+					"build",
+					"configureClientLaunch"
+				],
+				args: [
+					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
+				]
+				)
+
+		then:
+		result.task(":build").outcome == SUCCESS
+		result.task(":configureClientLaunch").outcome == SUCCESS
 	}
 }

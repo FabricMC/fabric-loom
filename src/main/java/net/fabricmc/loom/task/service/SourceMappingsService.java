@@ -120,7 +120,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
 		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
-			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString()));
+			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, extension.getUseIntermediateMappings().get() ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.OFFICIAL.toString()));
 		}
 
 		GenerateSourcesTask.MappingsProcessor mappingsProcessor = mappings -> {

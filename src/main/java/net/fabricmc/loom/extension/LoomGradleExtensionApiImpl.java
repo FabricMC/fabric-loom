@@ -63,6 +63,7 @@ import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
@@ -96,6 +97,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
 	private final Property<String> productionNamespace;
+	private final Property<Boolean> useIntermediateMappings;
 	private final Property<String> defaultMixinRemapType;
 	private final Property<Boolean> remapJsrAnnotationsToJetBrains;
 	private final Property<Boolean> runtimeOnlyLog4j;
@@ -143,8 +145,13 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.intermediary = project.getObjects().property(String.class)
 				.convention(DEFAULT_INTERMEDIARY_URL);
 		this.productionNamespace = project.getObjects().property(String.class);
+		this.productionNamespace.convention(project.provider(() -> LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated() ? MappingsNamespace.OFFICIAL.toString() : MappingsNamespace.INTERMEDIARY.toString()));
 		this.productionNamespace.finalizeValueOnRead();
+		this.useIntermediateMappings = project.getObjects().property(Boolean.class);
+		this.useIntermediateMappings.convention(project.provider(() -> !LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated()));
+		this.useIntermediateMappings.finalizeValueOnRead();
 		this.defaultMixinRemapType = project.getObjects().property(String.class);
+		this.defaultMixinRemapType.convention(project.provider(() -> LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated() ? ArtifactMetadata.MixinRemapType.STATIC.name() : ArtifactMetadata.MixinRemapType.MIXIN.name()));
 		this.defaultMixinRemapType.finalizeValueOnRead();
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
@@ -354,6 +361,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<String> getProductionNamespace() {
 		return productionNamespace;
+	}
+
+	@Override
+	public Property<Boolean> getUseIntermediateMappings() {
+		return useIntermediateMappings;
 	}
 
 	@Override

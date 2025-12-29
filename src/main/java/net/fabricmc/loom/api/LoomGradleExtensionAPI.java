@@ -53,7 +53,6 @@ import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.GenerateSourcesTask;
@@ -219,7 +218,8 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	default void noIntermediateMappings() {
-		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+		getUseIntermediateMappings().set(false);
+		getUseIntermediateMappings().finalizeValue();
 	}
 
 	/**
@@ -246,6 +246,11 @@ public interface LoomGradleExtensionAPI {
 	 * @return the production namespace
 	 */
 	Property<String> getProductionNamespace();
+
+	/**
+	 * @return whether to use intermediate mappings
+	 */
+	Property<Boolean> getUseIntermediateMappings();
 
 	/**
 	 * @return the default mixin remap type

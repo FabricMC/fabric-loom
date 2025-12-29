@@ -52,6 +52,38 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 	}
 
 	@Unroll
+	def "interface injection without intermediary (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "interfaceInjectionNoIntermediary", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "interface injection without intermediary genSources (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "interfaceInjectionNoIntermediary", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "genSources")
+
+		then:
+		result.task(":genSources").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
 	def "Resolve custom FMJ"() {
 		setup:
 		GradleProject gradle = gradleProject(project: "fmjPathConfig", version: version)

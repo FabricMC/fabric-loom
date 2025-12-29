@@ -45,6 +45,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.project.IsolatedProject;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
@@ -86,10 +87,10 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 	// See: https://github.com/FabricMC/fabric-loom/pull/206#issuecomment-986054254 for the reason why XML's are still used to provide the run configs
 	private List<IntelijRunConfig> getRunConfigs() throws IOException {
-		Project rootProject = getProject().getRootProject();
+		IsolatedProject rootProject = getProject().getIsolated().getRootProject();
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		String projectPath = getProject() == rootProject ? "" : getProject().getPath().replace(':', '_');
-		File runConfigsDir = new File(rootProject.file(".idea"), "runConfigurations");
+		String projectPath = getProject().getPath().equals(rootProject.getPath()) ? "" : getProject().getPath().replace(':', '_');
+		File runConfigsDir = new File(rootProject.getProjectDirectory().file(".idea").getAsFile(), "runConfigurations");
 
 		List<IntelijRunConfig> configs = new ArrayList<>();
 

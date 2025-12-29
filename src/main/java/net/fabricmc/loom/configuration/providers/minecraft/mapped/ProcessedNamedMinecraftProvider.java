@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -142,9 +143,9 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	}
 
 	@Override
-	protected String getName(MinecraftJar.Type type) {
-		// Hash the cache value so that we don't have to process the same JAR multiple times for many projects
-		return "minecraft-%s-%s".formatted(type.toString(), jarProcessorManager.getJarHash());
+	protected void collectNameComponents(StringJoiner joiner) {
+		super.collectNameComponents(joiner);
+		joiner.add(jarProcessorManager.getJarHash());
 	}
 
 	@Override

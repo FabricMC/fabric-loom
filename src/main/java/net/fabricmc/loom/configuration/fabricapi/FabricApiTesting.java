@@ -98,7 +98,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 				configureBase.accept(run);
 			});
 
-			tasks.named("test", task -> task.dependsOn(LoomTasks.getRunConfigTaskName(gameTest)));
+			tasks.named("check", task -> task.dependsOn(LoomTasks.getRunConfigTaskName(gameTest)));
 		}
 
 		if (settings.getEnableClientGameTests().get()) {

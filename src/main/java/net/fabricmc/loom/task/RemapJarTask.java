@@ -55,7 +55,6 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.ClassTweakerWriter;
 import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
@@ -106,7 +105,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 
-		getTargetNamespace().set(extension.getProductionNamespace().map(MappingsNamespace::toString));
+		getTargetNamespace().set(extension.getProductionNamespace());
 
 		TaskProvider<NestableJarGenerationTask> processIncludeJars = getProject().getTasks().named(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class);
 		getNestedJars().from(processIncludeJars.map(task -> getProject().fileTree(task.getOutputDirectory())));

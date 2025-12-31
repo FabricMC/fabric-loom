@@ -97,7 +97,7 @@ public class GradleMappingContext implements MappingContext {
 
 	@Override
 	public String productionNamespace() {
-		return extension.getProductionNamespace().get().toString();
+		return extension.getProductionNamespaceEnum().toString();
 	}
 
 	@Override

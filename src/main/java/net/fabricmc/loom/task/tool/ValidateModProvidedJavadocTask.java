@@ -55,7 +55,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.LoomProblems;
@@ -102,8 +101,8 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	protected abstract Problems getProblems();
 
 	public ValidateModProvidedJavadocTask() {
-		getMinecraftJars().convention(getProject().provider(() -> getExtension().getMinecraftJarsCollection(getExtension().getProductionNamespace().get())));
-		getExpectedNamespace().convention(getExtension().getProductionNamespace().map(MappingsNamespace::toString));
+		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJarsCollection));
+		getExpectedNamespace().convention(getExtension().getProductionNamespace());
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);

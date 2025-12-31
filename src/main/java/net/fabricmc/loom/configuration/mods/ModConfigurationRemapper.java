@@ -164,7 +164,7 @@ public class ModConfigurationRemapper {
 			 */
 			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
 			List<ArtifactRef> artifactRefs = resolveArtifacts(project, sourceConfig);
-			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache, extension.getDefaultMixinRemapType().get());
+			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache, extension.getDefaultMixinRemapTypeEnum().get());
 			final List<ModDependency> modDependencies = new ArrayList<>();
 
 			for (ArtifactRef artifact : artifactRefs) {

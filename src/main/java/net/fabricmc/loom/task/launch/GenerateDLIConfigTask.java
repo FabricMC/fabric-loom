@@ -50,7 +50,6 @@ import org.gradle.api.tasks.TaskAction;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
@@ -124,8 +123,8 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getAssetsDirectoryPath().set(new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
 		getNativesDirectoryPath().set(getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath());
 		getDevLauncherConfig().set(getExtension().getFiles().getDevLauncherConfig());
-		getProductionNamespace().set(getExtension().getProductionNamespace().map(MappingsNamespace::toString));
-		getDefaultMixinRemapType().set(getExtension().getDefaultMixinRemapType().map(remapType -> remapType.toString().toLowerCase(Locale.ROOT)));
+		getProductionNamespace().set(getExtension().getProductionNamespaceEnum().toString());
+		getDefaultMixinRemapType().set(getExtension().getDefaultMixinRemapTypeEnum().toString().toLowerCase(Locale.ROOT));
 	}
 
 	@TaskAction

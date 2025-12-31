@@ -38,6 +38,6 @@ public record MappingProcessorContextImpl(ConfigContext configContext) implement
 
 	@Override
 	public MappingsNamespace getProductionNamespace() {
-		return configContext().extension().getProductionNamespace().get();
+		return configContext().extension().getProductionNamespaceEnum().get();
 	}
 }

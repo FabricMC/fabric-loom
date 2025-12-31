@@ -139,7 +139,7 @@ public class ModProcessor {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 
-		MappingsNamespace productionNamespace = extension.getProductionNamespace().get();
+		MappingsNamespace productionNamespace = extension.getProductionNamespaceEnum().get();
 
 		Set<String> knownIndyBsms = new HashSet<>(extension.getKnownIndyBsms().get());
 

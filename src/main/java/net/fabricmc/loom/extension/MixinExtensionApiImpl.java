@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.MixinExtensionAPI;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 	private static final String MIXIN_AP_DISABLED_ERROR = "The mixin annotation is no longer enabled by default, you should remove any loom.mixin configuration. If you wish to continue to use the mixin AP you can set useLegacyMixinAp = true.";
@@ -60,7 +59,7 @@ public abstract class MixinExtensionApiImpl implements MixinExtensionAPI {
 				.convention(false);
 
 		this.refmapTargetNamespace = project.getObjects().property(String.class);
-		this.refmapTargetNamespace.convention(project.provider(() -> LoomGradleExtension.get(project)).flatMap(LoomGradleExtensionAPI::getProductionNamespace).map(MappingsNamespace::toString));
+		this.refmapTargetNamespace.convention(project.provider(() -> LoomGradleExtension.get(project)).flatMap(LoomGradleExtensionAPI::getProductionNamespace));
 		this.refmapTargetNamespace.finalizeValueOnRead();
 
 		this.messages = project.getObjects().mapProperty(String.class, String.class);

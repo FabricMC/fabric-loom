@@ -162,8 +162,8 @@ public class SourceRemapper {
 
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
+		MappingsNamespace prodNamespace = extension.getProductionNamespaceEnum().get();
 
-		MappingsNamespace prodNamespace = extension.getProductionNamespace().get();
 		LorenzMappingService lorenzMappingService = serviceFactory.get(LorenzMappingService.createOptions(
 				project,
 				mappingConfiguration,
@@ -183,7 +183,7 @@ public class SourceRemapper {
 			}
 		}
 
-		for (Path productionJar : extension.getMinecraftJars(extension.getProductionNamespace().get())) {
+		for (Path productionJar : extension.getMinecraftJars(prodNamespace)) {
 			mercury.getClassPath().add(productionJar);
 		}
 

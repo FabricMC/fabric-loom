@@ -62,6 +62,7 @@ import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrRemapper;
@@ -186,8 +187,10 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	@Override
 	public MappingsProcessor<Spec> processMappings() {
 		return (mappings, spec, context) -> {
-			if (!context.getProductionNamespace().toString().equals(mappings.getSrcNamespace())) {
-				throw new IllegalStateException("Mapping tree must have %s src mappings not %s".formatted(context.getProductionNamespace().toString(), mappings.getSrcNamespace()));
+			int productionNamespaceId = mappings.getNamespaceId(context.getProductionNamespace().toString());
+
+			if (productionNamespaceId == MappingTreeView.NULL_NAMESPACE_ID) {
+				throw new IllegalStateException("Mapping tree must have namespace %s".formatted(context.getProductionNamespace().toString()));
 			}
 
 			Map<String, List<InjectedInterface>> map = spec.injectedInterfaces().stream()
@@ -197,7 +200,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				final String className = entry.getKey();
 				final List<InjectedInterface> injectedInterfaces = entry.getValue();
 
-				MappingTree.ClassMapping classMapping = mappings.getClass(className);
+				MappingTree.ClassMapping classMapping = mappings.getClass(className, productionNamespaceId);
 
 				if (classMapping == null) {
 					final String modIds = injectedInterfaces.stream().map(InjectedInterface::modId).distinct().collect(Collectors.joining(","));

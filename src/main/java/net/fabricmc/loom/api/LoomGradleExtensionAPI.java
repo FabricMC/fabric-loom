@@ -47,13 +47,11 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
-import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
@@ -247,7 +245,7 @@ public interface LoomGradleExtensionAPI {
 	/**
 	 * @return the production namespace
 	 */
-	Property<MappingsNamespace> getProductionNamespace();
+	Property<String> getProductionNamespace();
 
 	/**
 	 * @return whether to use intermediate mappings
@@ -257,7 +255,7 @@ public interface LoomGradleExtensionAPI {
 	/**
 	 * @return the default mixin remap type
 	 */
-	Property<ArtifactMetadata.MixinRemapType> getDefaultMixinRemapType();
+	Property<String> getDefaultMixinRemapType();
 
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();

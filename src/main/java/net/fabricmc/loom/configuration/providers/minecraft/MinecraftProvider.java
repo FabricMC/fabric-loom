@@ -81,16 +81,7 @@ public abstract class MinecraftProvider {
 	public void provide() throws Exception {
 		initFiles();
 
-		final MinecraftVersionMeta.JavaVersion javaVersion = getVersionInfo().javaVersion();
-
-		if (javaVersion != null) {
-			final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
-			final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
-
-			if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
-				throw new IllegalStateException("Minecraft " + minecraftVersion() + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
-			}
-		}
+		verifyJavaVersion();
 
 		boolean didDownload = downloadJars();
 
@@ -108,6 +99,26 @@ public abstract class MinecraftProvider {
 
 		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
 		libraryProvider.provide();
+	}
+
+	private void verifyJavaVersion() {
+		if (configContext.extension().disableObfuscation()) {
+			return;
+		}
+
+		// Verify that the current Gradle Java version is the same or higher than the required Java version for this Minecraft version.
+		// This is required so the remappers can retrive the correct context of Java classes when remapping.
+
+		final MinecraftVersionMeta.JavaVersion javaVersion = getVersionInfo().javaVersion();
+
+		if (javaVersion != null) {
+			final int requiredMajorJavaVersion = getVersionInfo().javaVersion().majorVersion();
+			final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
+
+			if (!JavaVersion.current().isCompatibleWith(requiredJavaVersion)) {
+				throw new IllegalStateException("Minecraft " + minecraftVersion() + " requires Java " + requiredJavaVersion + " but Gradle is using " + JavaVersion.current());
+			}
+		}
 	}
 
 	protected void initFiles() {

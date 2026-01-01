@@ -233,9 +233,6 @@ public final class Download {
 
 				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
 			}
-
-			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
-			writeHash(output, expectedHash);
 		}
 	}
 
@@ -329,16 +326,8 @@ public final class Download {
 		}
 
 		if (expectedHash != null) {
-			final String hashAttribute = readHash(output).orElse("");
-
-			if (expectedHash.equalsIgnoreCase(hashAttribute)) {
-				// File has a matching hash attribute, assume file intact.
-				return false;
-			}
-
 			if (isHashValid(output)) {
 				// Valid hash, no need to re-download
-				writeHash(output, expectedHash);
 				return false;
 			}
 
@@ -394,22 +383,6 @@ public final class Download {
 			AttributeHelper.writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
 			throw error(e, "Failed to write etag to (%s)", output);
-		}
-	}
-
-	private Optional<String> readHash(Path output) {
-		try {
-			return AttributeHelper.readAttribute(output, "LoomHash");
-		} catch (IOException e) {
-			return Optional.empty();
-		}
-	}
-
-	private void writeHash(Path output, String value) throws DownloadException {
-		try {
-			AttributeHelper.writeAttribute(output, "LoomHash", value);
-		} catch (IOException e) {
-			throw error(e, "Failed to write hash to (%s)", output);
 		}
 	}
 

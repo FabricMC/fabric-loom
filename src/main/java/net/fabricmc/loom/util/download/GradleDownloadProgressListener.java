@@ -34,8 +34,11 @@ public class GradleDownloadProgressListener implements DownloadProgressListener 
 	private final String name;
 	private final Function<String, ProgressLogger> progressLoggerFactory;
 
+	private static final long REPORT_INTERVAL_MS = 500;
+
 	@Nullable
 	private ProgressLogger progressLogger;
+	private long lastReportTime = 0;
 
 	public GradleDownloadProgressListener(String name, Function<String, ProgressLogger> progressLoggerFactory) {
 		this.name = name;
@@ -45,12 +48,20 @@ public class GradleDownloadProgressListener implements DownloadProgressListener 
 	@Override
 	public void onStart() {
 		progressLogger = progressLoggerFactory.apply(this.name);
+		lastReportTime = 0;
 	}
 
 	@Override
 	public void onProgress(long bytesTransferred, long contentLength) {
 		Objects.requireNonNull(progressLogger);
-		progressLogger.progress("Downloading %s - %s / %s".formatted(name, humanBytes(bytesTransferred), humanBytes(contentLength)));
+
+		long currentTime = System.currentTimeMillis();
+
+		// Only update if at least 0.5 seconds have passed since last report, or if we're at 100%
+		if (currentTime - lastReportTime >= REPORT_INTERVAL_MS || bytesTransferred >= contentLength) {
+			progressLogger.progress("Downloading %s - %s / %s".formatted(name, humanBytes(bytesTransferred), humanBytes(contentLength)));
+			lastReportTime = currentTime;
+		}
 	}
 
 	@Override
@@ -61,15 +72,22 @@ public class GradleDownloadProgressListener implements DownloadProgressListener 
 		}
 	}
 
+	private static final long KB = 1024L;
+	private static final long MB = KB * 1024L;
+	private static final long GB = MB * 1024L;
+	private static final double KB_DIVISOR = 1024;
+	private static final double MB_DIVISOR = 1024 * 1024;
+	private static final double GB_DIVISOR = 1024 * 1024 * 1024;
+
 	private static String humanBytes(long bytes) {
-		if (bytes < 1024) {
+		if (bytes < KB) {
 			return bytes + " B";
-		} else if (bytes < 1024 * 1024) {
-			return (bytes / 1024) + " KB";
-		} else if (bytes < 1024 * 1024 * 1024) {
-			return String.format("%.2f MB", bytes / (1024.0 * 1024.0));
+		} else if (bytes < MB) {
+			return (bytes / KB_DIVISOR) + " KB";
+		} else if (bytes < GB) {
+			return String.format("%.2f MB", bytes / MB_DIVISOR);
 		} else {
-			return String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
+			return String.format("%.2f GB", bytes / GB_DIVISOR);
 		}
 	}
 }

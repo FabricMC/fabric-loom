@@ -58,6 +58,7 @@ import net.fabricmc.mappingio.MappingVisitor;
 import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
 import net.fabricmc.mappingio.adapter.MappingNsRenamer;
 import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJavadocProcessor.Spec> {
@@ -156,12 +157,14 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		}
 
 		public void apply(MemoryMappingTree target) {
-			if (!mappingTree.getSrcNamespace().equals(target.getSrcNamespace())) {
-				throw new IllegalStateException("Cannot apply mappings to differing namespaces. source: %s target: %s".formatted(mappingTree.getSrcNamespace(), target.getSrcNamespace()));
+			int targetNamespaceId = target.getNamespaceId(mappingTree.getSrcNamespace());
+
+			if (targetNamespaceId == MappingTreeView.NULL_NAMESPACE_ID) {
+				throw new IllegalStateException("Mapping tree must have namespace %s".formatted(mappingTree.getSrcNamespace()));
 			}
 
 			for (MappingTree.ClassMapping sourceClass : mappingTree.getClasses()) {
-				final MappingTree.ClassMapping targetClass = target.getClass(sourceClass.getSrcName());
+				final MappingTree.ClassMapping targetClass = target.getClass(sourceClass.getSrcName(), targetNamespaceId);
 
 				if (targetClass == null) {
 					LOGGER.warn("Could not find provided javadoc target class {} from mod {}", sourceClass.getSrcName(), modId);
@@ -171,7 +174,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				applyComment(sourceClass, targetClass);
 
 				for (MappingTree.FieldMapping sourceField : sourceClass.getFields()) {
-					final MappingTree.FieldMapping targetField = targetClass.getField(sourceField.getSrcName(), sourceField.getSrcDesc());
+					final MappingTree.FieldMapping targetField = targetClass.getField(sourceField.getSrcName(), sourceField.getSrcDesc(), targetNamespaceId);
 
 					if (targetField == null) {
 						LOGGER.warn("Could not find provided javadoc target field {}{} from mod {}", sourceField.getSrcName(), sourceField.getSrcDesc(), modId);
@@ -182,7 +185,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				}
 
 				for (MappingTree.MethodMapping sourceMethod : sourceClass.getMethods()) {
-					final MappingTree.MethodMapping targetMethod = targetClass.getMethod(sourceMethod.getSrcName(), sourceMethod.getSrcDesc());
+					final MappingTree.MethodMapping targetMethod = targetClass.getMethod(sourceMethod.getSrcName(), sourceMethod.getSrcDesc(), targetNamespaceId);
 
 					if (targetMethod == null) {
 						LOGGER.warn("Could not find provided javadoc target method {}{} from mod {}", sourceMethod.getSrcName(), sourceMethod.getSrcDesc(), modId);

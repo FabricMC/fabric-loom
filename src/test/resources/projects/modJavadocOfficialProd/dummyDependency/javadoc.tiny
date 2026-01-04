@@ -1,0 +1,7 @@
+tiny	2	0	official
+c	bzq
+	c	An example of a mod added class javadoc
+	f	Lbzp;	A
+		c	An example of a mod added field javadoc
+	m	(I)Ljava/util/function/ToIntFunction;	a
+		c	An example of a mod added method javadoc

@@ -68,6 +68,38 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 	}
 
 	@Unroll
+	def "transitive accesswidener official production (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "transitiveAccesswidenerOfficialProd", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "transitive accesswidener official production genSources (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "transitiveAccesswidenerOfficialProd", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "genSources")
+
+		then:
+		result.task(":genSources").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
 	def "invalid (#awLine)"() {
 		setup:
 		def gradle = gradleProject(project: "accesswidener", version: version)

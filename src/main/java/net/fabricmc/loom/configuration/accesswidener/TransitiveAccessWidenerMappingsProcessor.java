@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 
+import net.fabricmc.mappingio.tree.MappingTreeView;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,13 +61,15 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 			return false;
 		}
 
-		if (!context.getProductionNamespace().toString().equals(mappings.getSrcNamespace())) {
-			throw new IllegalStateException("Mapping tree must have " + context.getProductionNamespace().toString() + " src mappings not " + mappings.getSrcNamespace());
+		int productionNamespaceId = mappings.getNamespaceId(context.getProductionNamespace().toString());
+
+		if (productionNamespaceId == MappingTreeView.NULL_NAMESPACE_ID) {
+			throw new IllegalStateException("Mapping tree must have namespace %s".formatted(context.getProductionNamespace().toString()));
 		}
 
 		try (LazyCloseable<TinyRemapper> remapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
 			for (AccessWidenerEntry accessWidener : accessWideners) {
-				var visitor = new MappingCommentClassTweakerVisitor(accessWidener.mappingId(), mappings);
+				var visitor = new MappingCommentClassTweakerVisitor(accessWidener.mappingId(), productionNamespaceId, mappings);
 				accessWidener.read(visitor, remapper, context.getProductionNamespace());
 			}
 		} catch (IOException e) {
@@ -75,7 +79,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 		return true;
 	}
 
-	private record MappingCommentClassTweakerVisitor(String modId, MemoryMappingTree mappingTree) implements ClassTweakerVisitor {
+	private record MappingCommentClassTweakerVisitor(String modId, int productionNamespaceId, MemoryMappingTree mappingTree) implements ClassTweakerVisitor {
 		@Override
 		public AccessWidenerVisitor visitAccessWidener(String owner) {
 			return new MappingCommentAccessWidenerVisitor(owner);
@@ -90,7 +94,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 
 			@Override
 			public void visitClass(AccessType access, boolean transitive) {
-				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className, productionNamespaceId());
 
 				if (classMapping == null) {
 					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", className, modId());
@@ -105,7 +109,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 				// Access is also applied to the class, so also add the comment to the class
 				visitClass(access, transitive);
 
-				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className, productionNamespaceId());
 
 				if (classMapping == null) {
 					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", className, modId());
@@ -127,7 +131,7 @@ public final class TransitiveAccessWidenerMappingsProcessor implements Minecraft
 				// Access is also applied to the class, so also add the comment to the class
 				visitClass(access, transitive);
 
-				MappingTree.ClassMapping classMapping = mappingTree.getClass(className);
+				MappingTree.ClassMapping classMapping = mappingTree.getClass(className, productionNamespaceId());
 
 				if (classMapping == null) {
 					LOGGER.info("Failed to find class ({}) to mark access widened by mod ({})", name, modId());

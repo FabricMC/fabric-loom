@@ -41,7 +41,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
-import net.fabricmc.loom.decompilers.fernflower.FabricFernFlowerDecompiler;
 import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler;
 import net.fabricmc.loom.util.LoomVersions;
 import net.fabricmc.loom.util.ZipUtils;
@@ -52,11 +51,9 @@ public abstract class DecompilerConfiguration implements Runnable {
 
 	@Override
 	public void run() {
-		var fernflowerConfiguration = createConfiguration("fernflower", LoomVersions.FERNFLOWER);
 		var cfrConfiguration = createConfiguration("cfr", LoomVersions.CFR);
 		var vineflowerConfiguration = createConfiguration("vineflower", LoomVersions.VINEFLOWER);
 
-		registerDecompiler(getProject(), "fernFlower", BuiltinFernflower.class, fernflowerConfiguration);
 		registerDecompiler(getProject(), "cfr", BuiltinCfr.class, cfrConfiguration);
 		registerDecompiler(getProject(), "vineflower", BuiltinVineflower.class, vineflowerConfiguration);
 	}
@@ -77,7 +74,7 @@ public abstract class DecompilerConfiguration implements Runnable {
 
 	// We need to wrap the internal API with the public API.
 	// This is needed as the sourceset containing fabric's decompilers do not have access to loom classes.
-	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinFernflower, BuiltinCfr, BuiltinVineflower {
+	private abstract static sealed class BuiltinDecompiler implements LoomDecompiler permits BuiltinCfr, BuiltinVineflower {
 		private final LoomInternalDecompiler internalDecompiler;
 
 		BuiltinDecompiler(LoomInternalDecompiler internalDecompiler) {
@@ -146,12 +143,6 @@ public abstract class DecompilerConfiguration implements Runnable {
 					return ZipUtils.unpack(zip, path);
 				}
 			});
-		}
-	}
-
-	public static final class BuiltinFernflower extends BuiltinDecompiler {
-		public BuiltinFernflower() {
-			super(new FabricFernFlowerDecompiler());
 		}
 	}
 

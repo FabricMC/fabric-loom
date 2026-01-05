@@ -1,6 +1,5 @@
 [versions]
 # Decompilers
-fernflower = "2.0.0"
 cfr = "0.2.2"
 vineflower = "1.11.1"
 
@@ -18,7 +17,6 @@ enigma = "3.0.1"
 
 [libraries]
 # Decompilers
-fernflower = { module = "net.fabricmc:fabric-fernflower", version.ref = "fernflower" }
 cfr = { module = "net.fabricmc:cfr", version.ref = "cfr" }
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower" }
 

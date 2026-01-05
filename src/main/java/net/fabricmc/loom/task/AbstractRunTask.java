@@ -85,7 +85,7 @@ public abstract class AbstractRunTask extends JavaExec {
 	// We use a string here, as it's technically an output, but we don't want to cache runs of this task by default.
 	protected abstract Property<String> getArgFilePath();
 	@Input
-	protected abstract Property<Boolean> getUseXvfb();
+	public abstract Property<Boolean> getUseXvfb();
 
 	@Nested
 	@Optional

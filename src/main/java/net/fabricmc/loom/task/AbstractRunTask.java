@@ -66,7 +66,7 @@ import net.fabricmc.loom.util.Platform;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRunTask.class);
-	private static final String XVFB_PATH = "/usr/bin/xvfb-run";
+	private static final String XVFB_PATH = "xvfb-run";
 
 	@Inject
 	protected abstract ExecOperations getExecOperations();

@@ -127,7 +127,7 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 				throw new UnsupportedOperationException("XVFB is only supported on Linux");
 			}
 
-			exec.commandLine("/usr/bin/xvfb-run");
+			exec.commandLine("xvfb-run");
 			exec.args("-a", getJavaLauncher().get().getExecutablePath());
 
 			return;

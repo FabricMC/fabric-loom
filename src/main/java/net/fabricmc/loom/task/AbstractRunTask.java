@@ -212,7 +212,7 @@ public abstract class AbstractRunTask extends JavaExec {
 	}
 
 	private void execWithXvfb() {
-		String xvfbRunPath = "/usr/bin/xvfb-run";
+		String xvfbRunPath = "xvfb-run";
 
 		String javaExec = getJavaLauncher().get().getExecutablePath().getAsFile().getAbsolutePath();
 

@@ -101,8 +101,8 @@ public class Constants {
 	}
 
 	public static final class MixinArguments {
-		public static final String IN_MAP_FILE_NAMED_INTERMEDIARY = "inMapFileNamedIntermediary";
-		public static final String OUT_MAP_FILE_NAMED_INTERMEDIARY = "outMapFileNamedIntermediary";
+		public static final String IN_MAP_FILE_NAMED = "inMapFileNamed";
+		public static final String OUT_MAP_FILE_NAMED = "outMapFileNamed";
 		public static final String OUT_REFMAP_FILE = "outRefMapFile";
 		public static final String DEFAULT_OBFUSCATION_ENV = "defaultObfuscationEnv";
 		public static final String QUIET = "quiet";

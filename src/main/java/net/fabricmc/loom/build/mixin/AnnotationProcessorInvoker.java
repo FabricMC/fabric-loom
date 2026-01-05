@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -102,11 +103,14 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 
 			task.getOutputs().file(mixinMappings).withPropertyName("mixin-ap-" + sourceSet.getName() + "-" + name).optional();
 
+			String refmapTargetNamespace = loom.getMixin().getRefmapTargetNamespace().get();
+			String capitalizedTargetNamespace = refmapTargetNamespace.substring(0, 1).toUpperCase(Locale.ROOT) + refmapTargetNamespace.substring(1);
+
 			Map<String, String> args = new HashMap<>() {{
-					put(Constants.MixinArguments.IN_MAP_FILE_NAMED_INTERMEDIARY, loom.getMappingConfiguration().tinyMappings.toFile().getCanonicalPath());
-					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED_INTERMEDIARY, mixinMappings.getCanonicalPath());
+					put(Constants.MixinArguments.IN_MAP_FILE_NAMED + capitalizedTargetNamespace, loom.getMappingConfiguration().tinyMappings.toFile().getCanonicalPath());
+					put(Constants.MixinArguments.OUT_MAP_FILE_NAMED + capitalizedTargetNamespace, mixinMappings.getCanonicalPath());
 					put(Constants.MixinArguments.OUT_REFMAP_FILE, getRefmapDestination(task, refmapName));
-					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:" + loom.getMixin().getRefmapTargetNamespace().get());
+					put(Constants.MixinArguments.DEFAULT_OBFUSCATION_ENV, "named:" + refmapTargetNamespace);
 					put(Constants.MixinArguments.QUIET, "true");
 				}};
 

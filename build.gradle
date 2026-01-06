@@ -333,6 +333,25 @@ publishing {
 	}
 }
 
+if (ENV.MAVEN_URL && ENV.EXPERIMENTAL) {
+	tasks.named("publish") {
+		doLast {
+			StringBuilder urls = new StringBuilder()
+			gradlePlugin.plugins.forEach { plugin ->
+				urls.append(ENV.MAVEN_URL)
+				if (!ENV.MAVEN_URL.endsWith("/")) urls.append("/")
+				urls
+						.append(plugin.id.replace(".", "/"))
+						.append("/")
+						.append(project.version)
+						.append("/")
+						.append("\n")
+			}
+			println("Published to:\n" + urls)
+		}
+	}
+}
+
 // A task to output a json file with a list of all the test to run
 tasks.register('writeActionsTestMatrix') {
 	doLast {

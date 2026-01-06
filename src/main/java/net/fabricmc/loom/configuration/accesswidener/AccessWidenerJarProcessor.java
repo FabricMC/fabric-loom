@@ -84,7 +84,7 @@ public class AccessWidenerJarProcessor implements MinecraftJarProcessor<AccessWi
 		 */
 
 		if (includeTransitive) {
-			for (FabricModJson fabricModJson : context.modDependencies()) {
+			for (FabricModJson fabricModJson : context.modDependenciesCompileRuntime()) {
 				accessWideners.addAll(ModAccessWidenerEntry.readAll(fabricModJson, true));
 			}
 		}

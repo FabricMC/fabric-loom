@@ -80,7 +80,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 	public ModJavadocProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<ModJavadoc> javadocs = new ArrayList<>();
 
-		for (FabricModJson fabricModJson : context.allMods()) {
+		for (FabricModJson fabricModJson : context.modDependenciesCompileRuntime()) {
 			ModJavadoc javadoc = ModJavadoc.create(fabricModJson, context.productionNamespace());
 
 			if (javadoc != null) {

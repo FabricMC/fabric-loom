@@ -94,6 +94,7 @@ dependencies {
 	// game handling utils
 	implementation (libs.fabric.stitch) {
 		exclude module: 'enigma'
+		exclude module: 'guava'
 	}
 
 	// tinyfile management

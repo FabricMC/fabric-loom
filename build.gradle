@@ -344,8 +344,7 @@ if (ENV.MAVEN_URL && ENV.EXPERIMENTAL) {
 						.append(plugin.id.replace(".", "/"))
 						.append("/")
 						.append(project.version)
-						.append("/")
-						.append("\n")
+						.append("/\n")
 			}
 			println("Published to:\n" + urls)
 		}

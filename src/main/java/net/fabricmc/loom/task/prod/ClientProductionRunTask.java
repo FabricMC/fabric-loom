@@ -42,6 +42,7 @@ import org.jetbrains.annotations.ApiStatus;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.XVFBExistsValueSource;
 
 /**
  * A task that runs the Minecraft client in a similar way to a production launcher. You must manually register a task of this type to use it.
@@ -127,7 +128,7 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 				throw new UnsupportedOperationException("XVFB is only supported on Linux");
 			}
 
-			exec.commandLine("xvfb-run");
+			exec.commandLine(XVFBExistsValueSource.XVFB);
 			exec.args("-a", getJavaLauncher().get().getExecutablePath());
 
 			return;

@@ -63,10 +63,10 @@ import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.XVFBExistsValueSource;
 
 public abstract class AbstractRunTask extends JavaExec {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRunTask.class);
-	private static final String XVFB_PATH = "xvfb-run";
 
 	@Inject
 	protected abstract ExecOperations getExecOperations();
@@ -149,7 +149,7 @@ public abstract class AbstractRunTask extends JavaExec {
 				getProject().getProviders().environmentVariable("CI")
 						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
 						.zip(config, (enabled, runConfig) -> enabled && runConfig.environment.equals("client"))
-						.map(enabled -> enabled && Files.exists(Path.of(XVFB_PATH)))
+						.flatMap(enabled -> enabled ? XVFBExistsValueSource.exists(getProject()) : getProject().getProviders().provider(() -> false))
 						.orElse(false)
 		);
 
@@ -219,7 +219,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		// Build the complete command line: xvfb-run --auto-servernum java [jvm-args] mainclass [program-args]
 		List<String> commandLine = new ArrayList<>();
-		commandLine.add(XVFB_PATH);
+		commandLine.add(XVFBExistsValueSource.XVFB);
 		commandLine.add("--auto-servernum");
 		commandLine.add(javaExec);
 		commandLine.addAll(getJvmArguments().get());

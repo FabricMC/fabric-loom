@@ -395,6 +395,17 @@ tasks.register('downloadGradleSources') {
 tasks.register('printActionsTestName', PrintActionsTestName) {
 }
 
+tasks.register('exportVersion') {
+	def versionFile = file("${layout.buildDirectory.get()}/version.txt")
+	outputs.file(versionFile)
+
+	def v = project.version
+	doLast {
+		versionFile.text = v
+		println("Exported version: ${v}")
+	}
+}
+
 /**
  * Replaces invalid characters in test names for GitHub Actions artifacts.
  */

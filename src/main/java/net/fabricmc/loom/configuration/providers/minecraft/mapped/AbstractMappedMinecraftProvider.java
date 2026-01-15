@@ -54,6 +54,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVisitor;
 import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
@@ -172,35 +173,42 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		return new LocalMavenHelper("net.minecraft", getName(type), getVersion(), null, getMavenScope().getRoot(extension));
 	}
 
-	protected String getName(MinecraftJar.Type type) {
-		var sj = new StringJoiner("-");
-		sj.add("minecraft");
-		sj.add(type.toString());
+	private String getName(MinecraftJar.Type type) {
+		var hashJoiner = new StringJoiner(",");
 
+		collectNameComponents(hashJoiner);
+
+		if (hashJoiner.length() == 0) {
+			// No need to hash anything, return a simple name
+			return "minecraft-%s".formatted(type.toString()).toLowerCase(Locale.ROOT);
+		}
+
+		String jarHash = Checksum.of(hashJoiner.toString()).sha256().hex(16);
+		return "minecraft-%s-%s".formatted(jarHash, type.toString()).toLowerCase(Locale.ROOT);
+	}
+
+	// Collect components that should be included in the jar name hash
+	// This should include anything that would change the contents of the jar
+	protected void collectNameComponents(StringJoiner joiner) {
 		if (!extension.disableObfuscation()) {
 			// Include the intermediate mapping name if it's not the default intermediary
 			final String intermediateName = extension.getIntermediateMappingsProvider().getName();
 
 			if (!intermediateName.equals(IntermediaryMappingsProvider.NAME)) {
-				sj.add(intermediateName);
+				joiner.add(intermediateName);
 			}
-		} else {
-			sj.add("deobf");
+
+			// Add the mappings identifier to the hash
+			joiner.add(extension.getMappingConfiguration().mappingsIdentifier());
 		}
 
 		if (getTargetNamespace() != MappingsNamespace.NAMED) {
-			sj.add(getTargetNamespace().name());
+			joiner.add(getTargetNamespace().name());
 		}
-
-		return sj.toString().toLowerCase(Locale.ROOT);
 	}
 
 	protected String getVersion() {
-		if (extension.disableObfuscation()) {
-			return extension.getMinecraftProvider().minecraftVersion();
-		}
-
-		return "%s-%s".formatted(extension.getMinecraftProvider().minecraftVersion(), extension.getMappingConfiguration().mappingsIdentifier());
+		return extension.getMinecraftProvider().minecraftVersion();
 	}
 
 	protected String getDependencyNotation(MinecraftJar.Type type) {

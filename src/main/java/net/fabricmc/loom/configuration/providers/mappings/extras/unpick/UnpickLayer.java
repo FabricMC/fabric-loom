@@ -38,11 +38,10 @@ public interface UnpickLayer {
 	@Nullable
 	UnpickData getUnpickData() throws IOException;
 
-	record UnpickData(UnpickMetadata metadata, byte[] rawMetadata, byte[] definitions) {
+	record UnpickData(UnpickMetadata metadata, byte[] definitions) {
 		public static UnpickData read(Path metadataPath, Path definitionPath) throws IOException {
 			final byte[] definitions = Files.readAllBytes(definitionPath);
-			final byte[] metadata = Files.readAllBytes(metadataPath);
-			return new UnpickData(UnpickMetadata.parse(metadataPath), metadata, definitions);
+			return new UnpickData(UnpickMetadata.parse(metadataPath), definitions);
 		}
 	}
 }

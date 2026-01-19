@@ -30,6 +30,7 @@ import java.util.Optional;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.FileMappingsSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec;
 
 public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	/**
@@ -45,6 +46,7 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	private boolean unpick = false;
 	private boolean annotations = false;
 	private Optional<String> mergeNamespace = Optional.empty();
+	private Optional<String> fallbackUnpickConstants = Optional.empty();
 
 	private FileMappingsSpecBuilderImpl(FileSpec fileSpec) {
 		this.fileSpec = fileSpec;
@@ -82,6 +84,18 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	@Override
 	public FileMappingsSpecBuilderImpl containsUnpick() {
 		unpick = true;
+
+		if (fileSpec instanceof MavenFileSpec mavenFileSpec) {
+			String dependencyNotation = mavenFileSpec.dependencyNotation();
+			String[] notationParts = dependencyNotation.split("[:]");
+
+			if (notationParts.length == 4) {
+				dependencyNotation = dependencyNotation.substring(0, dependencyNotation.lastIndexOf(':'));
+			}
+
+			fallbackUnpickConstants = Optional.of(dependencyNotation + ":constants");
+		}
+
 		return this;
 	}
 
@@ -104,6 +118,6 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	}
 
 	public FileMappingsSpec build() {
-		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, annotations, mergeNamespace);
+		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, annotations, mergeNamespace, fallbackUnpickConstants);
 	}
 }

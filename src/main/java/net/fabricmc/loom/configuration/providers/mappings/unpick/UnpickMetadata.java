@@ -33,12 +33,15 @@ import com.google.gson.JsonObject;
 import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata.V2 {
 	String UNPICK_METADATA_PATH = "extras/unpick.json";
 	String UNPICK_DEFINITIONS_PATH = "extras/definitions.unpick";
 
 	boolean hasConstants();
+
+	UnpickMetadata withConstants(String constants);
 
 	/**
 	 * @param unpickGroup Deprecated, always uses the version of unpick loom depends on.
@@ -48,6 +51,12 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		@Override
 		public boolean hasConstants() {
 			return true;
+		}
+
+		@Override
+		public UnpickMetadata withConstants(String constants) {
+			// all v1 data is deprecated and ignored by Loom, just update to v2
+			return new UnpickMetadata.V2(MappingsNamespace.NAMED.toString(), constants);
 		}
 	}
 
@@ -61,6 +70,11 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		@Override
 		public boolean hasConstants() {
 			return constants != null;
+		}
+
+		@Override
+		public UnpickMetadata withConstants(String constants) {
+			return new UnpickMetadata.V2(namespace, constants);
 		}
 	}
 

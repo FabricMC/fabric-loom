@@ -87,7 +87,7 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 
 		if (fileSpec instanceof MavenFileSpec mavenFileSpec) {
 			String dependencyNotation = mavenFileSpec.dependencyNotation();
-			String[] notationParts = dependencyNotation.split("[:]");
+			String[] notationParts = dependencyNotation.split(":");
 
 			if (notationParts.length == 4) {
 				dependencyNotation = dependencyNotation.substring(0, dependencyNotation.lastIndexOf(':'));

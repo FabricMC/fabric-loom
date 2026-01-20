@@ -90,7 +90,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	MemoryMappingTree getSingleMapping(MappingsSpec<? extends MappingLayer> spec) {
 		MemoryMappingTree mappingTree = new MemoryMappingTree()
-		spec.createLayer(new TestMappingContext([spec])).visit(mappingTree)
+		spec.createLayer(createMappingContext(spec)).visit(mappingTree)
 		return mappingTree
 	}
 
@@ -108,7 +108,12 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
-		return processor.getUnpickData(processor.resolveLayers(new TestMappingContext(specs.toList())))
+		MappingContext context = createMappingContext(specs)
+		return processor.getUnpickData(processor.resolveLayers(context))
+	}
+
+	MappingContext createMappingContext(MappingsSpec<? extends MappingLayer>... specs) {
+		return new TestMappingContext(specs.toList())
 	}
 
 	private static LayeredMappingsProcessor createLayeredMappingsProcessor(MappingsSpec<? extends MappingLayer>... specs) {

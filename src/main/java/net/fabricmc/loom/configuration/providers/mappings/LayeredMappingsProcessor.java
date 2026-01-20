@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.Ann
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -150,6 +151,19 @@ public class LayeredMappingsProcessor {
 			if (layer instanceof UnpickLayer unpickLayer) {
 				UnpickLayer.UnpickData data = unpickLayer.getUnpickData();
 				if (data == null) continue;
+
+				if (!data.metadata().hasConstantsLocation()) {
+					// if the constants location is not provided explicitly, Loom
+					// cannot trick its way into finding them, since the mappings
+					// dependency points to the layered mappings instead of the
+					// individual layer that provided the unpick data
+					String fallbackConstants = unpickLayer.getFallbackConstants();
+					UnpickMetadata metadata = fallbackConstants == null
+								? data.metadata().withoutConstants()
+								: data.metadata().withConstants(fallbackConstants);
+
+					data = new UnpickLayer.UnpickData(metadata, data.definitions());
+				}
 
 				unpickDataList.add(data);
 			}

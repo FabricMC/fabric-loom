@@ -38,6 +38,9 @@ public interface UnpickLayer {
 	@Nullable
 	UnpickData getUnpickData() throws IOException;
 
+	@Nullable
+	String getFallbackConstants();
+
 	record UnpickData(UnpickMetadata metadata, byte[] definitions) {
 		public static UnpickData read(Path metadataPath, Path definitionPath) throws IOException {
 			final byte[] definitions = Files.readAllBytes(definitionPath);

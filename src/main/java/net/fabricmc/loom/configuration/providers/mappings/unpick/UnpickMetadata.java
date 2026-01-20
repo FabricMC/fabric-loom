@@ -39,9 +39,21 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 	String UNPICK_METADATA_PATH = "extras/unpick.json";
 	String UNPICK_DEFINITIONS_PATH = "extras/definitions.unpick";
 
+	/**
+	 * @return whether constants are required by the Unpick definitions
+	 */
 	boolean hasConstants();
 
+	/**
+	 * @return whether the maven location of the constants is specified by this metadata
+	 */
+	boolean hasConstantsLocation();
+
 	UnpickMetadata withConstants(String constants);
+
+	default UnpickMetadata withoutConstants() {
+		return withConstants(null);
+	}
 
 	/**
 	 * @param unpickGroup Deprecated, always uses the version of unpick loom depends on.
@@ -54,8 +66,14 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		}
 
 		@Override
+		public boolean hasConstantsLocation() {
+			return false;
+		}
+
+		@Override
 		public UnpickMetadata withConstants(String constants) {
-			// all v1 data is deprecated and ignored by Loom, just update to v2
+			// all v1 data is deprecated and ignored by Loom
+			// and only v2 format allows setting the constants location
 			return new UnpickMetadata.V2(MappingsNamespace.NAMED.toString(), constants);
 		}
 	}
@@ -70,6 +88,11 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		@Override
 		public boolean hasConstants() {
 			return constants != null;
+		}
+
+		@Override
+		public boolean hasConstantsLocation() {
+			return true;
 		}
 
 		@Override

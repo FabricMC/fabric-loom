@@ -117,16 +117,17 @@ public record FileMappingsLayer(
 				return null;
 			}
 
-			UnpickData unpickData = UnpickData.read(unpickMetadata, unpickDefinitions);
-			UnpickMetadata metadata = unpickData.metadata();
-
-			if (metadata instanceof UnpickMetadata.V1 && fallbackUnpickConstants != null) {
-				metadata = metadata.withConstants(fallbackUnpickConstants);
-				unpickData = new UnpickData(metadata, unpickData.definitions());
-			}
-
-			return unpickData;
+			return UnpickData.read(unpickMetadata, unpickDefinitions);
 		}
+	}
+
+	@Override
+	public @Nullable String getFallbackConstants() {
+		if (!unpick) {
+			return null;
+		}
+
+		return fallbackUnpickConstants;
 	}
 
 	@Override

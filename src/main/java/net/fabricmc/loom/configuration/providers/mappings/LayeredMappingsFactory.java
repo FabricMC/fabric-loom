@@ -164,7 +164,9 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return;
 		}
 
+		byte[] data = UnpickMetadata.toJson(unpickData.metadata()).getBytes(StandardCharsets.UTF_8);
+
 		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_DEFINITIONS_PATH, unpickData.definitions());
-		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_METADATA_PATH, LoomGradlePlugin.GSON.toJson(unpickData.metadata()));
+		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_METADATA_PATH, data);
 	}
 }

@@ -78,6 +78,18 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		}
 	}
 
+	static String toJson(UnpickMetadata metadata) {
+		JsonObject json = LoomGradlePlugin.GSON.toJsonTree(metadata).getAsJsonObject();
+
+		int version = switch (metadata) {
+		case UnpickMetadata.V1 v1 -> 1;
+		case UnpickMetadata.V2 v2 -> 2;
+		};
+		json.addProperty("version", version);
+
+		return json.toString();
+	}
+
 	static UnpickMetadata parse(Path path) throws IOException {
 		JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(path, StandardCharsets.UTF_8), JsonObject.class);
 

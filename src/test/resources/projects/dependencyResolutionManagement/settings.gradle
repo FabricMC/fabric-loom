@@ -1,11 +1,11 @@
 pluginManagement {
 	plugins {
-		id 'fabric-loom'
+		id 'net.fabricmc.fabric-loom-repositories'
 	}
 }
 
 plugins {
-	id 'fabric-loom'
+	id 'net.fabricmc.fabric-loom-repositories'
 }
 
 dependencyResolutionManagement {

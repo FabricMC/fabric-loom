@@ -241,6 +241,10 @@ gradlePlugin {
 			id = 'net.fabricmc.fabric-loom-companion'
 			implementationClass = 'net.fabricmc.loom.LoomCompanionGradlePlugin'
 		}
+		fabricLoomRepositories {
+			id = 'net.fabricmc.fabric-loom-repositories'
+			implementationClass = 'net.fabricmc.loom.LoomRepositoryPlugin'
+		}
 	}
 }
 

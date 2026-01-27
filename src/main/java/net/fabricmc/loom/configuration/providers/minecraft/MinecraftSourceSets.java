@@ -27,8 +27,6 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import net.fabricmc.loom.api.EnvironmentType;
-
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
@@ -41,6 +39,7 @@ import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.api.EnvironmentType;
 
 public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split, MinecraftSourceSets.LegacySplit {
 	public static MinecraftSourceSets get(Project project) {

@@ -26,12 +26,11 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.util.List;
 
-import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;
-
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;

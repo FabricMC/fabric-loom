@@ -87,7 +87,7 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		Set<String> entries = new HashSet<>();
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(input);
-			 Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
+				Stream<Path> walk = Files.walk(fs.get().getPath("/"))) {
 			Iterator<Path> iterator = walk.iterator();
 
 			while (iterator.hasNext()) {
@@ -114,7 +114,7 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		Files.deleteIfExists(outputJar);
 
 		try (FileSystemUtil.Delegate inputFs = FileSystemUtil.getJarFileSystem(inputJar);
-			 FileSystemUtil.Delegate outputFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
+				FileSystemUtil.Delegate outputFs = FileSystemUtil.getJarFileSystem(outputJar, true)) {
 			for (String entry : entries) {
 				Path inputPath = inputFs.get().getPath(entry);
 				Path outputPath = outputFs.get().getPath(entry);

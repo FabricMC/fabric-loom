@@ -28,7 +28,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server {
+public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server, MinecraftJar.ServerOnly {
 	private final Path path;
 	private final boolean merged, client, server;
 	private final Type type;
@@ -93,6 +93,7 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 		}
 	}
 
+	// Un-split server jar
 	public static final class Server extends MinecraftJar {
 		public Server(Path path) {
 			super(path, false, false, true, Type.SERVER);
@@ -128,6 +129,18 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 		}
 	}
 
+	// Split server jar
+	public static final class ServerOnly extends MinecraftJar {
+		public ServerOnly(Path path) {
+			super(path, false, false, true, Type.SERVER_ONLY);
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new ServerOnly(path);
+		}
+	}
+
 	public enum Type {
 		// Merged jar
 		MERGED("merged"),
@@ -138,7 +151,8 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 
 		// Split jars
 		COMMON("common"),
-		CLIENT_ONLY("clientOnly");
+		CLIENT_ONLY("clientOnly"),
+		SERVER_ONLY("serverOnly");
 
 		private final String name;
 

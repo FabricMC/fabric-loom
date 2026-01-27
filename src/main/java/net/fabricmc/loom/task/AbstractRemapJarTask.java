@@ -106,6 +106,16 @@ public abstract class AbstractRemapJarTask extends Jar {
 	@Optional
 	public abstract Property<String> getClientOnlySourceSetName();
 
+	@Input
+	public abstract Property<Boolean> getIncludesServerOnlyClasses();
+
+	@Input
+	public abstract ListProperty<String> getAdditionalServerOnlyEntries();
+
+	@Input
+	@Optional
+	public abstract Property<String> getServerOnlySourceSetName();
+
 	/**
 	 * Optionally supply a single mapping file or jar file containing mappings to be used for remapping.
 	 */

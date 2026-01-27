@@ -27,6 +27,8 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import net.fabricmc.loom.api.EnvironmentType;
+
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
@@ -40,7 +42,7 @@ import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split {
+public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split, MinecraftSourceSets.LegacySplit {
 	public static MinecraftSourceSets get(Project project) {
 		return LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit() ? Split.INSTANCE : Single.INSTANCE;
 	}
@@ -53,9 +55,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	public void evaluateSplit(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		Check.require(extension.areEnvironmentSourceSetsSplit());
+		Check.require(extension.environmentSourceSetType().isSplit());
 
-		Split.INSTANCE.evaluate(project);
+		if (extension.environmentSourceSetType() == EnvironmentType.SPLIT) {
+			Split.INSTANCE.evaluate(project);
+		} else {
+			LegacySplit.INSTANCE.evaluate(project);
+		}
 	}
 
 	public abstract void afterEvaluate(Project project);
@@ -242,6 +248,180 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			project.getTasks().withType(AbstractRemapJarTask.class, task -> {
 				// Set the default client only source set name
 				task.getClientOnlySourceSetName().convention(CLIENT_ONLY_SOURCE_SET_NAME);
+			});
+		}
+
+		@Override
+		public void afterEvaluate(Project project) {
+		}
+	}
+
+	/**
+	 * Used when we have a split client/common source set and split jars.
+	 */
+	public static final class LegacySplit extends MinecraftSourceSets {
+		private static final ConfigurationName MINECRAFT_COMMON_NAMED = new ConfigurationName(
+				"minecraftCommonNamed",
+				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
+		);
+		// Depends on the Minecraft client libraries.
+		private static final ConfigurationName MINECRAFT_CLIENT_ONLY_NAMED = new ConfigurationName(
+				"minecraftClientOnlyNamed",
+				Constants.Configurations.MINECRAFT_CLIENT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES
+		);
+		// Depends on the Minecraft server libraries.
+		private static final ConfigurationName MINECRAFT_SERVER_ONLY_NAMED = new ConfigurationName(
+				"minecraftServerOnlyNamed",
+				Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES
+		);
+
+		public static final String CLIENT_ONLY_SOURCE_SET_NAME = "client";
+		public static final String SERVER_ONLY_SOURCE_SET_NAME = "server";
+
+		private static final LegacySplit INSTANCE = new LegacySplit();
+
+		@Override
+		public void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets) {
+			Check.require(targets.size() == 3);
+			Check.require(targets.contains(MinecraftJar.Type.COMMON));
+			Check.require(targets.contains(MinecraftJar.Type.CLIENT_ONLY));
+			Check.require(targets.contains(MinecraftJar.Type.SERVER_ONLY));
+
+			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.Type.CLIENT_ONLY);
+			consumer.accept(MINECRAFT_SERVER_ONLY_NAMED.runtime(), MinecraftJar.Type.SERVER_ONLY);
+			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), MinecraftJar.Type.CLIENT_ONLY);
+			consumer.accept(MINECRAFT_SERVER_ONLY_NAMED.compile(), MinecraftJar.Type.SERVER_ONLY);
+		}
+
+		@Override
+		public String getSourceSetForEnv(String env) {
+			return env.equals("client") ? CLIENT_ONLY_SOURCE_SET_NAME : SERVER_ONLY_SOURCE_SET_NAME;
+		}
+
+		@Override
+		protected List<ConfigurationName> getConfigurations() {
+			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_SERVER_ONLY_NAMED);
+		}
+
+		// Called during evaluation, when the loom extension method is called.
+		private void evaluate(Project project) {
+			createConfigurations(project);
+			final ConfigurationContainer configurations = project.getConfigurations();
+
+			// Register our new client and server only source set, main becomes common only, with their respective jars.
+			final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+			final SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
+			final SourceSet serverOnlySourceSet = SourceSetHelper.createSourceSet(SERVER_ONLY_SOURCE_SET_NAME, project);
+
+			// Add Minecraft to the main and client source sets.
+			extendsFrom(project, mainSourceSet.getCompileClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.compile());
+			extendsFrom(project, mainSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
+			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.compile());
+			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.runtime());
+			extendsFrom(project, serverOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_SERVER_ONLY_NAMED.compile());
+			extendsFrom(project, serverOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_SERVER_ONLY_NAMED.runtime());
+
+			// Client source set depends on common.
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
+
+			// Server source set depends on common.
+			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
+			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
+
+			// Client annotation processor configuration extendsFrom "annotationProcessor"
+			extendsFrom(project, clientOnlySourceSet.getAnnotationProcessorConfigurationName(), JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+
+			// Server annotation processor configuration extendsFrom "annotationProcessor"
+			extendsFrom(project, serverOnlySourceSet.getAnnotationProcessorConfigurationName(), JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+
+			clientOnlySourceSet.setCompileClasspath(
+					clientOnlySourceSet.getCompileClasspath()
+							.plus(mainSourceSet.getOutput())
+			);
+			clientOnlySourceSet.setRuntimeClasspath(
+					clientOnlySourceSet.getRuntimeClasspath()
+							.plus(mainSourceSet.getOutput())
+			);
+
+			serverOnlySourceSet.setCompileClasspath(
+					serverOnlySourceSet.getCompileClasspath()
+							.plus(mainSourceSet.getOutput())
+			);
+			serverOnlySourceSet.setRuntimeClasspath(
+					serverOnlySourceSet.getRuntimeClasspath()
+							.plus(mainSourceSet.getOutput())
+			);
+
+			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspathConfigurationName());
+
+			extendsFrom(project, serverOnlySourceSet.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, serverOnlySourceSet.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspathConfigurationName());
+
+			// Test source set depends on client and server
+			final SourceSet testSourceSet = SourceSetHelper.getSourceSetByName(SourceSet.TEST_SOURCE_SET_NAME, project);
+			extendsFrom(project, testSourceSet.getCompileClasspathConfigurationName(), clientOnlySourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, testSourceSet.getRuntimeClasspathConfigurationName(), clientOnlySourceSet.getRuntimeClasspathConfigurationName());
+			project.getDependencies().add(testSourceSet.getImplementationConfigurationName(), clientOnlySourceSet.getOutput());
+
+			extendsFrom(project, testSourceSet.getCompileClasspathConfigurationName(), serverOnlySourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, testSourceSet.getRuntimeClasspathConfigurationName(), serverOnlySourceSet.getRuntimeClasspathConfigurationName());
+			project.getDependencies().add(testSourceSet.getImplementationConfigurationName(), serverOnlySourceSet.getOutput());
+
+			RemapConfigurations.configureClientConfigurations(project, clientOnlySourceSet);
+			RemapConfigurations.configureClientConfigurations(project, serverOnlySourceSet);
+
+			// Include the client only output in the jars
+			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
+				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
+				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
+
+				jar.dependsOn(project.getTasks().named(clientOnlySourceSet.getProcessResourcesTaskName()));
+			});
+
+			// Include the server only output in the jars
+			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
+				jar.from(serverOnlySourceSet.getOutput().getClassesDirs());
+				jar.from(serverOnlySourceSet.getOutput().getResourcesDir());
+
+				jar.dependsOn(project.getTasks().named(serverOnlySourceSet.getProcessResourcesTaskName()));
+			});
+
+			// Remap with the client compile classpath.
+			project.getTasks().withType(AbstractRemapJarTask.class).configureEach(remapJarTask -> {
+				remapJarTask.getClasspath().from(
+						project.getConfigurations().getByName(clientOnlySourceSet.getCompileClasspathConfigurationName())
+				);
+			});
+
+			// Remap with the server compile classpath.
+			project.getTasks().withType(AbstractRemapJarTask.class).configureEach(remapJarTask -> {
+				remapJarTask.getClasspath().from(
+						project.getConfigurations().getByName(serverOnlySourceSet.getCompileClasspathConfigurationName())
+				);
+			});
+
+			// The sources task can be registered at a later time.
+			project.getTasks().configureEach(task -> {
+				if (!mainSourceSet.getSourcesJarTaskName().equals(task.getName()) || !(task instanceof Jar jar)) {
+					// Not the sources task we are looking for.
+					return;
+				}
+
+				// The client and server only sources to the combined sources jar.
+				jar.from(clientOnlySourceSet.getAllSource(), serverOnlySourceSet.getAllSource());
+			});
+
+			project.getTasks().withType(AbstractRemapJarTask.class, task -> {
+				// Set the default client and server only source set name
+				task.getClientOnlySourceSetName().convention(CLIENT_ONLY_SOURCE_SET_NAME);
+				task.getServerOnlySourceSetName().convention(SERVER_ONLY_SOURCE_SET_NAME);
 			});
 		}
 

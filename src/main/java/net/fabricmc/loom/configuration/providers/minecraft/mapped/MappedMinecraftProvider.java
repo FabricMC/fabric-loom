@@ -67,6 +67,25 @@ public interface MappedMinecraftProvider {
 		}
 	}
 
+	interface LegacySplit extends ProviderImpl {
+		default MinecraftJar getCommonJar() {
+			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON));
+		}
+
+		default MinecraftJar getClientOnlyJar() {
+			return new MinecraftJar.ClientOnly(getJar(MinecraftJar.Type.CLIENT_ONLY));
+		}
+
+		default MinecraftJar getServerOnlyJar() {
+			return new MinecraftJar.ServerOnly(getJar(MinecraftJar.Type.SERVER_ONLY));
+		}
+
+		@Override
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
+		}
+	}
+
 	interface SingleJar extends ProviderImpl {
 		SingleJarEnvType env();
 

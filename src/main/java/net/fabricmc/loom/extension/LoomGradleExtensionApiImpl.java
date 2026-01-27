@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.fabricmc.loom.api.EnvironmentType;
+
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
@@ -103,7 +105,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> splitModDependencies;
 	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
-	private final Property<Boolean> splitEnvironmentalSourceSet;
+	private final Property<EnvironmentType> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
@@ -203,7 +205,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
 		this.interfaceInjectionExtension.getIsEnabled().convention(true);
 
-		this.splitEnvironmentalSourceSet = project.getObjects().property(Boolean.class).convention(false);
+		this.splitEnvironmentalSourceSet = project.getObjects().property(EnvironmentType.class).convention(EnvironmentType.MERGED);
 		this.splitEnvironmentalSourceSet.finalizeValueOnRead();
 
 		remapperExtensions = project.getObjects().listProperty(RemapperExtensionHolder.class);
@@ -446,10 +448,14 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public void splitEnvironmentSourceSets() {
-		splitMinecraftJar();
+	public void environmentSourceSetType(EnvironmentType type) {
+		if (type == EnvironmentType.SPLIT) {
+			splitMinecraftJar();
+		} else {
+			legacySplitMinecraftJar();
+		}
 
-		splitEnvironmentalSourceSet.set(true);
+		splitEnvironmentalSourceSet.set(type);
 
 		// We need to lock these values, as we setup the new source sets right away.
 		splitEnvironmentalSourceSet.finalizeValue();
@@ -459,7 +465,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
-	public boolean areEnvironmentSourceSetsSplit() {
+	public EnvironmentType environmentSourceSetType() {
 		return splitEnvironmentalSourceSet.get();
 	}
 

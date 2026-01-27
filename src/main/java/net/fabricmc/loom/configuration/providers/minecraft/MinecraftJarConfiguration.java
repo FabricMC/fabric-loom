@@ -104,6 +104,17 @@ public record MinecraftJarConfiguration<
 				SplitDecompileConfiguration::new,
 				List.of("client", "server")
 			);
+	public static final MinecraftJarConfiguration<
+			LegacySplitMinecraftProvider,
+			NamedMinecraftProvider.LegacySplitImpl,
+			MappedMinecraftProvider.Split> LEGACY_SPLIT = new MinecraftJarConfiguration<>(
+				LegacySplitMinecraftProvider::new,
+				IntermediaryMinecraftProvider.LegacySplitImpl::new,
+				NamedMinecraftProvider.LegacySplitImpl::new,
+				ProcessedNamedMinecraftProvider.LegacySplitImpl::new,
+				SplitDecompileConfiguration::new,
+				List.of("client", "server")
+			);
 
 	public MinecraftProvider createMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext context) {
 		return minecraftProviderFactory.create(metadataProvider, context);

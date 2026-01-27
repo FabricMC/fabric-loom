@@ -38,6 +38,7 @@ import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.processors.ProcessorContextImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
@@ -213,6 +214,27 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		@Override
 		public MinecraftJar getClientOnlyJar() {
 			return getProcessedJar(getParentMinecraftProvider().getClientOnlyJar());
+		}
+	}
+
+	public static final class LegacySplitImpl extends ProcessedNamedMinecraftProvider<LegacySplitMinecraftProvider, NamedMinecraftProvider.LegacySplitImpl> implements LegacySplit {
+		public LegacySplitImpl(NamedMinecraftProvider.LegacySplitImpl parentMinecraftProvide, MinecraftJarProcessorManager jarProcessorManager) {
+			super(parentMinecraftProvide, jarProcessorManager);
+		}
+
+		@Override
+		public MinecraftJar getCommonJar() {
+			return getProcessedJar(getParentMinecraftProvider().getCommonJar());
+		}
+
+		@Override
+		public MinecraftJar getClientOnlyJar() {
+			return getProcessedJar(getParentMinecraftProvider().getClientOnlyJar());
+		}
+
+		@Override
+		public MinecraftJar getServerOnlyJar() {
+			return getProcessedJar(getParentMinecraftProvider().getServerOnlyJar());
 		}
 	}
 

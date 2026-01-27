@@ -26,6 +26,8 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.util.List;
 
+import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;
+
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -160,6 +162,28 @@ public abstract class NamedMinecraftProvider<M extends MinecraftProvider> extend
 		@Override
 		public List<MinecraftJar.Type> getDependencyTypes() {
 			return List.of(MinecraftJar.Type.CLIENT_ONLY, MinecraftJar.Type.COMMON);
+		}
+	}
+
+	public static final class LegacySplitImpl extends NamedMinecraftProvider<LegacySplitMinecraftProvider> implements LegacySplit {
+		public LegacySplitImpl(Project project, LegacySplitMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
+		}
+
+		@Override
+		public List<RemappedJars> getRemappedJars() {
+			// The delegate providers will handle the remapping
+			throw new UnsupportedOperationException("LegacySplitImpl does not support getRemappedJars");
+		}
+
+		@Override
+		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+			configureLegacySplitRemapper(remappedJars, tinyRemapperBuilder);
+		}
+
+		@Override
+		public List<MinecraftJar.Type> getDependencyTypes() {
+			return List.of(MinecraftJar.Type.CLIENT_ONLY, MinecraftJar.Type.SERVER_ONLY, MinecraftJar.Type.COMMON);
 		}
 	}
 

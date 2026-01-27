@@ -26,6 +26,8 @@ package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
 import java.util.List;
 
+import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;
+
 import org.gradle.api.Project;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -38,7 +40,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftPro
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.LegacyMergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
+public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.LegacyMergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl, IntermediaryMinecraftProvider.LegacySplitImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
 
@@ -137,6 +139,26 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 			return List.of(
 				new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), minecraftProvider.getOfficialNamespace()),
 				new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar())
+			);
+		}
+
+		@Override
+		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+			configureSplitRemapper(remappedJars, tinyRemapperBuilder);
+		}
+	}
+
+	public static final class LegacySplitImpl extends IntermediaryMinecraftProvider<LegacySplitMinecraftProvider> implements LegacySplit {
+		public LegacySplitImpl(Project project, LegacySplitMinecraftProvider minecraftProvider) {
+			super(project, minecraftProvider);
+		}
+
+		@Override
+		public List<RemappedJars> getRemappedJars() {
+			return List.of(
+					new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), minecraftProvider.getOfficialNamespace()),
+					new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar()),
+					new RemappedJars(minecraftProvider.getMinecraftServerOnlyJar(), getServerOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar())
 			);
 		}
 

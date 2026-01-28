@@ -43,7 +43,10 @@ import net.fabricmc.loom.api.EnvironmentType;
 
 public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split, MinecraftSourceSets.LegacySplit {
 	public static MinecraftSourceSets get(Project project) {
-		return LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit() ? Split.INSTANCE : Single.INSTANCE;
+		EnvironmentType type = LoomGradleExtension.get(project).environmentSourceSetType();
+		if (type.isSplit())
+			return type == EnvironmentType.SPLIT ? Split.INSTANCE : LegacySplit.INSTANCE;
+		return Single.INSTANCE;
 	}
 
 	public abstract void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets);
@@ -321,7 +324,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			final SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
 			final SourceSet serverOnlySourceSet = SourceSetHelper.createSourceSet(SERVER_ONLY_SOURCE_SET_NAME, project);
 
-			// Add Minecraft to the main and client source sets.
+			// Add Minecraft to the main, client and server source sets.
 			extendsFrom(project, mainSourceSet.getCompileClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.compile());
 			extendsFrom(project, mainSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
 			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.compile());
@@ -378,34 +381,25 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			project.getDependencies().add(testSourceSet.getImplementationConfigurationName(), serverOnlySourceSet.getOutput());
 
 			RemapConfigurations.configureClientConfigurations(project, clientOnlySourceSet);
-			RemapConfigurations.configureClientConfigurations(project, serverOnlySourceSet);
+			RemapConfigurations.configureServerConfigurations(project, serverOnlySourceSet);
 
-			// Include the client only output in the jars
+			// Include the client and server only output in the jars
 			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
 
 				jar.dependsOn(project.getTasks().named(clientOnlySourceSet.getProcessResourcesTaskName()));
-			});
 
-			// Include the server only output in the jars
-			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(serverOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(serverOnlySourceSet.getOutput().getResourcesDir());
 
 				jar.dependsOn(project.getTasks().named(serverOnlySourceSet.getProcessResourcesTaskName()));
 			});
 
-			// Remap with the client compile classpath.
+			// Remap with the client and server compile classpath.
 			project.getTasks().withType(AbstractRemapJarTask.class).configureEach(remapJarTask -> {
 				remapJarTask.getClasspath().from(
-						project.getConfigurations().getByName(clientOnlySourceSet.getCompileClasspathConfigurationName())
-				);
-			});
-
-			// Remap with the server compile classpath.
-			project.getTasks().withType(AbstractRemapJarTask.class).configureEach(remapJarTask -> {
-				remapJarTask.getClasspath().from(
+						project.getConfigurations().getByName(clientOnlySourceSet.getCompileClasspathConfigurationName()),
 						project.getConfigurations().getByName(serverOnlySourceSet.getCompileClasspathConfigurationName())
 				);
 			});

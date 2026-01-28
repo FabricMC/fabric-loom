@@ -31,8 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import net.fabricmc.loom.util.Side;
-
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -47,6 +45,7 @@ import org.objectweb.asm.tree.MethodNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.util.Side;
 import net.fabricmc.loom.util.Constants;
 
 public class MinecraftClassMerger {
@@ -108,7 +107,7 @@ public class MinecraftClassMerger {
 				} else if (entryClient != null && side.allowClient() && side != Side.COMMON_MERGED) {
 					applySide(entryClient, "CLIENT");
 					list.add(entryClient);
-				} else if(entryServer != null && side.allowServer() && side != Side.COMMON_MERGED) {
+				} else if (entryServer != null && side.allowServer() && side != Side.COMMON_MERGED) {
 					applySide(entryServer, "SERVER");
 					list.add(entryServer);
 				}

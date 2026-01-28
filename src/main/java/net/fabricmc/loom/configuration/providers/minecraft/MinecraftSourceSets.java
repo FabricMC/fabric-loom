@@ -44,8 +44,11 @@ import net.fabricmc.loom.api.EnvironmentType;
 public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Single, MinecraftSourceSets.Split, MinecraftSourceSets.LegacySplit {
 	public static MinecraftSourceSets get(Project project) {
 		EnvironmentType type = LoomGradleExtension.get(project).environmentSourceSetType();
-		if (type.isSplit())
+
+		if (type.isSplit()) {
 			return type == EnvironmentType.SPLIT ? Split.INSTANCE : LegacySplit.INSTANCE;
+		}
+
 		return Single.INSTANCE;
 	}
 
@@ -320,9 +323,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		@Override
 		public String getSourceSetForEnv(String env) {
 			return switch (env) {
-				case "client" -> CLIENT_ONLY_SOURCE_SET_NAME;
-				case "server" -> SERVER_ONLY_SOURCE_SET_NAME;
-				default -> SourceSet.MAIN_SOURCE_SET_NAME;
+			case "client" -> CLIENT_ONLY_SOURCE_SET_NAME;
+			case "server" -> SERVER_ONLY_SOURCE_SET_NAME;
+			default -> SourceSet.MAIN_SOURCE_SET_NAME;
 			};
 		}
 

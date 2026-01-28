@@ -37,13 +37,12 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.FileSystemUtil;
-
-import net.fabricmc.loom.util.Side;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.Side;
 
 public class LegacyMinecraftJarSplitter implements AutoCloseable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LegacyMinecraftJarSplitter.class);

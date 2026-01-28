@@ -115,6 +115,7 @@ public class JarSplitter {
 			for (String entry : entries) {
 				boolean isClientEntry = clientEntries.contains(entry);
 				boolean isServerEntry = serverEntries.contains(entry);
+
 				if (!isClientEntry && serverEntries.isEmpty()) {
 					// Found a common entry, we need to split,.
 					return Target.SPLIT;
@@ -130,6 +131,7 @@ public class JarSplitter {
 			if (clientEntries.isEmpty()) {
 				return Target.SERVER_ONLY;
 			}
+
 			return Target.CLIENT_ONLY;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read jar", e);
@@ -154,8 +156,8 @@ public class JarSplitter {
 			}
 
 			try (FileSystemUtil.Delegate commonOutput = FileSystemUtil.getJarFileSystem(commonOutputJar, true);
-				 FileSystemUtil.Delegate clientOutput = FileSystemUtil.getJarFileSystem(clientOutputJar, true);
-				 Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
+					FileSystemUtil.Delegate clientOutput = FileSystemUtil.getJarFileSystem(clientOutputJar, true);
+					Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
 				final Iterator<Path> iterator = walk.iterator();
 
 				while (iterator.hasNext()) {
@@ -234,7 +236,7 @@ public class JarSplitter {
 
 			try (FileSystemUtil.Delegate commonOutput = FileSystemUtil.getJarFileSystem(commonOutputJar, true);
 					FileSystemUtil.Delegate clientOutput = FileSystemUtil.getJarFileSystem(clientOutputJar, true);
-				 	FileSystemUtil.Delegate serverOutput = FileSystemUtil.getJarFileSystem(serverOutputJar, true);
+					FileSystemUtil.Delegate serverOutput = FileSystemUtil.getJarFileSystem(serverOutputJar, true);
 					Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
 				final Iterator<Path> iterator = walk.iterator();
 
@@ -318,9 +320,11 @@ public class JarSplitter {
 
 	private List<String> readServerEntries(Manifest manifest) {
 		final Attributes attributes = manifest.getMainAttributes();
+
 		if (!attributes.containsKey(Constants.Manifest.SERVER_ENTRIES)) {
 			return List.of();
 		}
+
 		final String serverEntriesValue = attributes.getValue(Constants.Manifest.SERVER_ENTRIES);
 
 		if (serverEntriesValue == null || serverEntriesValue.isBlank()) {

@@ -66,6 +66,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 		});
 
 		final TaskProvider<Task> serverOnlyDecompileTask;
+
 		if (includeServer) {
 			serverOnlyDecompileTask = createDecompileTasks("ServerOnly", task -> {
 				final MinecraftJar serverOnlyJar = minecraftProvider.getServerOnlyJar();
@@ -90,6 +91,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			});
 
 			TaskProvider<Task> serverOnlyTask;
+
 			if (includeServer) {
 				serverOnlyTask = project.getTasks().named("gen%sSourcesWith%s".formatted("ServerOnly", decompilerName));
 
@@ -106,8 +108,10 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 				task.dependsOn(commonTask);
 				task.dependsOn(clientOnlyTask);
-				if (serverOnlyTask != null)
+
+				if (serverOnlyTask != null) {
 					task.dependsOn(serverOnlyTask);
+				}
 			});
 		}
 
@@ -117,8 +121,10 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 			task.dependsOn(commonDecompileTask);
 			task.dependsOn(clientOnlyDecompileTask);
-			if (serverOnlyDecompileTask != null)
+
+			if (serverOnlyDecompileTask != null) {
 				task.dependsOn(serverOnlyDecompileTask);
+			}
 		});
 	}
 

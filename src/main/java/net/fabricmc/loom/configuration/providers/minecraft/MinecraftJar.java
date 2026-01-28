@@ -24,11 +24,11 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
-import net.fabricmc.loom.util.Side;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
+
+import net.fabricmc.loom.util.Side;
 
 public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server, MinecraftJar.ServerOnly {
 	private final Path path;
@@ -167,10 +167,10 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 
 		public static Type fromSide(Side side) {
 			return switch (side) {
-				case COMMON, COMMON_MERGED -> COMMON;
-				case MERGED -> MERGED;
-				case CLIENT -> COMMON_CLIENT;
-				case SERVER -> COMMON_SERVER;
+			case COMMON, COMMON_MERGED -> COMMON;
+			case MERGED -> MERGED;
+			case CLIENT -> COMMON_CLIENT;
+			case SERVER -> COMMON_SERVER;
 			};
 		}
 

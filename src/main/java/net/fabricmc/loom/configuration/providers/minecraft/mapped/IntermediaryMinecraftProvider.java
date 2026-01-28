@@ -28,10 +28,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftJarSplitter;
-
 import org.gradle.api.Project;
 
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftJarSplitter;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.LegacySplitMinecraftProvider;

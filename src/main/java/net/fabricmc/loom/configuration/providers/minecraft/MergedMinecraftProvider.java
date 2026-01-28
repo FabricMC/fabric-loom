@@ -31,12 +31,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
-import net.fabricmc.loom.util.Side;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.Side;
 import net.fabricmc.loom.configuration.ConfigContext;
 
 public final class MergedMinecraftProvider extends MinecraftProvider {

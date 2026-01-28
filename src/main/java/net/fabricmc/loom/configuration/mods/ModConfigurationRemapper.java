@@ -130,6 +130,7 @@ public class ModConfigurationRemapper {
 					final Configuration clientTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime);
 					clientConfigsToRemap.put(sourceCopy, clientTarget);
 				}
+
 				if (entry.getServerSourceConfigurationName().isPresent()) {
 					final SourceSet serverSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.LegacySplit.SERVER_ONLY_SOURCE_SET_NAME, project);
 					final Configuration serverTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, serverSourceSet, runtime);

@@ -67,8 +67,10 @@ public interface MappedMinecraftProvider {
 		}
 
 		default MinecraftJar getServerOnlyJar() {
-			if (!isLegacy())
+			if (!isLegacy()) {
 				throw new UnsupportedOperationException("Split does not support getServerOnlyJar on non legacy providers");
+			}
+
 			return new MinecraftJar.ServerOnly(getJar(MinecraftJar.Type.SERVER_ONLY));
 		}
 
@@ -79,7 +81,6 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface LegacySplit extends Split {
-
 		default MinecraftJar getCommonClientJar() {
 			return new MinecraftJar.Common(Side.CLIENT, getJar(MinecraftJar.Type.COMMON_CLIENT));
 		}

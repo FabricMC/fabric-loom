@@ -39,8 +39,6 @@ import java.util.jar.Manifest;
 
 import javax.inject.Inject;
 
-import net.fabricmc.loom.api.EnvironmentType;
-
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -65,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.EnvironmentType;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.service.SidedEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;

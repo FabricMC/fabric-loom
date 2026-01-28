@@ -47,13 +47,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
-import net.fabricmc.loom.util.Side;
-
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import net.fabricmc.loom.util.Side;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.Lazy;
@@ -205,8 +204,9 @@ public class MinecraftJarMerger implements AutoCloseable {
 		boolean isMinecraft = entriesClient.containsKey(entry) || entry.startsWith("net/minecraft") || !entry.contains("/");
 		Result r = getResult(entry, isClass);
 
-		if (r.side() != null && side == Side.COMMON_MERGED)
+		if (r.side() != null && side == Side.COMMON_MERGED) {
 			return;
+		}
 
 		if (isClass && !isMinecraft && "SERVER".equals(r.side())) {
 			// Server bundles libraries, client doesn't - skip them
@@ -215,7 +215,7 @@ public class MinecraftJarMerger implements AutoCloseable {
 
 		if (isMinecraft && isClass) {
 			CompletableFuture.supplyAsync(() -> mergeClass(entry, r), executor)
-				.thenAccept(this::add);
+					.thenAccept(this::add);
 			return;
 		}
 

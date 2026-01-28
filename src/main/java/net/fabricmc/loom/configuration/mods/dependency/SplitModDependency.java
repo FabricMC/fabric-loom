@@ -86,9 +86,11 @@ public final class SplitModDependency extends ModDependency {
 				// Found a broken artifact, copy it to both locations without splitting.
 				getCommonMaven().copyToMaven(path, variant);
 				getClientMaven().copyToMaven(path, variant);
+
 				if (target == JarSplitter.Target.LEGACY_SPLIT) {
 					getServerMaven().copyToMaven(path, variant);
 				}
+
 				return;
 			}
 		}
@@ -154,6 +156,7 @@ public final class SplitModDependency extends ModDependency {
 	private void createModGroup(Project project, Path commonJar, Path clientJar, @Nullable Path serverJar) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final ModSettings modSettings = extension.getMods().maybeCreate(String.format("%s-%s-%s", getGroup(), getName(), getVersion()));
+
 		if (serverJar != null) {
 			modSettings.getModFiles().from(
 					commonJar.toFile(),

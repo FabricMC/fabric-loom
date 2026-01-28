@@ -29,6 +29,7 @@ import java.util.List;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
+import net.fabricmc.loom.util.Side;
 
 public interface MappedMinecraftProvider {
 	default List<Path> getMinecraftJarPaths() {
@@ -82,11 +83,11 @@ public interface MappedMinecraftProvider {
 	interface LegacySplit extends Split {
 
 		default MinecraftJar getCommonClientJar() {
-			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON_CLIENT));
+			return new MinecraftJar.Common(Side.CLIENT, getJar(MinecraftJar.Type.COMMON_CLIENT));
 		}
 
 		default MinecraftJar getCommonServerJar() {
-			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON_SERVER));
+			return new MinecraftJar.Common(Side.SERVER, getJar(MinecraftJar.Type.COMMON_SERVER));
 		}
 
 		@Override

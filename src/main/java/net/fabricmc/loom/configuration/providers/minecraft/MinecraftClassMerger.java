@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import net.fabricmc.loom.util.Side;
+
 import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -58,11 +60,15 @@ public class MinecraftClassMerger {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftClassMerger.class);
 
+	private final Side side;
+
 	private abstract static class Merger<T> {
 		private final Map<String, T> entriesClient, entriesServer;
 		private final List<String> entryNames;
+		private final Side side;
 
-		Merger(List<T> entriesClient, List<T> entriesServer) {
+		Merger(Side side, List<T> entriesClient, List<T> entriesServer) {
+			this.side = side;
 			this.entriesClient = new LinkedHashMap<>();
 			this.entriesServer = new LinkedHashMap<>();
 
@@ -99,10 +105,10 @@ public class MinecraftClassMerger {
 
 				if (entryClient != null && entryServer != null) {
 					list.add(merge(entryClient, entryServer));
-				} else if (entryClient != null) {
+				} else if (entryClient != null && side.allowClient()) {
 					applySide(entryClient, "CLIENT");
 					list.add(entryClient);
-				} else {
+				} else if(entryServer != null && side.allowServer()) {
 					applySide(entryServer, "SERVER");
 					list.add(entryServer);
 				}
@@ -140,7 +146,12 @@ public class MinecraftClassMerger {
 		}
 	}
 
+	public MinecraftClassMerger(Side side) {
+		this.side = side;
+	}
+
 	public MinecraftClassMerger() {
+		this(Side.MERGED);
 	}
 
 	public byte[] merge(byte[] classClient, byte[] classServer) {
@@ -201,9 +212,9 @@ public class MinecraftClassMerger {
 			boolean ns = nodeS.interfaces.contains(s);
 			nodeOut.interfaces.add(s);
 
-			if (nc && !ns) {
+			if (nc && !ns && side.allowClient()) {
 				clientItfs.add(s);
-			} else if (ns && !nc) {
+			} else if (ns && !nc && side.allowServer()) {
 				serverItfs.add(s);
 			}
 		}
@@ -224,7 +235,7 @@ public class MinecraftClassMerger {
 			envInterfaces.visitEnd();
 		}
 
-		new Merger<>(nodeC.innerClasses, nodeS.innerClasses) {
+		new Merger<>(side, nodeC.innerClasses, nodeS.innerClasses) {
 			@Override
 			public String getName(InnerClassNode entry) {
 				return entry.name;
@@ -235,7 +246,7 @@ public class MinecraftClassMerger {
 			}
 		}.merge(nodeOut.innerClasses);
 
-		new Merger<>(nodeC.fields, nodeS.fields) {
+		new Merger<>(side, nodeC.fields, nodeS.fields) {
 			@Override
 			public String getName(FieldNode entry) {
 				return entry.name + ";;" + entry.desc;
@@ -263,7 +274,7 @@ public class MinecraftClassMerger {
 			}
 		}.merge(nodeOut.fields);
 
-		new Merger<>(nodeC.methods, nodeS.methods) {
+		new Merger<>(side, nodeC.methods, nodeS.methods) {
 			@Override
 			public String getName(MethodNode entry) {
 				return entry.name + entry.desc;

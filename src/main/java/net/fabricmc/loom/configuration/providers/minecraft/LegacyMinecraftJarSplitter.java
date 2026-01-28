@@ -40,6 +40,8 @@ import java.util.stream.Stream;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 
+import net.fabricmc.loom.util.Side;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,13 +80,19 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		copyEntriesToJar(entryData.clientOnlyEntries, clientInputJar, clientOnlyOutputJar, "client");
 		copyEntriesToJar(entryData.serverOnlyEntries, serverInputJar, serverOnlyOutputJar, "server");
 
-		Path tmpMergedJar = commonOutputJar.getParent().resolve(commonOutputJar.getFileName().toString().replace(".jar", "-merged.jar"));
-
 		// We need to merge then strip the unwanted sided methods
 		MergedMinecraftProvider.mergeJars(
+				Side.CLIENT,
 				clientInputJar.toFile(),
 				serverInputJar.toFile(),
-				tmpMergedJar.toFile()
+				commonClientOutputJar.toFile()
+		);
+
+		MergedMinecraftProvider.mergeJars(
+				Side.SERVER,
+				clientInputJar.toFile(),
+				serverInputJar.toFile(),
+				commonServerOutputJar.toFile()
 		);
 	}
 

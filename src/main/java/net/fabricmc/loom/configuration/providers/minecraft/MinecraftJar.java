@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft;
 
+import net.fabricmc.loom.util.Side;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -83,8 +85,12 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 	}
 
 	public static final class Common extends MinecraftJar {
+		public Common(Side side, Path path) {
+			super(path, false, false, true, Type.fromSide(side));
+		}
+
 		public Common(Path path) {
-			super(path, false, false, true, Type.COMMON);
+			this(Side.COMMON, path);
 		}
 
 		@Override
@@ -158,6 +164,15 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 		SERVER_ONLY("serverOnly");
 
 		private final String name;
+
+		public static Type fromSide(Side side) {
+			return switch (side) {
+				case COMMON -> COMMON;
+				case MERGED -> MERGED;
+				case CLIENT -> COMMON_CLIENT;
+				case SERVER -> COMMON_SERVER;
+			};
+		}
 
 		Type(String name) {
 			this.name = name;

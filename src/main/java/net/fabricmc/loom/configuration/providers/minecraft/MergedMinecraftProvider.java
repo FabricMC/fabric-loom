@@ -31,6 +31,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 
+import net.fabricmc.loom.util.Side;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,12 +102,16 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	public static void mergeJars(File clientJar, File serverJar, File mergedJar) throws IOException {
+		mergeJars(Side.MERGED, clientJar, serverJar, mergedJar);
+	}
+
+	public static void mergeJars(Side side, File clientJar, File serverJar, File mergedJar) throws IOException {
 		LOGGER.info(":merging jars");
 
 		Objects.requireNonNull(clientJar, "Cannot merge null client jar?");
 		Objects.requireNonNull(serverJar, "Cannot merge null server jar?");
 
-		try (var jarMerger = new MinecraftJarMerger(clientJar, serverJar, mergedJar)) {
+		try (var jarMerger = new MinecraftJarMerger(side, clientJar, serverJar, mergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
 		}

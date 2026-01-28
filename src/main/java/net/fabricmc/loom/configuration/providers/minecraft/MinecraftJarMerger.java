@@ -47,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
+import net.fabricmc.loom.util.Side;
+
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -59,7 +61,8 @@ import net.fabricmc.loom.util.SnowmanClassVisitor;
 import net.fabricmc.loom.util.SyntheticParameterClassVisitor;
 
 public class MinecraftJarMerger implements AutoCloseable {
-	private final MinecraftClassMerger classMerger = new MinecraftClassMerger();
+	private final Side side;
+	private final MinecraftClassMerger classMerger;
 	private final FileSystemUtil.Delegate inputClientFs, inputServerFs, outputFs;
 	private final Path inputClient, inputServer;
 	private final Map<String, Entry> entriesClient, entriesServer;
@@ -67,7 +70,7 @@ public class MinecraftJarMerger implements AutoCloseable {
 	private boolean removeSnowmen = false;
 	private boolean offsetSyntheticsParams = false;
 
-	public MinecraftJarMerger(File inputClient, File inputServer, File output) throws IOException {
+	public MinecraftJarMerger(Side side, File inputClient, File inputServer, File output) throws IOException {
 		if (output.exists()) {
 			if (!output.delete()) {
 				throw new IOException("Could not delete " + output.getName());
@@ -76,6 +79,9 @@ public class MinecraftJarMerger implements AutoCloseable {
 
 		Files.createDirectories(output.toPath().getParent());
 
+		this.side = side;
+		this.classMerger = new MinecraftClassMerger(side);
+
 		this.inputClient = (inputClientFs = FileSystemUtil.getJarFileSystem(inputClient, false)).get().getPath("/");
 		this.inputServer = (inputServerFs = FileSystemUtil.getJarFileSystem(inputServer, false)).get().getPath("/");
 		this.outputFs = FileSystemUtil.getJarFileSystem(output, true);
@@ -83,6 +89,10 @@ public class MinecraftJarMerger implements AutoCloseable {
 		this.entriesClient = new HashMap<>();
 		this.entriesServer = new HashMap<>();
 		this.entriesAll = new TreeSet<>();
+	}
+
+	public MinecraftJarMerger(File inputClient, File inputServer, File output) throws IOException {
+		this(Side.MERGED, inputClient, inputServer, output);
 	}
 
 	public void enableSnowmanRemoval() {

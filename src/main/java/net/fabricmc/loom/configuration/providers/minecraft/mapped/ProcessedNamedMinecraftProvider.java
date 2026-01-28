@@ -228,6 +228,16 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		@Override
+		public MinecraftJar getCommonClientJar() {
+			return getProcessedJar(getParentMinecraftProvider().getCommonClientJar());
+		}
+
+		@Override
+		public MinecraftJar getCommonServerJar() {
+			return getProcessedJar(getParentMinecraftProvider().getCommonServerJar());
+		}
+
+		@Override
 		public MinecraftJar getClientOnlyJar() {
 			return getProcessedJar(getParentMinecraftProvider().getClientOnlyJar());
 		}

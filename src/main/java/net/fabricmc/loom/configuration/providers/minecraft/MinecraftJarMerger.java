@@ -185,8 +185,13 @@ public class MinecraftJarMerger implements AutoCloseable {
 			service.submit(() -> readToMap(entriesServer, inputServer));
 		}
 
-		entriesAll.addAll(entriesClient.keySet());
-		entriesAll.addAll(entriesServer.keySet());
+		if (side.allowClient()) {
+			entriesAll.addAll(entriesClient.keySet());
+		}
+
+		if (side.allowServer()) {
+			entriesAll.addAll(entriesServer.keySet());
+		}
 
 		try (ExecutorService service = Executors.newWorkStealingPool()) {
 			for (String entry : entriesAll) {
@@ -207,7 +212,7 @@ public class MinecraftJarMerger implements AutoCloseable {
 
 		if (isMinecraft && isClass) {
 			CompletableFuture.supplyAsync(() -> mergeClass(entry, r), executor)
-					.thenAccept(this::add);
+				.thenAccept(this::add);
 			return;
 		}
 

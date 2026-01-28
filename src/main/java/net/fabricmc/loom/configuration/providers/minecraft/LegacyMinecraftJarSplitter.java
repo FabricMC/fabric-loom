@@ -59,7 +59,7 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		this.serverInputJar = Objects.requireNonNull(serverInputJar);
 	}
 
-	public void split(Path clientOnlyOutputJar, Path serverOnlyOutputJar, Path commonOutputJar) throws IOException {
+	public void split(Path clientOnlyOutputJar, Path serverOnlyOutputJar, Path commonOutputJar, Path commonClientOutputJar, Path commonServerOutputJar) throws IOException {
 		LOGGER.info(":splitting jars");
 
 		Objects.requireNonNull(clientOnlyOutputJar);
@@ -71,11 +71,21 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		}
 
 		// Not something we expect, will require 3 jars, server, client and common.
+		assert entryData.clientOnlyEntries.isEmpty();
 		assert entryData.serverOnlyEntries.isEmpty();
 
 		copyEntriesToJar(entryData.commonEntries, serverInputJar, commonOutputJar, "common");
 		copyEntriesToJar(entryData.clientOnlyEntries, clientInputJar, clientOnlyOutputJar, "client");
 		copyEntriesToJar(entryData.serverOnlyEntries, serverInputJar, serverOnlyOutputJar, "server");
+
+		Path tmpMergedJar = commonOutputJar.getParent().resolve(commonOutputJar.getFileName().toString().replace(".jar", "-merged.jar"));
+
+		// We need to merge then strip the unwanted sided methods
+		MergedMinecraftProvider.mergeJars(
+				clientInputJar.toFile(),
+				serverInputJar.toFile(),
+				tmpMergedJar.toFile()
+		);
 	}
 
 	public void sharedEntry(String path) {

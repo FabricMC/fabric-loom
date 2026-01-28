@@ -163,7 +163,7 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 
 		@Override
 		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
-			final List<MinecraftJar> minecraftJars = List.of(getClientOnlyJar(), getServerOnlyJar(), getCommonJar());
+			final List<MinecraftJar> minecraftJars = List.of(getClientOnlyJar(), getServerOnlyJar(), getCommonJar(), getCommonClientJar(), getCommonServerJar());
 
 			// this check must be done before the client and server impls are provided
 			// because the splitting only needs to happen if the remapping step is run
@@ -178,14 +178,18 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 			final Path minecraftClientOnlyJar = getClientOnlyJar().getPath();
 			final Path minecraftServerOnlyJar = getServerOnlyJar().getPath();
 			final Path minecraftCommonJar = getCommonJar().getPath();
+			final Path minecraftCommonClientJar = getCommonClientJar().getPath();
+			final Path minecraftCommonServerJar = getCommonServerJar().getPath();
 
 			if (refreshOutputs) {
 				try (LegacyMinecraftJarSplitter jarSplitter = new LegacyMinecraftJarSplitter(client.getEnvOnlyJar().getPath(), server.getEnvOnlyJar().getPath())) {
-					jarSplitter.split(minecraftClientOnlyJar, minecraftServerOnlyJar, minecraftCommonJar);
+					jarSplitter.split(minecraftClientOnlyJar, minecraftServerOnlyJar, minecraftCommonJar, minecraftCommonClientJar, minecraftCommonServerJar);
 				} catch (Exception e) {
 					Files.deleteIfExists(minecraftClientOnlyJar);
 					Files.deleteIfExists(minecraftServerOnlyJar);
 					Files.deleteIfExists(minecraftCommonJar);
+					Files.deleteIfExists(minecraftCommonClientJar);
+					Files.deleteIfExists(minecraftCommonServerJar);
 
 					throw new RuntimeException("Failed to split minecraft", e);
 				}
@@ -207,7 +211,9 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 			return List.of(
 					new SimpleOutputJar(getClientOnlyJar()),
 					new SimpleOutputJar(getServerOnlyJar()),
-					new SimpleOutputJar(getCommonJar())
+					new SimpleOutputJar(getCommonJar()),
+					new SimpleOutputJar(getCommonClientJar()),
+					new SimpleOutputJar(getCommonServerJar())
 			);
 		}
 

@@ -151,6 +151,9 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 
 		// Split jars
 		COMMON("common"),
+		// Legacy split
+		COMMON_CLIENT("commonClient"),
+		COMMON_SERVER("commonServer"),
 		CLIENT_ONLY("clientOnly"),
 		SERVER_ONLY("serverOnly");
 

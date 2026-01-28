@@ -267,6 +267,17 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
 				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
 		);
+		// Common jars that contain unstripped sided classes, methods, and fields
+		private static final ConfigurationName MINECRAFT_COMMON_CLIENT_NAMED = new ConfigurationName(
+				"minecraftCommonClientNamed",
+				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
+		);
+		private static final ConfigurationName MINECRAFT_COMMON_SERVER_NAMED = new ConfigurationName(
+				"minecraftCommonServerNamed",
+				Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES,
+				Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES
+		);
 		// Depends on the Minecraft client libraries.
 		private static final ConfigurationName MINECRAFT_CLIENT_ONLY_NAMED = new ConfigurationName(
 				"minecraftClientOnlyNamed",
@@ -287,15 +298,21 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		public void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets) {
-			Check.require(targets.size() == 3);
+			Check.require(targets.size() == 5);
 			Check.require(targets.contains(MinecraftJar.Type.COMMON));
+			Check.require(targets.contains(MinecraftJar.Type.COMMON_CLIENT));
+			Check.require(targets.contains(MinecraftJar.Type.COMMON_SERVER));
 			Check.require(targets.contains(MinecraftJar.Type.CLIENT_ONLY));
 			Check.require(targets.contains(MinecraftJar.Type.SERVER_ONLY));
 
 			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_COMMON_CLIENT_NAMED.runtime(), MinecraftJar.Type.COMMON_CLIENT);
+			consumer.accept(MINECRAFT_COMMON_SERVER_NAMED.runtime(), MinecraftJar.Type.COMMON_SERVER);
 			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.Type.CLIENT_ONLY);
 			consumer.accept(MINECRAFT_SERVER_ONLY_NAMED.runtime(), MinecraftJar.Type.SERVER_ONLY);
 			consumer.accept(MINECRAFT_COMMON_NAMED.compile(), MinecraftJar.Type.COMMON);
+			consumer.accept(MINECRAFT_COMMON_CLIENT_NAMED.compile(), MinecraftJar.Type.COMMON_CLIENT);
+			consumer.accept(MINECRAFT_COMMON_SERVER_NAMED.compile(), MinecraftJar.Type.COMMON_SERVER);
 			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.compile(), MinecraftJar.Type.CLIENT_ONLY);
 			consumer.accept(MINECRAFT_SERVER_ONLY_NAMED.compile(), MinecraftJar.Type.SERVER_ONLY);
 		}
@@ -311,7 +328,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		protected List<ConfigurationName> getConfigurations() {
-			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_SERVER_ONLY_NAMED);
+			return List.of(MINECRAFT_COMMON_NAMED, MINECRAFT_COMMON_CLIENT_NAMED, MINECRAFT_COMMON_SERVER_NAMED, MINECRAFT_CLIENT_ONLY_NAMED, MINECRAFT_SERVER_ONLY_NAMED);
 		}
 
 		// Called during evaluation, when the loom extension method is called.
@@ -332,13 +349,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			extendsFrom(project, serverOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_SERVER_ONLY_NAMED.compile());
 			extendsFrom(project, serverOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_SERVER_ONLY_NAMED.runtime());
 
-			// Client source set depends on common.
-			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
-			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
+			// Client source set depends on common client.
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MINECRAFT_COMMON_CLIENT_NAMED.runtime());
+			extendsFrom(project, MINECRAFT_CLIENT_ONLY_NAMED.compile(), MINECRAFT_COMMON_CLIENT_NAMED.compile());
 
-			// Server source set depends on common.
-			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.runtime(), MINECRAFT_COMMON_NAMED.runtime());
-			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.compile(), MINECRAFT_COMMON_NAMED.compile());
+			// Server source set depends on common server.
+			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.runtime(), MINECRAFT_COMMON_SERVER_NAMED.runtime());
+			extendsFrom(project, MINECRAFT_SERVER_ONLY_NAMED.compile(), MINECRAFT_COMMON_SERVER_NAMED.compile());
 
 			// Client annotation processor configuration extendsFrom "annotationProcessor"
 			extendsFrom(project, clientOnlySourceSet.getAnnotationProcessorConfigurationName(), JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);

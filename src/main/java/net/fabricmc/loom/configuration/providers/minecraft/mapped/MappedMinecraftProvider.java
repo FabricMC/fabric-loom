@@ -80,6 +80,15 @@ public interface MappedMinecraftProvider {
 	}
 
 	interface LegacySplit extends Split {
+
+		default MinecraftJar getCommonClientJar() {
+			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON_CLIENT));
+		}
+
+		default MinecraftJar getCommonServerJar() {
+			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON_SERVER));
+		}
+
 		@Override
 		default boolean isLegacy() {
 			return true;

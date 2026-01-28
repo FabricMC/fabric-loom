@@ -33,6 +33,7 @@ import net.fabricmc.loom.configuration.ConfigContext;
 /**
  * Minecraft versions prior to 1.3 obfuscate the server and client jars differently.
  * The obfuscated jars must be provided separately, and can be merged after remapping.
+ * @see LegacySplitMinecraftProvider
  */
 public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 	private final SingleJarMinecraftProvider.Server serverMinecraftProvider;

@@ -59,7 +59,7 @@ import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
-import net.fabricmc.loom.task.service.ClientEntriesService;
+import net.fabricmc.loom.task.service.SidedEntriesService;
 import net.fabricmc.loom.task.service.MixinRefmapService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
@@ -310,7 +310,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	}
 
 	@Override
-	protected Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet) {
-		return ClientEntriesService.Classes.createOptions(getProject(), clientSourceSet);
+	protected Provider<? extends SidedEntriesService.Options> getSidedOnlyEntriesOptionsProvider(SourceSet sidedSourceSet) {
+		return SidedEntriesService.Classes.createOptions(getProject(), sidedSourceSet);
 	}
 }

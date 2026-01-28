@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import net.fabricmc.loom.api.EnvironmentType;
+
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
@@ -39,7 +41,7 @@ import org.gradle.jvm.tasks.Jar;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
-import net.fabricmc.loom.task.service.ClientEntriesService;
+import net.fabricmc.loom.task.service.SidedEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -71,8 +73,9 @@ public class NonRemappedJarTaskConfiguration {
 			task.doLast(new ManifestModificationAction(
 					manifestServiceProvider,
 					"official",
-					project.provider(extension::areEnvironmentSourceSetsSplit),
-					project.provider(this::getClientOnlyEntries)
+					project.provider(() -> extension.environmentSourceSetType().isSplit()),
+					project.provider(this::getClientOnlyEntries),
+					project.provider(this::getServerOnlyEntries)
 			));
 
 			task.usesService(manifestServiceProvider);
@@ -90,13 +93,32 @@ public class NonRemappedJarTaskConfiguration {
 				MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME,
 				project
 		);
-		final Provider<ClientEntriesService.Classes.Options> optionsProvider = ClientEntriesService.Classes.createOptions(project, clientSourceSet);
+		final Provider<SidedEntriesService.Classes.Options> optionsProvider = SidedEntriesService.Classes.createOptions(project, clientSourceSet);
 
 		try (var serviceFactory = new ScopedServiceFactory()) {
-			ClientEntriesService<ClientEntriesService.Classes.Options> service = serviceFactory.get(optionsProvider);
-			return new ArrayList<>(service.getClientOnlyEntries());
+			SidedEntriesService<SidedEntriesService.Classes.Options> service = serviceFactory.get(optionsProvider);
+			return new ArrayList<>(service.getSidedOnlyEntries());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to determine client-only entries", e);
+		}
+	}
+
+	private List<String> getServerOnlyEntries() {
+		if (extension.environmentSourceSetType() != EnvironmentType.LEGACY_SPLIT) {
+			return Collections.emptyList();
+		}
+
+		final SourceSet serverSourceSet = SourceSetHelper.getSourceSetByName(
+				MinecraftSourceSets.LegacySplit.SERVER_ONLY_SOURCE_SET_NAME,
+				project
+		);
+		final Provider<SidedEntriesService.Classes.Options> optionsProvider = SidedEntriesService.Classes.createOptions(project, serverSourceSet);
+
+		try (var serviceFactory = new ScopedServiceFactory()) {
+			SidedEntriesService<SidedEntriesService.Classes.Options> service = serviceFactory.get(optionsProvider);
+			return new ArrayList<>(service.getSidedOnlyEntries());
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to determine server-only entries", e);
 		}
 	}
 }

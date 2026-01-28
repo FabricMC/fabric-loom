@@ -31,76 +31,50 @@ import java.util.List;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
 
+/**
+ * Minecraft versions prior to 1.3 obfuscate the server and client jars differently.
+ * The obfuscated jars must be provided separately, and can be split after remapping.
+ * @see LegacyMergedMinecraftProvider
+ */
 public final class LegacySplitMinecraftProvider extends MinecraftProvider {
-	private Path minecraftClientOnlyJar;
-	private Path minecraftServerOnlyJar;
-	private Path minecraftCommonJar;
+	private final SingleJarMinecraftProvider.Server serverMinecraftProvider;
+	private final SingleJarMinecraftProvider.Client clientMinecraftProvider;
 
 	public LegacySplitMinecraftProvider(MinecraftMetadataProvider metadataProvider, ConfigContext configContext) {
 		super(metadataProvider, configContext);
+		serverMinecraftProvider = SingleJarMinecraftProvider.server(metadataProvider, configContext);
+		clientMinecraftProvider = SingleJarMinecraftProvider.client(metadataProvider, configContext);
+
+		if (!isLegacyVersion()) {
+			throw new RuntimeException("something has gone wrong - legacy-split jar configuration selected but Minecraft " + metadataProvider.getMinecraftVersion() + " allows splitting the obfuscated jars - the split jar configuration should have been selected!");
+		}
 	}
 
-	@Override
-	protected void initFiles() {
-		super.initFiles();
-
-		minecraftClientOnlyJar = path("minecraft-client-only.jar");
-		minecraftServerOnlyJar = path("minecraft-server-only.jar");
-		minecraftCommonJar = path("minecraft-common.jar");
+	public SingleJarMinecraftProvider.Server getServerMinecraftProvider() {
+		return serverMinecraftProvider;
 	}
 
-	@Override
-	public List<Path> getMinecraftJars() {
-		return List.of(minecraftClientOnlyJar, minecraftServerOnlyJar, minecraftCommonJar);
-	}
-
-	@Override
-	public MappingsNamespace getOfficialNamespace() {
-		return MappingsNamespace.OFFICIAL;
+	public SingleJarMinecraftProvider.Client getClientMinecraftProvider() {
+		return clientMinecraftProvider;
 	}
 
 	@Override
 	public void provide() throws Exception {
-		super.provide();
-
-		boolean requiresRefresh = getExtension().refreshDeps() || Files.notExists(minecraftClientOnlyJar) || Files.notExists(minecraftServerOnlyJar) || Files.notExists(minecraftCommonJar);
-
-		if (!requiresRefresh) {
-			return;
-		}
-
-		if (!isLegacyVersion()) {
-			throw new UnsupportedOperationException("Invalid version for legacy splitting! Version must be 1.2 or below.");
-		}
-
-		final Path clientJar = getMinecraftClientJar().toPath();
-		final Path serverJar = getMinecraftServerJar().toPath();
-
-		try (LegacyMinecraftJarSplitter jarSplitter = new LegacyMinecraftJarSplitter(clientJar, serverJar)) {
-			// Required for loader to compute the version info also useful to have in both jars.
-			jarSplitter.sharedEntry("version.json");
-			jarSplitter.sharedEntry("assets/.mcassetsroot");
-			jarSplitter.sharedEntry("assets/minecraft/lang/en_us.json");
-
-			jarSplitter.split(minecraftClientOnlyJar, minecraftServerOnlyJar, minecraftCommonJar);
-		} catch (Exception e) {
-			Files.deleteIfExists(minecraftClientOnlyJar);
-			Files.deleteIfExists(minecraftServerOnlyJar);
-			Files.deleteIfExists(minecraftCommonJar);
-
-			throw new RuntimeException("Failed to split minecraft", e);
-		}
+		serverMinecraftProvider.provide();
+		clientMinecraftProvider.provide();
 	}
 
-	public Path getMinecraftClientOnlyJar() {
-		return minecraftClientOnlyJar;
+	@Override
+	public List<Path> getMinecraftJars() {
+		return List.of(
+				serverMinecraftProvider.getMinecraftEnvOnlyJar(),
+				clientMinecraftProvider.getMinecraftEnvOnlyJar()
+		);
 	}
 
-	public Path getMinecraftServerOnlyJar() {
-		return minecraftServerOnlyJar;
-	}
-
-	public Path getMinecraftCommonJar() {
-		return minecraftCommonJar;
+	@Override
+	public MappingsNamespace getOfficialNamespace() {
+		// Legacy merged providers do not have a single namespace as they delegate to the single jar providers
+		throw new UnsupportedOperationException("Cannot query the official namespace for legacy-merged minecraft providers");
 	}
 }

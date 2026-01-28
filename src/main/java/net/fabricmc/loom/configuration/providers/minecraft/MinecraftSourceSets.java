@@ -299,7 +299,11 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		public String getSourceSetForEnv(String env) {
-			return env.equals("client") ? CLIENT_ONLY_SOURCE_SET_NAME : SERVER_ONLY_SOURCE_SET_NAME;
+			return switch (env) {
+				case "client" -> CLIENT_ONLY_SOURCE_SET_NAME;
+				case "server" -> SERVER_ONLY_SOURCE_SET_NAME;
+				default -> SourceSet.MAIN_SOURCE_SET_NAME;
+			};
 		}
 
 		@Override

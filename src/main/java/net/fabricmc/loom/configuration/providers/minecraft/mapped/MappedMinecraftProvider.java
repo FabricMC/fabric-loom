@@ -61,28 +61,28 @@ public interface MappedMinecraftProvider {
 			return new MinecraftJar.ClientOnly(getJar(MinecraftJar.Type.CLIENT_ONLY));
 		}
 
-		@Override
-		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(getCommonJar(), getClientOnlyJar());
-		}
-	}
-
-	interface LegacySplit extends ProviderImpl {
-		default MinecraftJar getCommonJar() {
-			return new MinecraftJar.Common(getJar(MinecraftJar.Type.COMMON));
-		}
-
-		default MinecraftJar getClientOnlyJar() {
-			return new MinecraftJar.ClientOnly(getJar(MinecraftJar.Type.CLIENT_ONLY));
+		default boolean isLegacy() {
+			return false;
 		}
 
 		default MinecraftJar getServerOnlyJar() {
+			if (!isLegacy())
+				throw new UnsupportedOperationException("Split does not support getServerOnlyJar on non legacy providers");
 			return new MinecraftJar.ServerOnly(getJar(MinecraftJar.Type.SERVER_ONLY));
 		}
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
+			if (isLegacy())
+				return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
+			return List.of(getCommonJar(), getClientOnlyJar());
+		}
+	}
+
+	interface LegacySplit extends Split {
+		@Override
+		default boolean isLegacy() {
+			return true;
 		}
 	}
 

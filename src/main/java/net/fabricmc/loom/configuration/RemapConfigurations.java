@@ -97,6 +97,32 @@ public final class RemapConfigurations {
 		}
 	}
 
+	public static void configureServerConfigurations(Project project, SourceSet clientSourceSet) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (extension.disableObfuscation()) {
+			return;
+		}
+
+		extension.createRemapConfigurations(clientSourceSet);
+
+		final NamedDomainObjectList<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
+		SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+
+		// Apply the client target names to the main configurations
+		for (ConfigurationOption option : getValidOptions(mainSourceSet)) {
+			configurations.getByName(option.name(mainSourceSet), settings -> {
+				String name = option.targetName(clientSourceSet);
+
+				if (name == null) {
+					return;
+				}
+
+				settings.getServerSourceConfigurationName().set(name);
+			});
+		}
+	}
+
 	/**
 	 * Gets or creates the collector configuration for a {@link SourceSet}.
 	 * The collector configuration receives all compile-time or runtime remapped mod dependency files.

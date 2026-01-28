@@ -24,7 +24,11 @@
 
 package net.fabricmc.loom.configuration.providers.minecraft.mapped;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import net.fabricmc.loom.configuration.providers.minecraft.LegacyMinecraftJarSplitter;
 
 import org.gradle.api.Project;
 
@@ -148,22 +152,68 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	public static final class LegacySplitImpl extends IntermediaryMinecraftProvider<LegacySplitMinecraftProvider> implements LegacySplit {
+		private final SingleJarImpl server;
+		private final SingleJarImpl client;
+
 		public LegacySplitImpl(Project project, LegacySplitMinecraftProvider minecraftProvider) {
 			super(project, minecraftProvider);
+			server = new SingleJarImpl(project, minecraftProvider.getServerMinecraftProvider(), SingleJarEnvType.SERVER);
+			client = new SingleJarImpl(project, minecraftProvider.getClientMinecraftProvider(), SingleJarEnvType.CLIENT);
+		}
+
+		@Override
+		public List<MinecraftJar> provide(ProvideContext context) throws Exception {
+			final List<MinecraftJar> minecraftJars = List.of(getClientOnlyJar(), getServerOnlyJar(), getCommonJar());
+
+			// this check must be done before the client and server impls are provided
+			// because the splitting only needs to happen if the remapping step is run
+			final boolean refreshOutputs = client.shouldRefreshOutputs(context)
+					|| server.shouldRefreshOutputs(context)
+					|| this.shouldRefreshOutputs(context);
+
+			// Map the client and server jars separately
+			server.provide(context);
+			client.provide(context);
+
+			final Path minecraftClientOnlyJar = getClientOnlyJar().getPath();
+			final Path minecraftServerOnlyJar = getServerOnlyJar().getPath();
+			final Path minecraftCommonJar = getCommonJar().getPath();
+
+			if (refreshOutputs) {
+				try (LegacyMinecraftJarSplitter jarSplitter = new LegacyMinecraftJarSplitter(client.getEnvOnlyJar().getPath(), server.getEnvOnlyJar().getPath())) {
+					jarSplitter.split(minecraftClientOnlyJar, minecraftServerOnlyJar, minecraftCommonJar);
+				} catch (Exception e) {
+					Files.deleteIfExists(minecraftClientOnlyJar);
+					Files.deleteIfExists(minecraftServerOnlyJar);
+					Files.deleteIfExists(minecraftCommonJar);
+
+					throw new RuntimeException("Failed to split minecraft", e);
+				}
+
+				createBackupJars(minecraftJars);
+			}
+
+			return minecraftJars;
 		}
 
 		@Override
 		public List<RemappedJars> getRemappedJars() {
+			// The delegate providers will handle the remapping
+			throw new UnsupportedOperationException("LegacySplitImpl does not support getRemappedJars");
+		}
+
+		@Override
+		public List<? extends OutputJar> getOutputJars() {
 			return List.of(
-					new RemappedJars(minecraftProvider.getMinecraftCommonJar(), getCommonJar(), minecraftProvider.getOfficialNamespace()),
-					new RemappedJars(minecraftProvider.getMinecraftClientOnlyJar(), getClientOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar()),
-					new RemappedJars(minecraftProvider.getMinecraftServerOnlyJar(), getServerOnlyJar(), minecraftProvider.getOfficialNamespace(), minecraftProvider.getMinecraftCommonJar())
+					new SimpleOutputJar(getClientOnlyJar()),
+					new SimpleOutputJar(getServerOnlyJar()),
+					new SimpleOutputJar(getCommonJar())
 			);
 		}
 
 		@Override
 		protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
-			configureSplitRemapper(remappedJars, tinyRemapperBuilder);
+			configureLegacySplitRemapper(remappedJars, tinyRemapperBuilder);
 		}
 	}
 

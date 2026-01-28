@@ -40,7 +40,12 @@ import java.util.stream.Stream;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LegacyMinecraftJarSplitter implements AutoCloseable {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LegacyMinecraftJarSplitter.class);
+
 	private final Path clientInputJar;
 	private final Path serverInputJar;
 
@@ -55,6 +60,8 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 	}
 
 	public void split(Path clientOnlyOutputJar, Path serverOnlyOutputJar, Path commonOutputJar) throws IOException {
+		LOGGER.info(":splitting jars");
+
 		Objects.requireNonNull(clientOnlyOutputJar);
 		Objects.requireNonNull(serverOnlyOutputJar);
 		Objects.requireNonNull(commonOutputJar);
@@ -160,6 +167,7 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 			this.serverEntries = serverEntries;
 
 			this.commonEntries = new HashSet<>(clientEntries);
+			this.commonEntries.retainAll(serverEntries);
 			this.commonEntries.addAll(sharedEntries);
 			this.commonEntries.removeAll(forcedClientEntries);
 			this.commonEntries.removeAll(forcedServerEntries);

@@ -37,7 +37,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.task.service.ClientEntriesService;
+import net.fabricmc.loom.task.service.SidedEntriesService;
 import net.fabricmc.loom.task.service.SourceRemapperService;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
@@ -66,8 +66,8 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	}
 
 	@Override
-	protected Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet) {
-		return ClientEntriesService.Source.createOptions(getProject(), clientSourceSet);
+	protected Provider<? extends SidedEntriesService.Options> getSidedOnlyEntriesOptionsProvider(SourceSet sidedSourceSet) {
+		return SidedEntriesService.Source.createOptions(getProject(), sidedSourceSet);
 	}
 
 	public interface RemapSourcesParams extends AbstractRemapParams {

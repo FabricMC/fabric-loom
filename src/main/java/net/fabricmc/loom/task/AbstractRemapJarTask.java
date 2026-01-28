@@ -39,6 +39,8 @@ import java.util.jar.Manifest;
 
 import javax.inject.Inject;
 
+import net.fabricmc.loom.api.EnvironmentType;
+
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -64,7 +66,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.task.service.ClientEntriesService;
+import net.fabricmc.loom.task.service.SidedEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
@@ -131,7 +133,11 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	@Nested
 	@Optional
-	protected abstract Property<ClientEntriesService.Options> getClientEntriesServiceOptions();
+	protected abstract Property<SidedEntriesService.Options> getClientEntriesServiceOptions();
+
+	@Nested
+	@Optional
+	protected abstract Property<SidedEntriesService.Options> getServerEntriesServiceOptions();
 
 	private final Provider<JarManifestService> jarManifestServiceProvider;
 
@@ -145,11 +151,20 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 		getClientEntriesServiceOptions().set(getIncludesClientOnlyClasses().flatMap(clientOnlyEntries -> {
 			if (clientOnlyEntries) {
-				return getClientOnlyEntriesOptionsProvider(getClientSourceSet());
+				return getSidedOnlyEntriesOptionsProvider(getClientSourceSet());
 			}
 
 			// Empty
-			return getProject().getObjects().property(ClientEntriesService.Options.class);
+			return getProject().getObjects().property(SidedEntriesService.Options.class);
+		}));
+
+		getServerEntriesServiceOptions().set(getIncludesServerOnlyClasses().flatMap(serverOnlyEntries -> {
+			if (serverOnlyEntries) {
+				return getSidedOnlyEntriesOptionsProvider(getServerSourceSet());
+			}
+
+			// Empty
+			return getProject().getObjects().property(SidedEntriesService.Options.class);
 		}));
 
 		jarManifestServiceProvider = JarManifestService.get(getProject());
@@ -176,8 +191,8 @@ public abstract class AbstractRemapJarTask extends Jar {
 				final List<String> clientOnlyEntries;
 
 				try (var serviceFactory = new ScopedServiceFactory()) {
-					ClientEntriesService<ClientEntriesService.Options> service = serviceFactory.get(getClientEntriesServiceOptions());
-					clientOnlyEntries = new ArrayList<>(service.getClientOnlyEntries());
+					SidedEntriesService<SidedEntriesService.Options> service = serviceFactory.get(getClientEntriesServiceOptions());
+					clientOnlyEntries = new ArrayList<>(service.getSidedOnlyEntries());
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
@@ -188,6 +203,22 @@ public abstract class AbstractRemapJarTask extends Jar {
 				params.getClientOnlyEntries().set(clientOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
 			}
 
+			if (getIncludesServerOnlyClasses().get()) {
+				final List<String> serverOnlyEntries;
+
+				try (var serviceFactory = new ScopedServiceFactory()) {
+					SidedEntriesService<SidedEntriesService.Options> service = serviceFactory.get(getServerEntriesServiceOptions());
+					serverOnlyEntries = new ArrayList<>(service.getSidedOnlyEntries());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+
+				serverOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
+				Collections.sort(serverOnlyEntries);
+				applyClientOnlyManifestAttributes(params, serverOnlyEntries);
+				params.getClientOnlyEntries().set(serverOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
+			}
+
 			if (getJarType().isPresent()) {
 				params.getManifestAttributes().put(Constants.Manifest.JAR_TYPE, getJarType().get());
 			}
@@ -196,7 +227,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		});
 	}
 
-	protected abstract Provider<? extends ClientEntriesService.Options> getClientOnlyEntriesOptionsProvider(SourceSet clientSourceSet);
+	protected abstract Provider<? extends SidedEntriesService.Options> getSidedOnlyEntriesOptionsProvider(SourceSet sidedSourceSet);
 
 	public interface AbstractRemapParams extends WorkParameters {
 		RegularFileProperty getInputFile();
@@ -231,6 +262,13 @@ public abstract class AbstractRemapJarTask extends Jar {
 		params.getManifestAttributes().set(Map.of(
 				Constants.Manifest.SPLIT_ENV, "true",
 				Constants.Manifest.CLIENT_ENTRIES, String.join(";", entries)
+		));
+	}
+
+	protected void applyServerOnlyManifestAttributes(AbstractRemapParams params, List<String> entries) {
+		params.getManifestAttributes().set(Map.of(
+				Constants.Manifest.SPLIT_ENV, "true",
+				Constants.Manifest.SERVER_ENTRIES, String.join(";", entries)
 		));
 	}
 
@@ -325,5 +363,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 	private SourceSet getClientSourceSet() {
 		Check.require(LoomGradleExtension.get(getProject()).areEnvironmentSourceSetsSplit(), "Cannot get client sourceset as project is not split");
 		return SourceSetHelper.getSourceSetByName(getClientOnlySourceSetName().get(), getProject());
+	}
+
+	private SourceSet getServerSourceSet() {
+		Check.require(LoomGradleExtension.get(getProject()).environmentSourceSetType() == EnvironmentType.LEGACY_SPLIT, "Cannot get server sourceset as project is not split or is not a legacy version");
+		return SourceSetHelper.getSourceSetByName(getServerOnlySourceSetName().get(), getProject());
 	}
 }

@@ -93,6 +93,8 @@ public class ModConfigurationRemapper {
 		final Map<Configuration, Configuration> configsToRemap = new LinkedHashMap<>();
 		// Client remapped dep collectors for split source sets. Same keys and values.
 		final Map<Configuration, Configuration> clientConfigsToRemap = new HashMap<>();
+		// Server remapped dep collectors for split source sets. Same keys and values.
+		final Map<Configuration, Configuration> serverConfigsToRemap = new HashMap<>();
 
 		/*
 		 * Hack fix/improvement for https://github.com/FabricMC/fabric-loom/issues/1012
@@ -121,12 +123,17 @@ public class ModConfigurationRemapper {
 				sourceCopy.setCanBeConsumed(false);
 				configsToRemap.put(sourceCopy, target);
 
-				// If our remap configuration entry targets the client source set as well,
+				// If our remap configuration entry targets the client or server source set as well,
 				// let's set up a collector for it too.
 				if (entry.getClientSourceConfigurationName().isPresent()) {
 					final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, project);
 					final Configuration clientTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, clientSourceSet, runtime);
 					clientConfigsToRemap.put(sourceCopy, clientTarget);
+				}
+				if (entry.getServerSourceConfigurationName().isPresent()) {
+					final SourceSet serverSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.LegacySplit.SERVER_ONLY_SOURCE_SET_NAME, project);
+					final Configuration serverTarget = RemapConfigurations.getOrCreateCollectorConfiguration(project, serverSourceSet, runtime);
+					serverConfigsToRemap.put(sourceCopy, serverTarget);
 				}
 			});
 
@@ -163,6 +170,7 @@ public class ModConfigurationRemapper {
 			remappedConfig - The target configuration where the remapped artifacts go
 			 */
 			final Configuration clientRemappedConfig = clientConfigsToRemap.get(sourceConfig);
+			final Configuration serverRemappedConfig = serverConfigsToRemap.get(sourceConfig);
 			List<ArtifactRef> artifactRefs = resolveArtifacts(project, sourceConfig);
 			Map<ArtifactRef, ArtifactMetadata> metadataMap = getMetadata(artifactRefs, metaCache, extension.getDefaultMixinRemapTypeEnum().get());
 			final List<ModDependency> modDependencies = new ArrayList<>();
@@ -186,7 +194,7 @@ public class ModConfigurationRemapper {
 					continue;
 				}
 
-				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, modDependencyOptions, project);
+				final ModDependency modDependency = ModDependencyFactory.create(artifact, artifactMetadata, remappedConfig, clientRemappedConfig, serverRemappedConfig, modDependencyOptions, project);
 				scheduleSourcesRemapping(project, sourceRemapper, modDependency);
 				modDependencies.add(modDependency);
 			}

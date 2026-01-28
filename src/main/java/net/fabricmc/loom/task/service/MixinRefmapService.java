@@ -77,14 +77,14 @@ public class MixinRefmapService extends Service<MixinRefmapService.Options> {
 						MixinExtension.getMixinInformationContainer(sourceSet)
 				);
 
-				final List<String> rootPaths = ClientEntriesService.getRootPaths(sourceSet.getResources().getSrcDirs());
+				final List<String> rootPaths = SidedEntriesService.getRootPaths(sourceSet.getResources().getSrcDirs());
 
 				final String refmapName = container.refmapNameProvider().get();
 				final List<String> mixinConfigs = container.sourceSet().getResources()
 						.matching(container.mixinConfigPattern())
 						.getFiles()
 						.stream()
-						.map(ClientEntriesService.relativePath(rootPaths))
+						.map(SidedEntriesService.relativePath(rootPaths))
 						.toList();
 
 				options.add(createOptions(project, mixinConfigs, refmapName));

@@ -74,9 +74,7 @@ public interface MappedMinecraftProvider {
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			if (isLegacy())
-				return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
-			return List.of(getCommonJar(), getClientOnlyJar());
+			return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
 		}
 	}
 
@@ -93,6 +91,11 @@ public interface MappedMinecraftProvider {
 		@Override
 		default boolean isLegacy() {
 			return true;
+		}
+
+		@Override
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(getCommonJar(), getCommonClientJar(), getCommonServerJar(), getClientOnlyJar(), getServerOnlyJar());
 		}
 	}
 

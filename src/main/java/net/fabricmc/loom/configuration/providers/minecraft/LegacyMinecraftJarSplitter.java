@@ -76,7 +76,13 @@ public class LegacyMinecraftJarSplitter implements AutoCloseable {
 		assert entryData.clientOnlyEntries.isEmpty();
 		assert entryData.serverOnlyEntries.isEmpty();
 
-		copyEntriesToJar(entryData.commonEntries, serverInputJar, commonOutputJar, "common");
+		MergedMinecraftProvider.mergeJars(
+				Side.COMMON_MERGED,
+				clientInputJar.toFile(),
+				serverInputJar.toFile(),
+				commonOutputJar.toFile()
+		);
+
 		copyEntriesToJar(entryData.clientOnlyEntries, clientInputJar, clientOnlyOutputJar, "client");
 		copyEntriesToJar(entryData.serverOnlyEntries, serverInputJar, serverOnlyOutputJar, "server");
 

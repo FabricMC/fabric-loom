@@ -2,6 +2,7 @@ package net.fabricmc.loom.util;
 
 public enum Side {
 	COMMON(false, false),
+	COMMON_MERGED(true, true),
 	MERGED(true, true),
 	CLIENT(true, false),
 	SERVER(false, true);

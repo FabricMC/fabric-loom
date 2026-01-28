@@ -167,7 +167,7 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 
 		public static Type fromSide(Side side) {
 			return switch (side) {
-				case COMMON -> COMMON;
+				case COMMON, COMMON_MERGED -> COMMON;
 				case MERGED -> MERGED;
 				case CLIENT -> COMMON_CLIENT;
 				case SERVER -> COMMON_SERVER;

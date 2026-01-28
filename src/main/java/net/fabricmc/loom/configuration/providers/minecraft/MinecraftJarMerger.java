@@ -205,6 +205,9 @@ public class MinecraftJarMerger implements AutoCloseable {
 		boolean isMinecraft = entriesClient.containsKey(entry) || entry.startsWith("net/minecraft") || !entry.contains("/");
 		Result r = getResult(entry, isClass);
 
+		if (r.side() != null && side == Side.COMMON_MERGED)
+			return;
+
 		if (isClass && !isMinecraft && "SERVER".equals(r.side())) {
 			// Server bundles libraries, client doesn't - skip them
 			return;

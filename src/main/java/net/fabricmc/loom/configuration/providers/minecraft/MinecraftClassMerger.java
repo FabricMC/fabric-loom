@@ -105,10 +105,10 @@ public class MinecraftClassMerger {
 
 				if (entryClient != null && entryServer != null) {
 					list.add(merge(entryClient, entryServer));
-				} else if (entryClient != null && side.allowClient()) {
+				} else if (entryClient != null && side.allowClient() && side != Side.COMMON_MERGED) {
 					applySide(entryClient, "CLIENT");
 					list.add(entryClient);
-				} else if(entryServer != null && side.allowServer()) {
+				} else if(entryServer != null && side.allowServer() && side != Side.COMMON_MERGED) {
 					applySide(entryServer, "SERVER");
 					list.add(entryServer);
 				}
@@ -210,11 +210,16 @@ public class MinecraftClassMerger {
 		for (String s : itfs) {
 			boolean nc = nodeC.interfaces.contains(s);
 			boolean ns = nodeS.interfaces.contains(s);
-			nodeOut.interfaces.add(s);
 
-			if (nc && !ns && side.allowClient()) {
+			boolean canAdd = (nc && !ns && side.allowClient()) || (ns && !nc && side.allowServer());
+
+			if (canAdd && side != Side.COMMON_MERGED) {
+				nodeOut.interfaces.add(s);
+			}
+
+			if (nc && !ns) {
 				clientItfs.add(s);
-			} else if (ns && !nc && side.allowServer()) {
+			} else if (ns && !nc) {
 				serverItfs.add(s);
 			}
 		}

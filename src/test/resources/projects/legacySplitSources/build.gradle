@@ -1,0 +1,49 @@
+plugins {
+	id 'fabric-loom'
+	id 'maven-publish'
+}
+
+
+configurations {
+	shade
+}
+
+loom {
+	legacySplitEnvironmentSourceSets()
+
+	mods {
+		modid {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+			sourceSet sourceSets.server
+
+			configuration configurations.shade
+		}
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:1.16.5"
+	mappings "net.fabricmc:yarn:1.18.2+build.1:v2"
+	modImplementation "net.fabricmc:fabric-loader:0.16.5"
+	testImplementation "net.fabricmc:fabric-loader-junit:0.16.5"
+
+	modImplementation "net.fabricmc.fabric-api:fabric-api:0.47.8+1.18.2"
+
+	shade "com.googlecode.json-simple:json-simple:1.1.1"
+}
+
+test {
+	useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 17
+}
+
+java {
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
+}

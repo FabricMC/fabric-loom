@@ -1,5 +1,5 @@
 [versions]
-minecraft = "1.16.5"
+minecraft = { strictly = "[1.16.5,]", prefer = "1.16.5" }
 fabricLoader = "0.11.3"
 parchment = "2021.10.10"
 

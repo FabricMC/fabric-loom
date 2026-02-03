@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalDependency;
 import org.gradle.api.provider.Property;
 import org.jspecify.annotations.Nullable;
 
@@ -68,8 +70,19 @@ public final class MinecraftMetadataProvider {
 	}
 
 	private static String resolveMinecraftVersion(Project project) {
-		final DependencyInfo dependency = DependencyInfo.create(project, Constants.Configurations.MINECRAFT);
-		return dependency.getDependency().getVersion();
+		final DependencyInfo dependencyInfo = DependencyInfo.create(project, Constants.Configurations.MINECRAFT);
+		final Dependency dependency = dependencyInfo.getDependency();
+
+		// Handle version constraints defined in libs.version.toml
+		if (dependency instanceof ExternalDependency externalDependency) {
+			String preferredVersion = externalDependency.getVersionConstraint().getPreferredVersion();
+
+			if (!preferredVersion.isEmpty()) {
+				return preferredVersion;
+			}
+		}
+
+		return dependency.getVersion();
 	}
 
 	public String getMinecraftVersion() {

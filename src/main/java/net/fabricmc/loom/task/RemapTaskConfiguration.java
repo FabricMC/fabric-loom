@@ -92,7 +92,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
 			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
-			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
+			task.getIncludesClientOnlyClasses().set(getProject().provider(() -> extension.environmentSourceSetType().isSplit()));
+			task.getIncludesServerOnlyClasses().set(getProject().provider(extension::areLegacyEnvironmentSourceSetsSplit));
 		};
 
 		// must not be lazy to ensure that the prepare tasks get setup for other projects to depend on.
@@ -133,7 +134,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		TaskProvider<RemapSourcesJarTask> remapSourcesTask = getTasks().register(REMAP_SOURCES_JAR_TASK_NAME, RemapSourcesJarTask.class, task -> {
 			task.setDescription("Remaps the default sources jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
-			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
+			task.getIncludesClientOnlyClasses().set(getProject().provider(() -> extension.environmentSourceSetType().isSplit()));
+			task.getIncludesServerOnlyClasses().set(getProject().provider(extension::areLegacyEnvironmentSourceSetsSplit));
 		});
 
 		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));

@@ -284,6 +284,10 @@ public interface LoomGradleExtensionAPI {
 		return environmentSourceSetType() == EnvironmentType.SPLIT;
 	}
 
+	default boolean areLegacyEnvironmentSourceSetsSplit() {
+		return environmentSourceSetType() == EnvironmentType.LEGACY_SPLIT;
+	}
+
 	void environmentSourceSetType(EnvironmentType type);
 
 	EnvironmentType environmentSourceSetType();

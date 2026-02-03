@@ -76,7 +76,7 @@ public interface MappedMinecraftProvider {
 
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
-			return List.of(getCommonJar(), getClientOnlyJar(), getServerOnlyJar());
+			return List.of(getCommonJar(), getClientOnlyJar());
 		}
 	}
 

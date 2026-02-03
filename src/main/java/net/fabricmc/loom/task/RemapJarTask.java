@@ -197,6 +197,10 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 					markClientOnlyClasses();
 				}
 
+				if (getParameters().getServerOnlyEntries().isPresent()) {
+					markServerOnlyClasses();
+				}
+
 				remapAccessWidener();
 				addRefmaps(serviceFactory);
 				addNestedJars();
@@ -238,6 +242,15 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			final Stream<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> tranformers = getParameters().getClientOnlyEntries().get().stream()
 					.map(s -> new Pair<>(s,
 							(ZipUtils.AsmClassOperator) classVisitor -> SidedClassVisitor.CLIENT.insertApplyVisitor(null, classVisitor)
+					));
+
+			ZipUtils.transformAsync(outputFile, tranformers);
+		}
+
+		private void markServerOnlyClasses() throws IOException {
+			final Stream<Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>> tranformers = getParameters().getServerOnlyEntries().get().stream()
+					.map(s -> new Pair<>(s,
+							(ZipUtils.AsmClassOperator) classVisitor -> SidedClassVisitor.SERVER.insertApplyVisitor(null, classVisitor)
 					));
 
 			ZipUtils.transformAsync(outputFile, tranformers);

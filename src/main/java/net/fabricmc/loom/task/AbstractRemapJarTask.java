@@ -146,6 +146,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		getSourceNamespace().convention(MappingsNamespace.NAMED.toString()).finalizeValueOnRead();
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
+		getIncludesServerOnlyClasses().convention(false).finalizeValueOnRead();
 		getJarType().finalizeValueOnRead();
 
 		getClientEntriesServiceOptions().set(getIncludesClientOnlyClasses().flatMap(clientOnlyEntries -> {
@@ -212,10 +213,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 					throw new RuntimeException(e);
 				}
 
-				serverOnlyEntries.addAll(getAdditionalClientOnlyEntries().get());
+				serverOnlyEntries.addAll(getAdditionalServerOnlyEntries().get());
 				Collections.sort(serverOnlyEntries);
-				applyClientOnlyManifestAttributes(params, serverOnlyEntries);
-				params.getClientOnlyEntries().set(serverOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
+				applyServerOnlyManifestAttributes(params, serverOnlyEntries);
+				params.getServerOnlyEntries().set(serverOnlyEntries.stream().filter(s -> s.endsWith(".class")).toList());
 			}
 
 			if (getJarType().isPresent()) {
@@ -255,6 +256,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 		MapProperty<String, String> getManifestAttributes();
 
 		ListProperty<String> getClientOnlyEntries();
+		ListProperty<String> getServerOnlyEntries();
 	}
 
 	protected void applyClientOnlyManifestAttributes(AbstractRemapParams params, List<String> entries) {

@@ -248,6 +248,10 @@ gradlePlugin {
 	}
 }
 
+tasks.validatePlugins {
+	enableStricterValidation = false
+}
+
 test {
 	maxHeapSize = "2560m"
 	jvmArgs "-XX:+HeapDumpOnOutOfMemoryError"

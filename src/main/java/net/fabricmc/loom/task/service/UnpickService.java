@@ -51,7 +51,6 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
@@ -98,11 +97,9 @@ public class UnpickService extends Service<UnpickService.Options> {
 		@Nested
 		Property<UnpickRemapperService.Options> getUnpickRemapperService();
 
-		@InputFiles
 		@Classpath
 		ConfigurableFileCollection getUnpickConstantJar();
 
-		@InputFiles
 		@Classpath
 		ConfigurableFileCollection getUnpickClasspath();
 

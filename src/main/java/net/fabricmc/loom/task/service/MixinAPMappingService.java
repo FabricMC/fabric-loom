@@ -41,7 +41,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.SourceSet;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -66,8 +65,7 @@ public class MixinAPMappingService extends Service<MixinAPMappingService.Options
 	private static final Logger LOGGER = LoggerFactory.getLogger(MixinAPMappingService.class);
 
 	public interface Options extends Service.Options {
-		@InputFiles // We need to depend on all the outputs, as we don't know if the mixin mapping will exist at the time of task creation
-		@Classpath
+		@Classpath // We need to depend on all the outputs, as we don't know if the mixin mapping will exist at the time of task creation
 		ConfigurableFileCollection getCompileOutputs();
 		@Input
 		Property<String> getMixinMappingFileName();

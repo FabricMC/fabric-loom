@@ -53,7 +53,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
@@ -113,15 +112,12 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<String> getInputJarName();
 
-	@InputFiles // Only contains a single file
-	@Classpath
+	@Classpath // Only contains a single file
 	protected abstract ConfigurableFileCollection getClassesInputJar();
 
-	@InputFiles
 	@Classpath
 	protected abstract ConfigurableFileCollection getClasspath();
 
-	@InputFiles
 	@Classpath
 	protected abstract ConfigurableFileCollection getMinecraftCompileLibraries();
 

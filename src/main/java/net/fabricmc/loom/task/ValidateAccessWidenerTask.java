@@ -39,7 +39,6 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
@@ -60,7 +59,6 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 	@PathSensitive(PathSensitivity.NONE)
 	public abstract RegularFileProperty getAccessWidener();
 
-	@InputFiles
 	@Classpath
 	public abstract ConfigurableFileCollection getTargetJars();
 

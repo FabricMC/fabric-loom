@@ -91,7 +91,6 @@ public abstract class AbstractRemapJarTask extends Jar {
 	public abstract RegularFileProperty getInputFile();
 
 	@Classpath
-	@InputFiles
 	public abstract ConfigurableFileCollection getClasspath();
 
 	@Input

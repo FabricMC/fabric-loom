@@ -32,6 +32,8 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
@@ -44,6 +46,7 @@ import net.fabricmc.loom.util.service.ScopedServiceFactory;
 @UntrackedTask(because = "Always rerun this task.")
 public abstract class MigrateMappingsTask extends AbstractMigrateMappingsTask {
 	@InputDirectory
+	@PathSensitive(PathSensitivity.ABSOLUTE)
 	@SkipWhenEmpty
 	@Option(option = "input", description = "Java source file directory")
 	public abstract DirectoryProperty getInputDir();

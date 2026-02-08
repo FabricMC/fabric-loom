@@ -45,8 +45,11 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.Nullable;
@@ -71,6 +74,7 @@ import net.fabricmc.mappingio.adapter.ForwardingMappingVisitor;
  * This task can be used together with {@link ModEnigmaTask} to author and check
  * mod-provided javadoc files.
  */
+@DisableCachingByDefault
 public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	private static final ProblemId MAPPINGS_CONTAIN_DST_NAMES = LoomProblems.problemId("mappings-contain-dst-names", "Mod-provided javadoc mapping file contains renames");
 	private static final ProblemId INCORRECT_MAPPING_SRC_NAME = LoomProblems.problemId("incorrect-mapping-src-name", "Mod-provided javadoc mapping file has an invalid source namespace");
@@ -82,6 +86,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	 */
 	@InputFiles
 	@SkipWhenEmpty
+	@PathSensitive(PathSensitivity.NONE)
 	public abstract ConfigurableFileCollection getMappingFiles();
 
 	/**

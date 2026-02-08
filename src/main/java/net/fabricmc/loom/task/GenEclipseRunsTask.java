@@ -44,12 +44,14 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 
+@DisableCachingByDefault
 public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 	@Nested
 	protected abstract ListProperty<EclipseRunConfig> getEclipseRunConfigs();

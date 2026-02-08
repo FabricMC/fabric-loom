@@ -40,6 +40,8 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -70,6 +72,7 @@ public final class MigrateClassTweakerMappingsService extends Service<MigrateCla
 		@Nested
 		Property<TinyRemapperService.Options> getTinyRemapperOptions();
 		@InputFile
+		@PathSensitive(PathSensitivity.NONE)
 		RegularFileProperty getMergedMappings();
 	}
 

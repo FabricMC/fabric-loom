@@ -37,14 +37,19 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
+@DisableCachingByDefault
 public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 	@InputFiles
+	@PathSensitive(PathSensitivity.ABSOLUTE)
 	public abstract ConfigurableFileCollection getRemapClasspath();
 
 	@OutputFile

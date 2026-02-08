@@ -36,6 +36,8 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	// TODO use a nested TinyMappingsService instead of duplicating it
 	public interface Options extends Service.Options {
 		@InputFile
+		@PathSensitive(PathSensitivity.NONE)
 		RegularFileProperty getMappingsFile();
 		@Input
 		Property<String> getFrom();

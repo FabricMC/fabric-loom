@@ -26,10 +26,12 @@ package net.fabricmc.loom.task;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Internal;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
+@DisableCachingByDefault
 public abstract class AbstractLoomTask extends DefaultTask {
 	public AbstractLoomTask() {
 		setGroup(Constants.TaskGroup.FABRIC);

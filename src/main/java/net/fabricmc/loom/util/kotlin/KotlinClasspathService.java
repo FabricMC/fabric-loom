@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 
@@ -48,6 +49,7 @@ public final class KotlinClasspathService extends Service<KotlinClasspathService
 
 	public interface Options extends Service.Options {
 		@InputFiles
+		@Classpath
 		ConfigurableFileCollection getClasspath();
 		@Input
 		Property<String> getKotlinVersion();

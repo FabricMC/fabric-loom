@@ -27,7 +27,9 @@ package net.fabricmc.loom.task;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.options.Option;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault
 public abstract class AbstractMigrateMappingsTask extends AbstractLoomTask {
 	@Input
 	@Option(option = "mappings", description = "Target mappings")

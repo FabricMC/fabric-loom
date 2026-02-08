@@ -26,9 +26,12 @@ package net.fabricmc.loom.task;
 
 import javax.inject.Inject;
 
+import org.gradle.work.DisableCachingByDefault;
+
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 
+@DisableCachingByDefault
 public abstract class RunGameTask extends AbstractRunTask {
 	@Inject
 	public RunGameTask(RunConfigSettings settings) {

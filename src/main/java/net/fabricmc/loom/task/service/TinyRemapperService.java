@@ -45,6 +45,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
@@ -85,6 +86,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		@Optional
 		Property<KotlinClasspathService.Options> getKotlinClasspathService();
 		@InputFiles
+		@Classpath
 		ConfigurableFileCollection getClasspath();
 		@Input
 		ListProperty<String> getKnownIndyBsms();

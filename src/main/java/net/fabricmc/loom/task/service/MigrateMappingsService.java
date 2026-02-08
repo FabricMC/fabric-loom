@@ -35,6 +35,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 		@Nested
 		Property<TinyMappingsService.Options> getTargetMappings();
 		@InputFiles
+		@Classpath
 		ConfigurableFileCollection getClasspath();
 	}
 

@@ -43,6 +43,8 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.mappings.TinyMappingsService;
@@ -64,6 +66,7 @@ public final class MigrateSourceCodeMappingsService extends Service<MigrateSourc
 		@Nested
 		Property<MigrateMappingsService.Options> getMappings();
 		@InputDirectory
+		@PathSensitive(PathSensitivity.ABSOLUTE)
 		DirectoryProperty getInputDir();
 		@Input
 		Property<String> getSourceCompatibility();

@@ -29,10 +29,12 @@ import java.io.File;
 import javax.inject.Inject;
 
 import org.gradle.api.tasks.Sync;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 
+@DisableCachingByDefault
 public abstract class ExtractNativesTask extends Sync {
 	@Inject
 	public ExtractNativesTask() {

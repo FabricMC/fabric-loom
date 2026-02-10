@@ -104,7 +104,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		final Project project = remapJarTask.getProject();
 
 		return project.provider(() -> {
-			if (!remapJarTask.getCustomMappings().isPresent()) {
+			if (remapJarTask.getCustomMappings().isEmpty()) {
 				LOGGER.debug("Using default project mappings for remapping");
 				return MappingsService.createOptionsWithProjectMappings(
 						project,
@@ -114,7 +114,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 			}
 
 			// Custom mappings:
-			File mappingsFile = remapJarTask.getCustomMappings().get().getAsFile();
+			File mappingsFile = remapJarTask.getCustomMappings().getSingleFile();
 
 			if (mappingsFile.getName().endsWith(".zip") || mappingsFile.getName().endsWith(".jar")) {
 				mappingsFile = project.zipTree(mappingsFile).matching(patternFilterable -> patternFilterable.include("mappings/mappings.tiny")).getSingleFile();

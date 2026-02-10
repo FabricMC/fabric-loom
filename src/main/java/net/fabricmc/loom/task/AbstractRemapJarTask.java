@@ -49,6 +49,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
@@ -115,10 +116,10 @@ public abstract class AbstractRemapJarTask extends Jar {
 	 * Optionally supply a single mapping file or jar file containing mappings to be used for remapping.
 	 */
 	@ApiStatus.Experimental
-	@InputFile
+	@InputFiles
 	@PathSensitive(PathSensitivity.NONE)
 	@Optional
-	public abstract RegularFileProperty getCustomMappings();
+	public abstract ConfigurableFileCollection getCustomMappings();
 
 	@Input
 	@Optional

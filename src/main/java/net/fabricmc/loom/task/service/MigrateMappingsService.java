@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task.service;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
@@ -78,7 +79,7 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.NAMED));
 
 		return TYPE.create(project, (o) -> {
-			FileCollection targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
+			Provider<File> targetMappingsFile = getTargetMappingsFile(project, targetMappings.get());
 			o.getSourceMappings().set(MappingsService.createOptionsWithProjectMappings(project, from, to));
 			o.getTargetMappings().set(TinyMappingsService.createOptions(project, targetMappingsFile, "mappings/mappings.tiny"));
 			o.getClasspath().from(classpath);
@@ -100,7 +101,7 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 	/**
 	 * Return a mappings file for the requested mappings.
 	 */
-	private static FileCollection getTargetMappingsFile(Project project, String mappings) {
+	private static Provider<File> getTargetMappingsFile(Project project, String mappings) {
 		if (mappings == null || mappings.isEmpty()) {
 			throw new IllegalArgumentException("No mappings were specified. Use --mappings=\"\" to specify target mappings");
 		}
@@ -112,15 +113,16 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 				}
 
 				LayeredMappingsFactory dep = new LayeredMappingsFactory(LayeredMappingSpecBuilderImpl.buildOfficialMojangMappings());
-				return project.files(dep.resolve(project).toFile());
+				File file = dep.resolve(project).toFile();
+				return project.provider(() -> file);
 			} else {
 				Dependency dependency = project.getDependencies().create(mappings);
-				return project.getConfigurations().detachedConfiguration(dependency);
+				return project.provider(() -> project.getConfigurations().detachedConfiguration(dependency).getSingleFile());
 			}
 		} catch (IllegalDependencyNotation ignored) {
 			LOGGER.info("Could not locate mappings, presuming V2 Yarn");
 			String mavenNotation = "net.fabricmc:yarn:%s:v2".formatted(mappings);
-			return project.getConfigurations().detachedConfiguration(project.getDependencies().create(mavenNotation));
+			return project.provider(() -> project.getConfigurations().detachedConfiguration(project.getDependencies().create(mavenNotation)).getSingleFile());
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to resolve mappings", e);
 		}

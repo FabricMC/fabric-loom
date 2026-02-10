@@ -33,11 +33,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.gradle.api.Project;
-import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -65,9 +65,9 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceMappingsService.class);
 
 	public interface Options extends Service.Options {
-		@InputFiles
+		@InputFile
 		@PathSensitive(PathSensitivity.NONE)
-		ConfigurableFileCollection getMappings(); // Only a single file
+		RegularFileProperty getMappings();
 
 		@Input
 		@Optional
@@ -79,7 +79,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		final Path mappings = getMappings(project, hash);
 
 		return TYPE.create(project, options -> {
-			options.getMappings().from(project.file(mappings));
+			options.getMappings().fileValue(project.file(mappings));
 			options.getProcessorHash().set(hash);
 		});
 	}
@@ -152,7 +152,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 	}
 
 	public Path getMappingsFile() {
-		return getOptions().getMappings().getSingleFile().toPath();
+		return getOptions().getMappings().getAsFile().get().toPath();
 	}
 
 	public @Nullable String getProcessorHash() {

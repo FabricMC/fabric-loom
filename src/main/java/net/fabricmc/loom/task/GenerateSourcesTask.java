@@ -112,8 +112,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<String> getInputJarName();
 
-	@Classpath // Only contains a single file
-	protected abstract ConfigurableFileCollection getClassesInputJar();
+	@Classpath
+	protected abstract RegularFileProperty getClassesInputJar();
 
 	@Classpath
 	protected abstract ConfigurableFileCollection getClasspath();
@@ -126,7 +126,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	// Contains the remapped linenumbers
 	@OutputFile
-	protected abstract ConfigurableFileCollection getClassesOutputJar(); // Single jar
+	protected abstract RegularFileProperty getClassesOutputJar();
 
 	@Input
 	@Option(option = "use-cache", description = "Use the decompile cache")
@@ -185,7 +185,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	public GenerateSourcesTask(DecompilerOptions decompilerOptions) {
 		this.decompilerOptions = decompilerOptions;
 
-		getClassesInputJar().setFrom(getInputJarName().map(minecraftJarName -> {
+		getClassesInputJar().fileProvider(getInputJarName().map(minecraftJarName -> {
 			final List<MinecraftJar> minecraftJars = getExtension().getNamedMinecraftProvider().getMinecraftJars();
 
 			for (MinecraftJar minecraftJar : minecraftJars) {
@@ -202,7 +202,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 			throw new IllegalStateException("Input minecraft jar not found: " + getInputJarName().get());
 		}));
-		getClassesOutputJar().setFrom(getInputJarName().map(minecraftJarName -> {
+		getClassesOutputJar().fileProvider(getInputJarName().map(minecraftJarName -> {
 			final List<MinecraftJar> minecraftJars = getExtension().getNamedMinecraftProvider().getMinecraftJars();
 
 			for (MinecraftJar minecraftJar : minecraftJars) {
@@ -291,9 +291,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void runWithCache(ServiceFactory serviceFactory, Path cacheRoot) throws IOException {
-		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
+		final Path classesInputJar = getClassesInputJar().get().getAsFile().toPath();
 		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
-		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
+		final Path classesOutputJar = getClassesOutputJar().get().getAsFile().toPath();
 		final var cacheRules = new CachedFileStoreImpl.CacheRules(getMaxCachedFiles().get(), Duration.ofDays(getMaxCacheFileAge().get()));
 		final var decompileCache = new CachedFileStoreImpl<>(cacheRoot, CachedData.SERIALIZER, cacheRules);
 		final String cacheKey = getCacheKey(serviceFactory);
@@ -357,9 +357,9 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	}
 
 	private void runWithoutCache(ServiceFactory serviceFactory) throws IOException {
-		final Path classesInputJar = getClassesInputJar().getSingleFile().toPath();
+		final Path classesInputJar = getClassesInputJar().get().getAsFile().toPath();
 		final Path sourcesOutputJar = getSourcesOutputJar().get().getAsFile().toPath();
-		final Path classesOutputJar = getClassesOutputJar().getSingleFile().toPath();
+		final Path classesOutputJar = getClassesOutputJar().get().getAsFile().toPath();
 
 		Path workClassesJar = classesInputJar;
 

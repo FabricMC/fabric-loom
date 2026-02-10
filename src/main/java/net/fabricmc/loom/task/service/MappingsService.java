@@ -104,7 +104,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 		final Project project = remapJarTask.getProject();
 
 		return project.provider(() -> {
-			if (remapJarTask.getCustomMappings().isPresent()) {
+			if (!remapJarTask.getCustomMappings().isPresent()) {
 				LOGGER.debug("Using default project mappings for remapping");
 				return MappingsService.createOptionsWithProjectMappings(
 						project,

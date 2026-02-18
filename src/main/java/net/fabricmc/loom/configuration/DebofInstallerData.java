@@ -26,7 +26,6 @@ package net.fabricmc.loom.configuration;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -48,6 +47,7 @@ public class DebofInstallerData {
 		for (DebofConfiguration debofConfiguration : DebofConfiguration.ALL) {
 			for (Configuration configuration : debofConfiguration.getConfigurations(project)) {
 				Optional<InstallerData> installerData = configuration.getFiles().parallelStream()
+						.filter(File::isFile)
 						.map(DebofInstallerData::getInstaller)
 						.filter(Objects::nonNull)
 						.findFirst();
@@ -76,7 +76,8 @@ public class DebofInstallerData {
 			LOGGER.info("Found installer in mod {} version {}", fabricModJson.getId(), fabricModJson.getModVersion());
 			return InstallerData.fromBytes(installerData, fabricModJson.getModVersion());
 		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read " + file, e);
+			LOGGER.debug("Failed to read installer data from file '{}'", file, e);
+			return null;
 		}
 	}
 }

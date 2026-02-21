@@ -125,9 +125,9 @@ class MinecraftJarMergerTest extends Specification {
 	}
 
 	static Jars downloadVersion(VersionsManifest.Version version, DownloadExecutor downloadExecutor) {
-		def manifest = Download.create(version.url)
-				.sha1(version.sha1)
-				.downloadString(dir.resolve(version.id + ".json"))
+		def manifest = Download.create(version.url())
+				.sha1(version.sha1())
+				.downloadString(dir.resolve(version.id() + ".json"))
 		def meta = LoomGradlePlugin.GSON.fromJson(manifest, MinecraftVersionMeta.class)
 
 		def client = meta.download("client")

@@ -215,7 +215,8 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		};
 	}
 
-	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
+	@Nullable
+	private static String appendComment(@Nullable String comment, List<InjectedInterface> injectedInterfaces) {
 		if (injectedInterfaces.isEmpty()) {
 			return comment;
 		}
@@ -234,7 +235,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 		}
 
-		return comment;
+		return commentBuilder.toString();
 	}
 
 	private record InjectedInterface(String modId, String className, String ifaceName, @Nullable String generics) {

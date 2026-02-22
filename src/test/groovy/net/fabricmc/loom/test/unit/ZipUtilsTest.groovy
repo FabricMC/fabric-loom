@@ -288,4 +288,25 @@ class ZipUtilsTest extends Specification {
 		new String(ZipUtils.unpack(zip, "a.txt"), StandardCharsets.UTF_8) == "ONE"
 		new String(ZipUtils.unpack(zip, "b.txt"), StandardCharsets.UTF_8) == "TWO"
 	}
+
+	def "transform async throws"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "a.txt").text = "one"
+
+		when:
+		ZipUtils.pack(dir.toPath(), zip)
+		ZipUtils.transformAsync(zip, [
+			new Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>("a.txt", new ZipUtils.UnsafeUnaryOperator<byte[]>() {
+				@Override
+				byte[] apply(byte[] arg) throws IOException {
+					throw new RuntimeException("Test exception")
+				}
+			})
+		])
+
+		then:
+		thrown(RuntimeException)
+	}
 }

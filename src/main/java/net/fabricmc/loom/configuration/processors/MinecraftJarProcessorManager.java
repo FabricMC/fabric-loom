@@ -145,6 +145,12 @@ public final class MinecraftJarProcessorManager {
 			try {
 				entry.processJar(jar, context);
 			} catch (IOException e) {
+				try {
+					Files.delete(jar);
+				} catch (IOException ioe) {
+					LOGGER.error("Failed to delete jar after failed processing: {}", jar, ioe);
+				}
+
 				throw new IOException("Failed to process jar when running jar processor: %s - %s".formatted(entry.name(), e.getMessage()), e);
 			}
 		}

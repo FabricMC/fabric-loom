@@ -291,6 +291,11 @@ public interface LoomGradleExtensionAPI {
 
 	Property<Boolean> getRuntimeOnlyLog4j();
 
+	/**
+	 * When enabled, lwjgl-opengl or lwjgl-vulkan will be added as a runtime dependency preventing the mod from compiling against a specific graphics API.
+	 */
+	Property<Boolean> getRuntimeOnlyLwjglGraphics();
+
 	Property<Boolean> getSplitModDependencies();
 
 	<T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);

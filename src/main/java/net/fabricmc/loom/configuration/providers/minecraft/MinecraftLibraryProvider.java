@@ -44,6 +44,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContex
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLwjglGraphicsLibraryProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -68,6 +69,10 @@ public class MinecraftLibraryProvider {
 
 		if (extension.getRuntimeOnlyLog4j().get()) {
 			enabledProcessors.add(RuntimeLog4jLibraryProcessor.class.getSimpleName());
+		}
+
+		if (extension.getRuntimeOnlyLwjglGraphics().get()) {
+			enabledProcessors.add(RuntimeLwjglGraphicsLibraryProcessor.class.getSimpleName());
 		}
 
 		final Provider<String> libraryProcessorsProperty = project.getProviders().gradleProperty(Constants.Properties.LIBRARY_PROCESSORS);

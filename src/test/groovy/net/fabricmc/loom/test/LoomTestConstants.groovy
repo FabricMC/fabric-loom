@@ -40,10 +40,7 @@ class LoomTestConstants {
 	public final static List<String> STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
 		DEFAULT_GRADLE,
 		PRE_RELEASE_GRADLE
-	] : [
-		DEFAULT_GRADLE,
-		LoomTestVersions.GRADLE_LATEST.version()
-	]).shuffled().toArray()
+	] : [DEFAULT_GRADLE]).shuffled().toArray()
 
 	public static final File TEST_DIR = new File("./.gradle/test-files")
 

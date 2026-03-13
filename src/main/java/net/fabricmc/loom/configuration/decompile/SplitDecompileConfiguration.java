@@ -50,6 +50,7 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 	public void afterEvaluation() {
 		final MinecraftJar commonJar = minecraftProvider.getCommonJar();
 		final MinecraftJar clientOnlyJar = minecraftProvider.getClientOnlyJar();
+		final boolean includeServer = minecraftProvider.isLegacy();
 
 		final TaskProvider<Task> commonDecompileTask = createDecompileTasks("Common", task -> {
 			task.getInputJarName().set(commonJar.getName());
@@ -64,6 +65,21 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 			task.mustRunAfter(commonDecompileTask);
 		});
 
+		final TaskProvider<Task> serverOnlyDecompileTask;
+
+		if (includeServer) {
+			serverOnlyDecompileTask = createDecompileTasks("ServerOnly", task -> {
+				final MinecraftJar serverOnlyJar = minecraftProvider.getServerOnlyJar();
+				task.getInputJarName().set(serverOnlyJar.getName());
+				task.getSourcesOutputJar().fileValue(GenerateSourcesTask.getJarFileWithSuffix("-sources.jar", serverOnlyJar.getPath()));
+
+				// Don't allow them to run at the same time.
+				task.mustRunAfter(clientOnlyDecompileTask);
+			});
+		} else {
+			serverOnlyDecompileTask = null;
+		}
+
 		for (DecompilerOptions options : extension.getDecompilerOptions()) {
 			final String decompilerName = options.getFormattedName();
 
@@ -74,12 +90,28 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 				task.mustRunAfter(commonTask);
 			});
 
+			TaskProvider<Task> serverOnlyTask;
+
+			if (includeServer) {
+				serverOnlyTask = project.getTasks().named("gen%sSourcesWith%s".formatted("ServerOnly", decompilerName));
+
+				serverOnlyTask.configure(task -> {
+					task.mustRunAfter(clientOnlyTask);
+				});
+			} else {
+				serverOnlyTask = null;
+			}
+
 			project.getTasks().register("genSourcesWith" + decompilerName, task -> {
 				task.setDescription("Decompile minecraft using %s.".formatted(decompilerName));
 				task.setGroup(Constants.TaskGroup.FABRIC);
 
 				task.dependsOn(commonTask);
 				task.dependsOn(clientOnlyTask);
+
+				if (serverOnlyTask != null) {
+					task.dependsOn(serverOnlyTask);
+				}
 			});
 		}
 
@@ -89,6 +121,10 @@ public final class SplitDecompileConfiguration extends DecompileConfiguration<Ma
 
 			task.dependsOn(commonDecompileTask);
 			task.dependsOn(clientOnlyDecompileTask);
+
+			if (serverOnlyDecompileTask != null) {
+				task.dependsOn(serverOnlyDecompileTask);
+			}
 		});
 	}
 

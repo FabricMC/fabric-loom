@@ -29,6 +29,7 @@ import java.util.List;
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
+import net.fabricmc.loom.util.Side;
 
 public interface MappedMinecraftProvider {
 	default List<Path> getMinecraftJarPaths() {
@@ -61,9 +62,41 @@ public interface MappedMinecraftProvider {
 			return new MinecraftJar.ClientOnly(getJar(MinecraftJar.Type.CLIENT_ONLY));
 		}
 
+		default boolean isLegacy() {
+			return false;
+		}
+
+		default MinecraftJar getServerOnlyJar() {
+			if (!isLegacy()) {
+				throw new UnsupportedOperationException("Split does not support getServerOnlyJar on non legacy providers");
+			}
+
+			return new MinecraftJar.ServerOnly(getJar(MinecraftJar.Type.SERVER_ONLY));
+		}
+
 		@Override
 		default List<MinecraftJar> getMinecraftJars() {
 			return List.of(getCommonJar(), getClientOnlyJar());
+		}
+	}
+
+	interface LegacySplit extends Split {
+		default MinecraftJar getCommonClientJar() {
+			return new MinecraftJar.Common(Side.CLIENT, getJar(MinecraftJar.Type.COMMON_CLIENT));
+		}
+
+		default MinecraftJar getCommonServerJar() {
+			return new MinecraftJar.Common(Side.SERVER, getJar(MinecraftJar.Type.COMMON_SERVER));
+		}
+
+		@Override
+		default boolean isLegacy() {
+			return true;
+		}
+
+		@Override
+		default List<MinecraftJar> getMinecraftJars() {
+			return List.of(getCommonJar(), getCommonClientJar(), getCommonServerJar(), getClientOnlyJar(), getServerOnlyJar());
 		}
 	}
 

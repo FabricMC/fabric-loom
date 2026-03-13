@@ -49,11 +49,18 @@ import net.fabricmc.loom.util.FileSystemUtil;
 public class JarSplitter {
 	private static final Attributes.Name MANIFEST_SPLIT_ENV_NAME = new Attributes.Name(Constants.Manifest.SPLIT_ENV);
 	private static final Attributes.Name MANIFEST_CLIENT_ENTRIES_NAME = new Attributes.Name(Constants.Manifest.CLIENT_ENTRIES);
+	private static final Attributes.Name MANIFEST_SERVER_ENTRIES_NAME = new Attributes.Name(Constants.Manifest.SERVER_ENTRIES);
 
 	final Path inputJar;
+	final boolean legacy;
+
+	public JarSplitter(Path inputJar, boolean legacy) {
+		this.inputJar = inputJar;
+		this.legacy = legacy;
+	}
 
 	public JarSplitter(Path inputJar) {
-		this.inputJar = inputJar;
+		this(inputJar, false);
 	}
 
 	@Nullable
@@ -67,15 +74,16 @@ public class JarSplitter {
 			}
 
 			final HashSet<String> clientEntries = new HashSet<>(readClientEntries(manifest));
+			final HashSet<String> serverEntries = new HashSet<>(readServerEntries(manifest));
 
-			if (clientEntries.isEmpty()) {
-				// No client entries.
+			if (clientEntries.isEmpty() && serverEntries.isEmpty()) {
+				// No client or server entries.
 				return Target.COMMON_ONLY;
 			}
 
 			final List<String> entries = new ArrayList<>();
 
-			// Must collect all the input entries to see if this might be a client only jar.
+			// Must collect all the input entries to see if this might be a client/server only jar.
 			try (Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
 				final Iterator<Path> iterator = walk.iterator();
 
@@ -105,13 +113,25 @@ public class JarSplitter {
 			}
 
 			for (String entry : entries) {
-				if (!clientEntries.contains(entry)) {
+				boolean isClientEntry = clientEntries.contains(entry);
+				boolean isServerEntry = serverEntries.contains(entry);
+
+				if (!isClientEntry && serverEntries.isEmpty()) {
 					// Found a common entry, we need to split,.
 					return Target.SPLIT;
 				}
+
+				if (!isServerEntry && clientEntries.isEmpty()) {
+					// Found a common entry, we need to split,.
+					return Target.LEGACY_SPLIT;
+				}
 			}
 
-			// All input entries are client only entries.
+			// All input entries are client or server only entries.
+			if (clientEntries.isEmpty()) {
+				return Target.SERVER_ONLY;
+			}
+
 			return Target.CLIENT_ONLY;
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read jar", e);
@@ -195,6 +215,88 @@ public class JarSplitter {
 		return true;
 	}
 
+	public boolean splitLegacy(Path commonOutputJar, Path clientOutputJar, Path serverOutputJar) throws IOException {
+		Files.deleteIfExists(commonOutputJar);
+		Files.deleteIfExists(clientOutputJar);
+		Files.deleteIfExists(serverOutputJar);
+
+		try (FileSystemUtil.Delegate input = FileSystemUtil.getJarFileSystem(inputJar)) {
+			final Manifest manifest = input.fromInputStream(Manifest::new, Constants.Manifest.PATH);
+
+			if (!Boolean.parseBoolean(manifest.getMainAttributes().getValue(Constants.Manifest.SPLIT_ENV))) {
+				throw new UnsupportedOperationException("Cannot split jar that has not been built with a split env");
+			}
+
+			final List<String> clientEntries = readClientEntries(manifest);
+			final List<String> serverEntries = readServerEntries(manifest);
+
+			if (clientEntries.isEmpty() || serverEntries.isEmpty()) {
+				throw new IllegalStateException("Expected to split jar with no client or server entries");
+			}
+
+			try (FileSystemUtil.Delegate commonOutput = FileSystemUtil.getJarFileSystem(commonOutputJar, true);
+					FileSystemUtil.Delegate clientOutput = FileSystemUtil.getJarFileSystem(clientOutputJar, true);
+					FileSystemUtil.Delegate serverOutput = FileSystemUtil.getJarFileSystem(serverOutputJar, true);
+					Stream<Path> walk = Files.walk(input.get().getPath("/"))) {
+				final Iterator<Path> iterator = walk.iterator();
+
+				while (iterator.hasNext()) {
+					final Path entry = iterator.next();
+
+					if (!Files.isRegularFile(entry)) {
+						continue;
+					}
+
+					final Path relativePath = input.get().getPath("/").relativize(entry);
+
+					if (relativePath.startsWith("META-INF")) {
+						if (isSignatureData(relativePath)) {
+							// Strip any signature data
+							continue;
+						}
+					}
+
+					final String entryPath = relativePath.toString();
+
+					if (entryPath.equals(Constants.Manifest.PATH)) {
+						continue;
+					}
+
+					final FileSystemUtil.Delegate target = clientEntries.contains(entryPath) ? clientOutput : serverEntries.contains(entryPath) ? serverOutput : commonOutput;
+					final Path outputEntry = target.getPath(entryPath);
+					final Path outputParent = outputEntry.getParent();
+
+					if (outputParent != null) {
+						Files.createDirectories(outputParent);
+					}
+
+					Files.copy(entry, outputEntry, StandardCopyOption.COPY_ATTRIBUTES);
+				}
+
+				/*
+				Write the manifest to both jars
+				- Remove signature data
+				- Remove split data as its already been split.
+				- Add env name.
+				 */
+				final Manifest outManifest = new Manifest(manifest);
+				final Attributes attributes = outManifest.getMainAttributes();
+				stripSignatureData(outManifest);
+
+				attributes.remove(Attributes.Name.SIGNATURE_VERSION);
+				Objects.requireNonNull(attributes.remove(MANIFEST_SPLIT_ENV_NAME));
+				Objects.requireNonNull(attributes.remove(MANIFEST_CLIENT_ENTRIES_NAME));
+				Objects.requireNonNull(attributes.remove(MANIFEST_SERVER_ENTRIES_NAME));
+
+				writeBytes(writeWithEnvironment(outManifest, "common"), commonOutput.getPath(Constants.Manifest.PATH));
+				writeBytes(writeWithEnvironment(outManifest, "client"), clientOutput.getPath(Constants.Manifest.PATH));
+				writeBytes(writeWithEnvironment(outManifest, "server"), serverOutput.getPath(Constants.Manifest.PATH));
+			}
+		}
+
+		return true;
+	}
+
 	private byte[] writeWithEnvironment(Manifest in, String value) throws IOException {
 		final Manifest manifest = new Manifest(in);
 		final Attributes attributes = manifest.getMainAttributes();
@@ -214,6 +316,22 @@ public class JarSplitter {
 		}
 
 		return Arrays.stream(clientEntriesValue.split(";")).toList();
+	}
+
+	private List<String> readServerEntries(Manifest manifest) {
+		final Attributes attributes = manifest.getMainAttributes();
+
+		if (!attributes.containsKey(Constants.Manifest.SERVER_ENTRIES)) {
+			return List.of();
+		}
+
+		final String serverEntriesValue = attributes.getValue(Constants.Manifest.SERVER_ENTRIES);
+
+		if (serverEntriesValue == null || serverEntriesValue.isBlank()) {
+			return Collections.emptyList();
+		}
+
+		return Arrays.stream(serverEntriesValue.split(";")).toList();
 	}
 
 	private boolean isSignatureData(Path path) {
@@ -253,15 +371,22 @@ public class JarSplitter {
 	}
 
 	public enum Target {
-		COMMON_ONLY(true, false),
-		CLIENT_ONLY(false, true),
-		SPLIT(true, true);
+		COMMON_ONLY(true, false, false),
+		CLIENT_ONLY(false, true, false),
+		SERVER_ONLY(false, false, true),
+		SPLIT(true, true, false),
+		LEGACY_SPLIT(true, true, true);
 
-		final boolean common, client;
+		final boolean common, client, server;
 
-		Target(boolean common, boolean client) {
+		Target(boolean common, boolean client, boolean server) {
 			this.common = common;
 			this.client = client;
+			this.server = server;
+		}
+
+		public boolean isSplit() {
+			return this == SPLIT || this == LEGACY_SPLIT;
 		}
 
 		public boolean common() {
@@ -270,6 +395,10 @@ public class JarSplitter {
 
 		public boolean client() {
 			return client;
+		}
+
+		public boolean server() {
+			return server;
 		}
 	}
 }

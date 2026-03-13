@@ -54,16 +54,19 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 	private final String targetNamespace;
 	private final Provider<Boolean> areEnvironmentSourceSetsSplit;
 	private final Provider<List<String>> clientOnlyEntries;
+	private final Provider<List<String>> serverOnlyEntries;
 
 	public ManifestModificationAction(
 			Provider<JarManifestService> manifestService,
 			String targetNamespace,
 			Provider<Boolean> areEnvironmentSourceSetsSplit,
-			Provider<List<String>> clientOnlyEntries) {
+			Provider<List<String>> clientOnlyEntries,
+			Provider<List<String>> serverOnlyEntries) {
 		this.manifestService = manifestService;
 		this.targetNamespace = targetNamespace;
 		this.areEnvironmentSourceSetsSplit = areEnvironmentSourceSetsSplit;
 		this.clientOnlyEntries = clientOnlyEntries;
+		this.serverOnlyEntries = serverOnlyEntries;
 	}
 
 	@Override
@@ -92,6 +95,11 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 		// Add client-only entries list if present
 		if (clientOnlyEntries != null && !clientOnlyEntries.get().isEmpty()) {
 			manifestAttributes.put(Constants.Manifest.CLIENT_ENTRIES, String.join(";", clientOnlyEntries.get()));
+		}
+
+		// Add server-only entries list if present
+		if (serverOnlyEntries != null && !serverOnlyEntries.get().isEmpty()) {
+			manifestAttributes.put(Constants.Manifest.SERVER_ENTRIES, String.join(";", serverOnlyEntries.get()));
 		}
 
 		int count = ZipUtils.transform(jarFile.toPath(), Map.of(Constants.Manifest.PATH, bytes -> {

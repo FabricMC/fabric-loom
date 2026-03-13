@@ -306,6 +306,22 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 	}
 
+	// Configure the remapper to add the @Environment annotation to all classes in the client and server jar.
+	public static void configureLegacySplitRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {
+		final MinecraftJar outputJar = remappedJars.outputJar();
+		assert !outputJar.isMerged();
+
+		if (outputJar.includesClient()) {
+			assert !outputJar.includesServer();
+			tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.CLIENT);
+		}
+
+		if (outputJar.includesServer()) {
+			assert !outputJar.includesClient();
+			tinyRemapperBuilder.extraPostApplyVisitor(SidedClassVisitor.SERVER);
+		}
+	}
+
 	private void cleanOutputs(List<RemappedJars> remappedJars) throws IOException {
 		for (RemappedJars remappedJar : remappedJars) {
 			Files.deleteIfExists(remappedJar.outputJarPath());

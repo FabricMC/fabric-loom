@@ -54,6 +54,7 @@ public abstract class RemapConfigurationSettings implements Named {
 		getSourceSet().finalizeValueOnRead();
 		getTargetConfigurationName().finalizeValueOnRead();
 		getClientSourceConfigurationName().finalizeValueOnRead();
+		getServerSourceConfigurationName().finalizeValueOnRead();
 		getOnCompileClasspath().finalizeValueOnRead();
 		getOnRuntimeClasspath().finalizeValueOnRead();
 		getPublishingMode().convention(PublishingMode.NONE).finalizeValueOnRead();
@@ -82,6 +83,14 @@ public abstract class RemapConfigurationSettings implements Named {
 	 * @return The client source configuration name
 	 */
 	public abstract Property<String> getClientSourceConfigurationName();
+
+	/**
+	 * Optional, only used when split sourcesets are enabled.
+	 * When not present server only entries should go onto the target configuration.
+	 *
+	 * @return The server source configuration name
+	 */
+	public abstract Property<String> getServerSourceConfigurationName();
 
 	/**
 	 * @return True if this configuration's artifacts should be exposed for compile operations.

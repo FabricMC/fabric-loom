@@ -39,20 +39,20 @@ import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
 
-public abstract class ClientEntriesService<O extends ClientEntriesService.Options> extends Service<O> {
+public abstract class SidedEntriesService<O extends SidedEntriesService.Options> extends Service<O> {
 	public interface Options extends Service.Options {
 	}
 
-	public ClientEntriesService(O options, ServiceFactory serviceFactory) {
+	public SidedEntriesService(O options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);
 	}
 
-	public abstract List<String> getClientOnlyEntries();
+	public abstract List<String> getSidedOnlyEntries();
 
-	public static class Source extends ClientEntriesService<Source.Options> {
+	public static class Source extends SidedEntriesService<Source.Options> {
 		public static final ServiceType<Source.Options, Source> TYPE = new ServiceType<>(Source.Options.class, Source.class);
 
-		public interface Options extends ClientEntriesService.Options {
+		public interface Options extends SidedEntriesService.Options {
 			@InputFiles
 			ConfigurableFileCollection getAllSourceFiles();
 			@InputFiles
@@ -71,17 +71,17 @@ public abstract class ClientEntriesService<O extends ClientEntriesService.Option
 		}
 
 		@Override
-		public List<String> getClientOnlyEntries() {
+		public List<String> getSidedOnlyEntries() {
 			return getOptions().getAllSourceFiles().getFiles().stream()
 					.map(relativePath(getRootPaths(getOptions().getSourceDirectories().getFiles())))
 					.toList();
 		}
 	}
 
-	public static class Classes extends ClientEntriesService<Classes.Options> {
+	public static class Classes extends SidedEntriesService<Classes.Options> {
 		public static final ServiceType<Classes.Options, Classes> TYPE = new ServiceType<>(Classes.Options.class, Classes.class);
 
-		public interface Options extends ClientEntriesService.Options {
+		public interface Options extends SidedEntriesService.Options {
 			@InputFiles
 			ConfigurableFileCollection getAllOutputDirs();
 		}
@@ -98,7 +98,7 @@ public abstract class ClientEntriesService<O extends ClientEntriesService.Option
 		}
 
 		@Override
-		public List<String> getClientOnlyEntries() {
+		public List<String> getSidedOnlyEntries() {
 			final Set<File> outputFiles = getOptions().getAllOutputDirs().getAsFileTree().getFiles();
 			final List<String> rootPaths = getRootPaths(getOptions().getAllOutputDirs().getFiles());
 			return outputFiles.stream()

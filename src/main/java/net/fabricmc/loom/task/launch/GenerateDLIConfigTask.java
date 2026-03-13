@@ -193,6 +193,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 
 		return switch (env) {
 		case "client" -> split.getClientOnlyJar().getPath().toAbsolutePath().toString();
+		case "server" -> split.getServerOnlyJar().getPath().toAbsolutePath().toString();
 		case "common" -> split.getCommonJar().getPath().toAbsolutePath().toString();
 		default -> throw new UnsupportedOperationException();
 		};

@@ -29,7 +29,9 @@ import java.util.function.Function;
 
 public enum SingleJarEnvType {
 	CLIENT(MinecraftJar.Client::new, MinecraftJar.Type.CLIENT),
-	SERVER(MinecraftJar.Server::new, MinecraftJar.Type.SERVER);
+	SERVER(MinecraftJar.Server::new, MinecraftJar.Type.SERVER),
+	CLIENT_ONLY(MinecraftJar.ClientOnly::new, MinecraftJar.Type.CLIENT_ONLY),
+	SERVER_ONLY(MinecraftJar.ServerOnly::new, MinecraftJar.Type.SERVER_ONLY);
 
 	private final Function<Path, MinecraftJar> jarFunction;
 	private final MinecraftJar.Type type;

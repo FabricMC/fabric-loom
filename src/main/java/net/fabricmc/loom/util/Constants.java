@@ -179,6 +179,7 @@ public class Constants {
 		public static final String SPLIT_ENV = "Fabric-Loom-Split-Environment";
 		public static final String SPLIT_ENV_NAME = "Fabric-Loom-Split-Environment-Name";
 		public static final String CLIENT_ENTRIES = "Fabric-Loom-Client-Only-Entries";
+		public static final String SERVER_ENTRIES = "Fabric-Loom-Server-Only-Entries";
 		public static final String JAR_TYPE = "Fabric-Jar-Type";
 		public static final String GRADLE_VERSION = "Fabric-Gradle-Version";
 		public static final String LOOM_VERSION = "Fabric-Loom-Version";

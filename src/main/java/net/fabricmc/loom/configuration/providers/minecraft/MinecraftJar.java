@@ -28,7 +28,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Objects;
 
-public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server {
+import net.fabricmc.loom.util.Side;
+
+public abstract sealed class MinecraftJar permits MinecraftJar.Client, MinecraftJar.ClientOnly, MinecraftJar.Common, MinecraftJar.Merged, MinecraftJar.Server, MinecraftJar.ServerOnly {
 	private final Path path;
 	private final boolean merged, client, server;
 	private final Type type;
@@ -83,8 +85,12 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 	}
 
 	public static final class Common extends MinecraftJar {
+		public Common(Side side, Path path) {
+			super(path, false, false, true, Type.fromSide(side));
+		}
+
 		public Common(Path path) {
-			super(path, false, false, true, Type.COMMON);
+			this(Side.COMMON, path);
 		}
 
 		@Override
@@ -93,6 +99,7 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 		}
 	}
 
+	// Un-split server jar
 	public static final class Server extends MinecraftJar {
 		public Server(Path path) {
 			super(path, false, false, true, Type.SERVER);
@@ -128,6 +135,18 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 		}
 	}
 
+	// Split server jar
+	public static final class ServerOnly extends MinecraftJar {
+		public ServerOnly(Path path) {
+			super(path, false, false, true, Type.SERVER_ONLY);
+		}
+
+		@Override
+		public MinecraftJar forPath(Path path) {
+			return new ServerOnly(path);
+		}
+	}
+
 	public enum Type {
 		// Merged jar
 		MERGED("merged"),
@@ -138,9 +157,22 @@ public abstract sealed class MinecraftJar permits MinecraftJar.Client, Minecraft
 
 		// Split jars
 		COMMON("common"),
-		CLIENT_ONLY("clientOnly");
+		// Legacy split
+		COMMON_CLIENT("commonClient"),
+		COMMON_SERVER("commonServer"),
+		CLIENT_ONLY("clientOnly"),
+		SERVER_ONLY("serverOnly");
 
 		private final String name;
+
+		public static Type fromSide(Side side) {
+			return switch (side) {
+			case COMMON, COMMON_MERGED -> COMMON;
+			case MERGED -> MERGED;
+			case CLIENT -> COMMON_CLIENT;
+			case SERVER -> COMMON_SERVER;
+			};
+		}
 
 		Type(String name) {
 			this.name = name;

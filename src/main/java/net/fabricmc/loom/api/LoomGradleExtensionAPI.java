@@ -272,9 +272,29 @@ public interface LoomGradleExtensionAPI {
 		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.SPLIT);
 	}
 
-	void splitEnvironmentSourceSets();
+	default void legacySplitMinecraftJar() {
+		getMinecraftJarConfiguration().set(MinecraftJarConfiguration.LEGACY_SPLIT);
+	}
 
-	boolean areEnvironmentSourceSetsSplit();
+	default void splitEnvironmentSourceSets() {
+		environmentSourceSetType(EnvironmentType.SPLIT);
+	}
+
+	default void legacySplitEnvironmentSourceSets() {
+		environmentSourceSetType(EnvironmentType.LEGACY_SPLIT);
+	}
+
+	default boolean areEnvironmentSourceSetsSplit() {
+		return environmentSourceSetType() == EnvironmentType.SPLIT;
+	}
+
+	default boolean areLegacyEnvironmentSourceSetsSplit() {
+		return environmentSourceSetType() == EnvironmentType.LEGACY_SPLIT;
+	}
+
+	void environmentSourceSetType(EnvironmentType type);
+
+	EnvironmentType environmentSourceSetType();
 
 	/**
 	 * When enabled, Loom remaps JSR {@code Nullable}, {@code Nonnull}, and {@code Immutable} annotations to their JetBrains counterparts in the Minecraft JAR.

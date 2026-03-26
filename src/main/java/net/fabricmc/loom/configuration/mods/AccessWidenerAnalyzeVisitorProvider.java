@@ -48,7 +48,7 @@ public record AccessWidenerAnalyzeVisitorProvider(ClassTweaker accessWidener) im
 			}
 
 			final var reader = ClassTweakerReader.create(accessWidener);
-			reader.read(accessWidenerData.content(), null); // TODO pass mod id
+			reader.read(accessWidenerData.content());
 		}
 
 		return new AccessWidenerAnalyzeVisitorProvider(accessWidener);

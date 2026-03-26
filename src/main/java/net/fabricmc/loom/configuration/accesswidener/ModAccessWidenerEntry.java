@@ -82,7 +82,7 @@ public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironme
 		}
 
 		var reader = ClassTweakerReader.create(visitor);
-		reader.read(data, mod.getId());
+		reader.read(data);
 	}
 
 	@Override

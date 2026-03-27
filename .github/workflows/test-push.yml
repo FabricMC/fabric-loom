@@ -101,8 +101,6 @@ jobs:
           path: "*.hprof"
 
   run_tests_windows:
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.extended_tests == 'true' }}
-
     needs: prepare_test_matrix
 
     strategy:

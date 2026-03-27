@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - uses: gradle/actions/wrapper-validation@v4
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
@@ -56,7 +56,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - uses: actions/checkout@v4
       - run: ./gradlew writeActionsTestMatrix --stacktrace --warning-mode fail
       -
@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
@@ -119,7 +119,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - run: ./gradlew printActionsTestName --name="${{ matrix.test }}" test --tests ${{ matrix.test }} --stacktrace --warning-mode fail
         env:
           TEST_WARNING_MODE: fail
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: 'microsoft'
 
       - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace --warning-mode fail
 

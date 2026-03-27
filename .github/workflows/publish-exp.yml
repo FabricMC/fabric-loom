@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: 21
-          distribution: 'temurin'
+          distribution: 'microsoft'
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4
 

@@ -109,8 +109,9 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
+        os: [ windows-2025, windows-11-arm ]
 
-    runs-on: windows-2025
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v4
@@ -142,8 +143,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ 21, 25 ]
-        os: [ windows-2025, ubuntu-24.04, macos-26 ]
+        java: [ 25 ]
+        os: [ windows-2025, ubuntu-24.04, macos-26, windows-11-arm, ubuntu-22.04-arm, macos-26-intel ]
 
     runs-on: ${{ matrix.os }}
     steps:

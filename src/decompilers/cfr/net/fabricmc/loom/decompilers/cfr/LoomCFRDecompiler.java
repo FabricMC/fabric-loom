@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -75,7 +75,7 @@ public final class LoomCFRDecompiler implements LoomInternalDecompiler {
 		DCCommonState state = new DCCommonState(options, classFileSource);
 
 		if (context.javaDocs() != null) {
-			state = new DCCommonState(state, new CFRObfuscationMapping(context.javaDocs()));
+			state = new DCCommonState(state, new CFRObfuscationMapping(context.javaDocs(), context.runtimeNamespace()));
 		}
 
 		final Manifest manifest = new Manifest();

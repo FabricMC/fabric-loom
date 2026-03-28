@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,6 +57,7 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.processors.MappingProcessing;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.Pair;
@@ -201,7 +202,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				final String className = entry.getKey();
 				final List<InjectedInterface> injectedInterfaces = entry.getValue();
 
-				MappingTree.ClassMapping classMapping = mappings.getClass(className, productionNamespaceId);
+				MappingTree.ClassMapping classMapping = MappingProcessing.getOrCreateClassMapping(mappings, className, productionNamespaceId, context.disableObfuscation());
 
 				if (classMapping == null) {
 					final String modIds = injectedInterfaces.stream().map(InjectedInterface::modId).distinct().collect(Collectors.joining(","));

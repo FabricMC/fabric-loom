@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022-2025 FabricMC
+ * Copyright (c) 2022-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -108,7 +108,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 	public @Nullable MappingsProcessor<Spec> processMappings() {
 		return (mappings, spec, context) -> {
 			for (ModJavadoc javadoc : spec.javadocs()) {
-				javadoc.apply(mappings);
+				javadoc.apply(mappings, context.disableObfuscation());
 			}
 
 			return true;
@@ -156,7 +156,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 			return new ModJavadoc(modId, mappings, mappingsHash);
 		}
 
-		public void apply(MemoryMappingTree target) {
+		public void apply(MemoryMappingTree target, boolean disableObfuscation) {
 			int targetNamespaceId = target.getNamespaceId(mappingTree.getSrcNamespace());
 
 			if (targetNamespaceId == MappingTreeView.NULL_NAMESPACE_ID) {
@@ -164,7 +164,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 			}
 
 			for (MappingTree.ClassMapping sourceClass : mappingTree.getClasses()) {
-				final MappingTree.ClassMapping targetClass = target.getClass(sourceClass.getSrcName(), targetNamespaceId);
+				final MappingTree.ClassMapping targetClass = MappingProcessing.getOrCreateClassMapping(target, sourceClass.getSrcName(), targetNamespaceId, disableObfuscation);
 
 				if (targetClass == null) {
 					LOGGER.warn("Could not find provided javadoc target class {} from mod {}", sourceClass.getSrcName(), modId);
@@ -174,7 +174,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				applyComment(sourceClass, targetClass);
 
 				for (MappingTree.FieldMapping sourceField : sourceClass.getFields()) {
-					final MappingTree.FieldMapping targetField = targetClass.getField(sourceField.getSrcName(), sourceField.getSrcDesc(), targetNamespaceId);
+					final MappingTree.FieldMapping targetField = MappingProcessing.getOrCreateFieldMapping(target, targetClass, sourceField.getSrcName(), sourceField.getSrcDesc(), targetNamespaceId, disableObfuscation);
 
 					if (targetField == null) {
 						LOGGER.warn("Could not find provided javadoc target field {}{} from mod {}", sourceField.getSrcName(), sourceField.getSrcDesc(), modId);
@@ -185,7 +185,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 				}
 
 				for (MappingTree.MethodMapping sourceMethod : sourceClass.getMethods()) {
-					final MappingTree.MethodMapping targetMethod = targetClass.getMethod(sourceMethod.getSrcName(), sourceMethod.getSrcDesc(), targetNamespaceId);
+					final MappingTree.MethodMapping targetMethod = MappingProcessing.getOrCreateMethodMapping(target, targetClass, sourceMethod.getSrcName(), sourceMethod.getSrcDesc(), targetNamespaceId, disableObfuscation);
 
 					if (targetMethod == null) {
 						LOGGER.warn("Could not find provided javadoc target method {}{} from mod {}", sourceMethod.getSrcName(), sourceMethod.getSrcDesc(), modId);

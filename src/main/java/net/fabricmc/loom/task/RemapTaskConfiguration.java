@@ -71,6 +71,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		TaskProvider<NestableJarGenerationTask> processIncludeJarsTask = getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
 			task.from(includeConfiguration);
 			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));
+			task.getUncompressNestedJars().set(extension.getUncompressNestedJars());
 		});
 
 		if (extension.dontRemapOutputs()) {

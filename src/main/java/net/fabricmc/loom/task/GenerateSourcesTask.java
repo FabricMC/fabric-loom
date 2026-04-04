@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2025 FabricMC
+ * Copyright (c) 2016-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -74,6 +74,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
@@ -141,7 +142,6 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 	// Internal inputs
 	@ApiStatus.Internal
 	@Nested
-	@Optional
 	protected abstract Property<SourceMappingsService.Options> getMappings();
 
 	// Internal outputs
@@ -172,6 +172,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 
 	@Nested
 	protected abstract Property<DaemonUtils.Context> getDaemonUtilsContext();
+
+	@ApiStatus.Internal
+	@Internal
+	protected abstract Property<String> getRuntimeNamespace();
 
 	@Nested
 	@Optional
@@ -223,9 +227,13 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		getUseCache().convention(true);
 		getResetCache().convention(getExtension().refreshDeps());
 
+		getMappings().set(SourceMappingsService.create(getProject()));
+
 		if (!LoomGradleExtension.get(getProject()).disableObfuscation()) {
-			getMappings().set(SourceMappingsService.create(getProject()));
 			getUnpickOptions().set(UnpickService.createOptions(this));
+			getRuntimeNamespace().set(MappingsNamespace.NAMED.toString());
+		} else {
+			getRuntimeNamespace().set(MappingsNamespace.OFFICIAL.toString());
 		}
 
 		getMaxCachedFiles().set(GradleUtils.getIntegerPropertyProvider(getProject(), Constants.Properties.DECOMPILE_CACHE_MAX_FILES).orElse(50_000));
@@ -410,13 +418,11 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			sj.add(unpick.getUnpickCacheKey());
 		}
 
-		if (getMappings().isPresent()) {
-			SourceMappingsService mappingsService = serviceFactory.get(getMappings());
-			String mappingsHash = mappingsService.getProcessorHash();
+		SourceMappingsService mappingsService = serviceFactory.get(getMappings());
+		String mappingsHash = mappingsService.getProcessorHash();
 
-			if (mappingsHash != null) {
-				sj.add(mappingsHash);
-			}
+		if (mappingsHash != null) {
+			sj.add(mappingsHash);
 		}
 
 		getLogger().info("Decompile cache data: {}", sj);
@@ -489,10 +495,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			params.getInputJar().set(inputJar.toFile());
 			params.getOutputJar().set(outputJar.toFile());
 			params.getLinemapFile().set(linemapFile.toFile());
-
-			if (getMappings().isPresent()) {
-				params.getMappings().set(getMappings());
-			}
+			params.getMappings().set(getMappings());
+			params.getRuntimeNamespace().set(getRuntimeNamespace());
 
 			if (ipcServer != null) {
 				params.getIPCPath().set(ipcServer.getPath().toFile());
@@ -551,6 +555,7 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		RegularFileProperty getOutputJar();
 		RegularFileProperty getLinemapFile();
 		Property<SourceMappingsService.Options> getMappings();
+		Property<String> getRuntimeNamespace();
 
 		RegularFileProperty getIPCPath();
 
@@ -595,19 +600,16 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 			}
 
 			try (var serviceFactory = new ScopedServiceFactory()) {
-				Path javaDocs = null;
-
-				if (getParameters().getMappings().isPresent()) {
-					final SourceMappingsService mappingsService = serviceFactory.get(getParameters().getMappings());
-					javaDocs = mappingsService.getMappingsFile();
-				}
+				final SourceMappingsService mappingsService = serviceFactory.get(getParameters().getMappings());
+				final Path javaDocs = mappingsService.getMappingsFile();
 
 				final var metadata = new DecompilationMetadata(
 						decompilerOptions.maxThreads(),
 						javaDocs,
 						getLibraries(),
 						logger,
-						decompilerOptions.options()
+						decompilerOptions.options(),
+						getParameters().getRuntimeNamespace().get()
 				);
 
 				decompiler.decompile(

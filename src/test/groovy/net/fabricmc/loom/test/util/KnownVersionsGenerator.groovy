@@ -66,7 +66,7 @@ class KnownVersionsGenerator {
 		def unsignedServerVersions = [:] as Map<String, String>
 
 		for (def version in manifest.versions()) {
-			println("Checking version " + version.id)
+			println("Checking version " + version.id())
 			checkVersion(version, unsignedClientVersions, unsignedServerVersions)
 		}
 
@@ -75,9 +75,9 @@ class KnownVersionsGenerator {
 	}
 
 	static void downloadVersion(VersionsManifest.Version version, DownloadExecutor downloadExecutor) {
-		def manifest = Download.create(version.url)
-				.sha1(version.sha1)
-				.downloadString(dir.resolve(version.id + ".json"))
+		def manifest = Download.create(version.url())
+				.sha1(version.sha1())
+				.downloadString(dir.resolve(version.id() + ".json"))
 		def meta = LoomGradlePlugin.GSON.fromJson(manifest, MinecraftVersionMeta.class)
 
 		def client = meta.download("client")
@@ -98,9 +98,9 @@ class KnownVersionsGenerator {
 	}
 
 	static void checkVersion(VersionsManifest.Version version, Map<String, String> unsignedClientVersions, Map<String, String> unsignedServerVersions) {
-		def manifest = Download.create(version.url)
-				.sha1(version.sha1)
-				.downloadString(dir.resolve(version.id + ".json"))
+		def manifest = Download.create(version.url())
+				.sha1(version.sha1())
+				.downloadString(dir.resolve(version.id() + ".json"))
 		def meta = LoomGradlePlugin.GSON.fromJson(manifest, MinecraftVersionMeta.class)
 
 		def client = meta.download("client")
@@ -109,13 +109,13 @@ class KnownVersionsGenerator {
 		def clientJar = dir.resolve(client.sha1() + ".jar")
 
 		if (!isSigned(clientJar)) {
-			unsignedClientVersions.put(version.id, Checksum.of(clientJar).sha256().hex())
+			unsignedClientVersions.put(version.id(), Checksum.of(clientJar).sha256().hex())
 		}
 
 		if (server != null) {
 			def serverJar = dir.resolve(server.sha1() + ".jar")
 			if (BundleMetadata.fromJar(serverJar) == null) {
-				unsignedServerVersions.put(version.id, Checksum.of(serverJar).sha256().hex())
+				unsignedServerVersions.put(version.id(), Checksum.of(serverJar).sha256().hex())
 			}
 		}
 	}

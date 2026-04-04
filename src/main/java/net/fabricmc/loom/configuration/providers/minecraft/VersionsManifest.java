@@ -30,8 +30,10 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public record VersionsManifest(List<Version> versions, Map<String, String> latest) {
-	public static class Version {
-		public String type, id, url, sha1;
+	public record Version(@Nullable String type, String id, String url, @Nullable String sha1) {
+		public Version(String id, String url) {
+			this(null, id, url, null);
+		}
 	}
 
 	@Nullable

@@ -152,6 +152,7 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 			configureMainClass(exec);
 			configureProgramArgs(exec);
 
+			exec.setStandardInput(System.in);
 			exec.setWorkingDir(getRunDir());
 
 			LOGGER.debug("Running command: {}", exec.getCommandLine());

@@ -46,7 +46,7 @@ public record LocalAccessWidenerEntry(Path path, String hash) implements AccessW
 	@Override
 	public void read(ClassTweakerVisitor visitor, LazyCloseable<TinyRemapper> remapper, MappingsNamespace productionNamespace) throws IOException {
 		var reader = ClassTweakerReader.create(visitor);
-		reader.read(Files.readAllBytes(path), null);
+		reader.read(Files.readAllBytes(path));
 	}
 
 	@Override
@@ -59,7 +59,7 @@ public record LocalAccessWidenerEntry(Path path, String hash) implements AccessW
 		}
 
 		var reader = ClassTweakerReader.create(visitor);
-		reader.read(data, null);
+		reader.read(data);
 	}
 
 	@Override

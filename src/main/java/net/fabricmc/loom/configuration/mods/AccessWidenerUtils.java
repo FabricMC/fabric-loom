@@ -51,7 +51,7 @@ public class AccessWidenerUtils {
 				toNamespace
 		);
 		ClassTweakerReader reader = ClassTweakerReader.create(awRemapper);
-		reader.read(input, null); // TODO pass modid
+		reader.read(input);
 		return writer.getOutput();
 	}
 

@@ -48,11 +48,11 @@ class MinecraftJarMergerRunner {
 		// Download all the minecraft jars
 		new DownloadExecutor(10).withCloseable {
 			for (def version in manifest.versions()) {
-				if (version.type == "snapshot" && version.id != "25w31a") {
+				if (version.type() == "snapshot" && version.id() != "25w31a") {
 					continue
 				}
 
-				if (version.id == "1.2.5") {
+				if (version.id() == "1.2.5") {
 					// Cannot merge any version before this.
 					break
 				}
@@ -87,9 +87,9 @@ class MinecraftJarMergerRunner {
 
 	// Returns null if the version does not have a server jar
 	static VersionInfo downloadVersion(VersionsManifest.Version version, DownloadExecutor downloadExecutor) {
-		def manifest = Download.create(version.url)
-				.sha1(version.sha1)
-				.downloadString(dir.resolve(version.id + ".json"))
+		def manifest = Download.create(version.url())
+				.sha1(version.sha1())
+				.downloadString(dir.resolve(version.id() + ".json"))
 		def meta = LoomGradlePlugin.GSON.fromJson(manifest, MinecraftVersionMeta.class)
 
 		def client = meta.download("client")
@@ -103,7 +103,7 @@ class MinecraftJarMergerRunner {
 		def serverJar = download(server, downloadExecutor)
 
 		return new VersionInfo(
-				id: version.id,
+				id: version.id(),
 				clientJar: clientJar,
 				serverJar: serverJar
 				)

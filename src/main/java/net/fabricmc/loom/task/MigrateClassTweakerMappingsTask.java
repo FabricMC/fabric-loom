@@ -77,7 +77,7 @@ public abstract class MigrateClassTweakerMappingsTask extends AbstractMigrateMap
 
 			final ClassTweakerWriter writer = ClassTweakerWriter.create(ctVersion);
 			final var remapper = new ClassTweakerRemapperVisitor(writer, service.getRemapper(), MappingsNamespace.NAMED.toString(), MappingsNamespace.NAMED.toString());
-			ClassTweakerReader.create(remapper).read(inputBytes, "unused_id");
+			ClassTweakerReader.create(remapper).read(inputBytes);
 
 			final boolean inPlace = getOverrideInputs().get();
 			final Path targetFile = inPlace ? inputFile : getOutputFile().get().getAsFile().toPath();

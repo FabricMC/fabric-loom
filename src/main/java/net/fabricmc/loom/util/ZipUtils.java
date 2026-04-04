@@ -40,8 +40,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -278,11 +280,12 @@ public class ZipUtils {
 
 	public static int transformAsync(Path zip, Supplier<ExecutorService> executorSupplier, Map<String, UnsafeUnaryOperator<byte[]>> transforms) throws IOException {
 		final AtomicInteger replacedCount = new AtomicInteger(0);
+		final Collection<Future<?>> futures = new java.util.ArrayList<>();
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false);
 				ExecutorService service = executorSupplier.get()) {
 			for (Map.Entry<String, UnsafeUnaryOperator<byte[]>> entry : transforms.entrySet()) {
-				service.submit(() -> {
+				futures.add(service.submit(() -> {
 					Path fsPath = fs.get().getPath(entry.getKey());
 
 					if (Files.exists(fsPath)) {
@@ -291,9 +294,29 @@ public class ZipUtils {
 							replacedCount.incrementAndGet();
 						} catch (IOException ioe) {
 							throw new UncheckedIOException("Failed to apply transformation to " + fsPath, ioe);
+						} catch (Exception e) {
+							throw new RuntimeException("Failed to apply transformation to " + fsPath, e);
 						}
 					}
-				});
+				}));
+			}
+
+			for (Future<?> future : futures) {
+				try {
+					future.get();
+				} catch (InterruptedException e) {
+					throw new IOException("Transformation was interrupted", e);
+				} catch (ExecutionException e) {
+					Throwable cause = e.getCause();
+
+					if (cause instanceof UncheckedIOException uncheckedIOException) {
+						throw uncheckedIOException.getCause();
+					} else if (cause instanceof RuntimeException runtimeException) {
+						throw runtimeException;
+					} else {
+						throw new IOException("Failed to apply transformation", cause);
+					}
+				}
 			}
 		}
 

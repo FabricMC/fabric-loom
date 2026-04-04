@@ -69,7 +69,10 @@ public class SourceRemapper {
 				logger.progress("remapping sources - " + source.getName());
 				Files.deleteIfExists(destination.toPath());
 				remapSourcesInner(source, destination);
-				ZipReprocessorUtil.reprocessZip(destination.toPath(), reproducibleFileOrder, preserveFileTimestamps);
+
+				if (reproducibleFileOrder || !preserveFileTimestamps) {
+					ZipReprocessorUtil.reprocessZip(destination.toPath(), reproducibleFileOrder, preserveFileTimestamps);
+				}
 
 				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
 				destination.setLastModified(source.lastModified());

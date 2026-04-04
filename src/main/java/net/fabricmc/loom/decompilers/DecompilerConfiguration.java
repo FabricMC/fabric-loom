@@ -142,6 +142,11 @@ public abstract class DecompilerConfiguration implements Runnable {
 				public byte[] unpackZip(Path zip, String path) throws IOException {
 					return ZipUtils.unpack(zip, path);
 				}
+
+				@Override
+				public String runtimeNamespace() {
+					return metaData.runtimeNamespace();
+				}
 			});
 		}
 	}

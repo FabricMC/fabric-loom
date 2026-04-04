@@ -91,7 +91,7 @@ public abstract class ValidateAccessWidenerTask extends DefaultTask {
 		final ClassTweakerReader accessWidenerReader = ClassTweakerReader.create(validator);
 
 		try (BufferedReader reader = Files.newBufferedReader(getAccessWidener().get().getAsFile().toPath(), StandardCharsets.UTF_8)) {
-			accessWidenerReader.read(reader, "named");
+			accessWidenerReader.read(reader);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to read access widener", e);
 		} finally {

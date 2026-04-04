@@ -92,10 +92,6 @@ public class ZipReprocessorUtil {
 	}
 
 	public static void reprocessZip(Path file, boolean reproducibleFileOrder, boolean preserveFileTimestamps, ZipEntryCompression zipEntryCompression) throws IOException {
-		if (!reproducibleFileOrder && preserveFileTimestamps) {
-			return;
-		}
-
 		final Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
 
 		try (var zipFile = new ZipFile(file.toFile());

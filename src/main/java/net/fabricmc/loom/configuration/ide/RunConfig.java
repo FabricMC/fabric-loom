@@ -210,7 +210,7 @@ public class RunConfig {
 	}
 
 	@Nullable
-	static String getMainClass(String side, LoomGradleExtension extension) {
+	public static String getMainClass(String side, LoomGradleExtension extension) {
 		InstallerData installerData = extension.getInstallerData();
 
 		if (installerData == null) {

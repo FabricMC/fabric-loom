@@ -51,8 +51,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
@@ -80,8 +80,8 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 	private List<VsCodeConfiguration> getConfigurations() {
 		List<VsCodeConfiguration> configurations = new ArrayList<>();
 
-		for (RunConfigSettings settings : getExtension().getRunConfigs()) {
-			if (!settings.isIdeConfigGenerated()) {
+		for (RunConfiguration settings : getExtension().getRunConfigs()) {
+			if (!settings.getGenerateRunConfig().get()) {
 				continue;
 			}
 

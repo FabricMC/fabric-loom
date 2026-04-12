@@ -39,6 +39,7 @@ import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
@@ -176,7 +177,7 @@ public abstract class LoomTasks implements Runnable {
 		});
 	}
 
-	public static String getRunConfigTaskName(RunConfigSettings config) {
+	public static String getRunConfigTaskName(RunConfiguration config) {
 		String configName = config.getName();
 		return "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
 	}

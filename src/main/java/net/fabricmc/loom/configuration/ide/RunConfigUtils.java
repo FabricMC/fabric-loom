@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task;
+package net.fabricmc.loom.configuration.ide;
 
-import javax.inject.Inject;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import org.gradle.work.DisableCachingByDefault;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.RunConfig;
 
-@DisableCachingByDefault
-public abstract class RunGameTask extends AbstractRunTask {
-	@Inject
-	public RunGameTask(RunConfiguration settings) {
-		super(proj -> RunConfig.runConfig(proj, settings));
+public class RunConfigUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RunConfigUtils.class);
 
-		// Defaults to empty, forwards stdin to mc.
-		setStandardInput(System.in);
+	public static void createRunDirectory(RunConfiguration runConfiguration) throws IOException {
+		Path runDirectory = runConfiguration.getRunDirectory().getAsFile().get().toPath();
+
+		if (!Files.exists(runDirectory)) {
+			Files.createDirectories(runDirectory);
+		} else if (!Files.isDirectory(runDirectory)) {
+			LOGGER.warn("Run directory {} is not a directory", runDirectory);
+		}
 	}
 }

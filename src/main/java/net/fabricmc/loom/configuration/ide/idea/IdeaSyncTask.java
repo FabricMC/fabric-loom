@@ -61,8 +61,9 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
@@ -95,8 +96,8 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 		List<IntellijRunConfig> configs = new ArrayList<>();
 
-		for (RunConfigSettings settings : extension.getRunConfigs()) {
-			if (!settings.isIdeConfigGenerated()) {
+		for (RunConfiguration settings : extension.getRunConfigs()) {
+			if (!settings.getGenerateRunConfig().get()) {
 				continue;
 			}
 
@@ -113,7 +114,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			irc.getLaunchFile().set(runConfigFile);
 			configs.add(irc);
 
-			settings.makeRunDir();
+			RunConfigUtils.createRunDirectory(settings);
 		}
 
 		return configs;

@@ -47,8 +47,9 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.util.Constants;
 
 @DisableCachingByDefault
@@ -69,14 +70,14 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 		}
 	}
 
-	private static List<EclipseRunConfig> getRunConfigs(Project project) {
+	private static List<EclipseRunConfig> getRunConfigs(Project project) throws IOException {
 		EclipseModel eclipseModel = project.getExtensions().getByType(EclipseModel.class);
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		List<EclipseRunConfig> runConfigs = new ArrayList<>();
 
-		for (RunConfigSettings settings : extension.getRunConfigs()) {
-			if (!settings.isIdeConfigGenerated()) {
+		for (RunConfiguration settings : extension.getRunConfigs()) {
+			if (!settings.getGenerateRunConfig().get()) {
 				continue;
 			}
 
@@ -96,7 +97,7 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 			eclipseRunConfig.getLaunchFile().set(project.file(configs));
 			runConfigs.add(eclipseRunConfig);
 
-			settings.makeRunDir();
+			RunConfigUtils.createRunDirectory(settings);
 		}
 
 		return runConfigs;

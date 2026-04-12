@@ -43,6 +43,7 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.api.fabricapi.GameTestSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
@@ -85,14 +86,14 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 			testSourceSet = SourceSetHelper.getMainSourceSet(getProject());
 		}
 
-		Consumer<RunConfigSettings> configureBase = run -> {
+		Consumer<RunConfiguration> configureBase = run -> {
 			if (settings.getCreateSourceSet().get()) {
-				run.source(getSourceSetName());
+				run.getSourceSet().set(SourceSetHelper.getSourceSetByName(getSourceSetName(), getProject()));
 			}
 		};
 
 		if (settings.getEnableGameTests().get()) {
-			RunConfigSettings gameTest = extension.getRunConfigs().create("gameTest", run -> {
+			RunConfiguration gameTest = extension.getRunConfigs().create("gameTest", run -> {
 				run.inherit(extension.getRunConfigs().getByName("server"));
 				run.property("fabric-api.gametest");
 				run.runDir("build/run/gameTest");

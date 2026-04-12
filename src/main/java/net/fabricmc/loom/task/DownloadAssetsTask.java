@@ -40,7 +40,7 @@ import org.gradle.internal.logging.progress.ProgressLoggerFactory;
 import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradlePlugin;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.assets.AssetIndex;
 import net.fabricmc.loom.util.MirrorUtil;
@@ -93,9 +93,9 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 			getLegacyResourcesDirectory().set(new File(assetsDir, "/legacy/" + versionInfo.id()));
 		} else {
 			// pre-1.6 resources
-			RunConfigSettings client = getExtension().getRunConfigs().findByName("client");
-			String runDir = client != null ? client.getRunDir() : "run";
-			getLegacyResourcesDirectory().set(new File(getProject().getProjectDir(), runDir + "/resources"));
+			RunConfiguration client = getExtension().getRunConfigs().findByName("client");
+			File runDir = client != null ? client.getRunDirectory().getAsFile().get() : getProject().file("run");
+			getLegacyResourcesDirectory().set(new File(runDir, "resources"));
 		}
 
 		getResourcesBaseUrl().set(MirrorUtil.getResourcesBase(getProject()));

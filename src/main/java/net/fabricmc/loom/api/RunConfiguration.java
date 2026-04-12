@@ -25,6 +25,7 @@
 package net.fabricmc.loom.api;
 
 import org.gradle.api.Named;
+import org.gradle.api.Project;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -32,8 +33,14 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.Strings;
+import net.fabricmc.loom.util.gradle.GradleUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
  * Represents a run configuration for Minecraft, these can presented via an IDE run configuration or a Gradle task.
@@ -123,13 +130,40 @@ public interface RunConfiguration extends Named {
 	@ApiStatus.Experimental
 	Property<String> getDevLaunchMainClass();
 
+	default void configureDefaults(Project project) {
+		getAppendProjectPathToConfigName().convention(true);
+		getMainClass().convention(project.provider(() -> RunConfig.getMainClass(getRuntimeEnvironment().get(), LoomGradleExtension.get(project))));
+		getDevLaunchMainClass().convention(Constants.DLI_ENTRYPOINT);
+		getSourceSet().convention(getRuntimeEnvironment().map(runtimeEnvironment -> {
+			final String sourceSetName = MinecraftSourceSets.get(project).getSourceSetForEnv(runtimeEnvironment);
+			return SourceSetHelper.getSourceSetByName(sourceSetName, project);
+		}));
+		getDisplayName().convention(getSourceSet().map(sourceSet -> {
+			String configName = "";
+			String srcName = sourceSet.getName();
+
+			final boolean isSplitClientSourceSet = LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit()
+					&& srcName.equals("client")
+					&& getRuntimeEnvironment().get().equals("client");
+
+			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
+				configName += Strings.capitalizeCamelCaseName(srcName) + " ";
+			}
+
+			configName += "Minecraft " + Strings.capitalizeCamelCaseName(getName());
+			return configName;
+		}));
+		getRunDirectory().set(project.file("run"));
+		getGenerateRunConfig().convention(GradleUtils.isRootProject(project));
+	}
+
 	default void inherit(RunConfiguration parent) {
 		getDisplayName().convention(parent.getDisplayName());
 		getJvmArguments().convention(parent.getJvmArguments());
 		getProgramArguments().convention(parent.getProgramArguments());
 		getEnvironmentVars().convention(parent.getEnvironmentVars());
 		getRuntimeEnvironment().convention(parent.getRuntimeEnvironment());
-		getAppendProjectPathToConfigName().convention(getAppendProjectPathToConfigName());
+		getAppendProjectPathToConfigName().convention(parent.getAppendProjectPathToConfigName());
 		getMainClass().convention(parent.getMainClass());
 		getSourceSet().convention(parent.getSourceSet());
 		getRunDirectory().convention(parent.getRunDirectory());

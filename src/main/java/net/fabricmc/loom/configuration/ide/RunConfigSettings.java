@@ -38,12 +38,8 @@ import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
-import net.fabricmc.loom.util.Strings;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class RunConfigSettings implements Named, RunConfiguration {
@@ -55,30 +51,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	public RunConfigSettings(Project project, String name) {
 		this.name = name;
 		this.project = project;
-
-		getAppendProjectPathToConfigName().convention(true);
-		getMainClass().convention(project.provider(() -> RunConfig.getMainClass(getRuntimeEnvironment().get(), LoomGradleExtension.get(project))));
-		getDevLaunchMainClass().convention(Constants.DLI_ENTRYPOINT);
-		setSource(p -> {
-			final String sourceSetName = MinecraftSourceSets.get(p).getSourceSetForEnv(getEnvironment());
-			return SourceSetHelper.getSourceSetByName(sourceSetName, p);
-		});
-		getDisplayName().convention(getSourceSet().map(sourceSet -> {
-			String configName = "";
-			String srcName = sourceSet.getName();
-
-			final boolean isSplitClientSourceSet = LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit()
-					&& srcName.equals("client")
-					&& getRuntimeEnvironment().get().equals("client");
-
-			if (!srcName.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
-				configName += Strings.capitalizeCamelCaseName(srcName) + " ";
-			}
-
-			configName += "Minecraft " + Strings.capitalizeCamelCaseName(name);
-			return configName;
-		}));
-		runDir("run");
+		configureDefaults(project);
 	}
 
 	@Override

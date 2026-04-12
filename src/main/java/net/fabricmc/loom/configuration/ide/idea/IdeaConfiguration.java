@@ -35,7 +35,6 @@ import org.gradle.api.Project;
 import org.gradle.internal.DefaultTaskExecutionRequest;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.LoomTasks;
 
 public abstract class IdeaConfiguration implements Runnable {
@@ -44,7 +43,7 @@ public abstract class IdeaConfiguration implements Runnable {
 
 	public void run() {
 		getProject().getTasks().register("ideaSyncTask", IdeaSyncTask.class, task -> {
-			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(RunConfigSettings::isIdeConfigGenerated)) {
+			if (LoomGradleExtension.get(getProject()).getRunConfigs().stream().anyMatch(config -> config.getGenerateRunConfig().get())) {
 				task.dependsOn(LoomTasks.getIDELaunchConfigureTaskName(getProject()));
 			} else {
 				task.setEnabled(false);

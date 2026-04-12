@@ -41,7 +41,7 @@ import org.gradle.work.DisableCachingByDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
@@ -60,7 +60,7 @@ public abstract class RenderDocRunTask extends RunGameTask {
 	protected abstract ExecOperations getExecOperations();
 
 	@Inject
-	public RenderDocRunTask(RunConfigSettings settings) {
+	public RenderDocRunTask(RunConfiguration settings) {
 		super(settings);
 		setGroup(Constants.TaskGroup.FABRIC);
 		dependsOn("configureClientLaunch");

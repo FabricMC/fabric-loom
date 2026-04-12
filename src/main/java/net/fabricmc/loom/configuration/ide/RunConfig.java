@@ -117,6 +117,10 @@ public class RunConfig {
 		runConfig.mainClass = settings.getDevLaunchMainClass().get();
 		runConfig.vmArgs.add("-Dfabric.dli.config=" + encodeEscaped(extension.getFiles().getDevLauncherConfig().getAbsolutePath()));
 		runConfig.vmArgs.add("-Dfabric.dli.env=" + environment.toLowerCase());
+
+		// TODO maybe pass these all via DLI
+		settings.getSystemProperties().get().forEach((key, value) -> runConfig.vmArgs.add("-D%s=%s".formatted(key, value)));
+
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir; // TODO check if the runDir is relative to the project root
@@ -214,7 +218,7 @@ public class RunConfig {
 		InstallerData installerData = extension.getInstallerData();
 
 		if (installerData == null) {
-			return null;
+			return getDefaultMainClass(side);
 		}
 
 		JsonObject installerJson = installerData.installerJson();
@@ -237,7 +241,16 @@ public class RunConfig {
 			return mainClassName;
 		}
 
-		return null;
+		return getDefaultMainClass(side);
+	}
+
+	@Nullable
+	private static String getDefaultMainClass(String side) {
+		return switch (side) {
+			case "client" -> Constants.Knot.KNOT_CLIENT;
+			case "server" -> Constants.Knot.KNOT_SERVER;
+			default -> null;
+		};
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {

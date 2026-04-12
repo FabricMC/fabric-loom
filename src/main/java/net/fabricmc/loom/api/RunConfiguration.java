@@ -176,7 +176,6 @@ public interface RunConfiguration extends Named {
 	 */
 	default void client() {
 		getRuntimeEnvironment().convention("client");
-		getMainClass().convention(Constants.Knot.KNOT_CLIENT);
 
 		if (Platform.CURRENT.isRaspberryPi()) {
 			getEnvironmentVars().put("MESA_GL_VERSION_OVERRIDE", "4.3");
@@ -189,6 +188,5 @@ public interface RunConfiguration extends Named {
 	default void server() {
 		getProgramArguments().add("nogui");
 		getRuntimeEnvironment().convention("server");
-		getMainClass().convention(Constants.Knot.KNOT_SERVER);
 	}
 }

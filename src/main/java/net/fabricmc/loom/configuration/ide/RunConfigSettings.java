@@ -355,7 +355,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 */
 	@Deprecated
 	public void property(String name) {
-		getSystemProperties().put(name, (String) null);
+		getSystemProperties().put(name, "");
 	}
 
 	/**

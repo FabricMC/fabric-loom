@@ -42,7 +42,7 @@ import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
-public abstract class RunConfigSettings implements Named, RunConfiguration {
+public abstract class RunConfigSettings implements Named, RunConfiguration, RunConfigurationInternal {
 	// The base name of the run configuration, which is the name it is created with, i.e. 'client'
 	private final String name;
 	private final Project project;
@@ -51,7 +51,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	public RunConfigSettings(Project project, String name) {
 		this.name = name;
 		this.project = project;
-		configureDefaults(project);
+		DefaultRunConfigurationSettings.configureDefaults(this, project);
 	}
 
 	@Override
@@ -72,18 +72,18 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	// Note: Overridden for backwards compatibility
 	@Override
 	public void client() {
-		RunConfiguration.super.client();
+		RunConfigurationInternal.super.client();
 	}
 
 	// Note: Overridden for backwards compatibility
 	@Override
 	public void server() {
-		RunConfiguration.super.server();
+		RunConfigurationInternal.super.server();
 	}
 
 	// Note: Overload method for backwards compatibility
 	public void inherit(RunConfigSettings parent) {
-		RunConfiguration.super.inherit(parent);
+		RunConfigurationInternal.super.inherit(parent);
 	}
 
 	/**
@@ -209,7 +209,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 */
 	@Deprecated
 	public SourceSet getSource(Project proj) {
-		return getSourceSet().get();
+		return SourceSetHelper.getSourceSetByName(getSourceSet().get(), project);
 	}
 
 	/**
@@ -217,7 +217,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 */
 	@Deprecated
 	public void setSource(SourceSet source) {
-		getSourceSet().set(source);
+		getSourceSet().set(source.getName());
 	}
 
 	/**
@@ -225,7 +225,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 */
 	@Deprecated
 	public void setSource(Function<Project, SourceSet> sourceFn) {
-		getSourceSet().set(getProject().provider(() -> sourceFn.apply(getProject())));
+		getSourceSet().set(getProject().provider(() -> sourceFn.apply(getProject()).getName()));
 	}
 
 	/**

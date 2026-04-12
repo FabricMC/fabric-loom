@@ -88,7 +88,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 		Consumer<RunConfiguration> configureBase = run -> {
 			if (settings.getCreateSourceSet().get()) {
-				run.getSourceSet().set(SourceSetHelper.getSourceSetByName(getSourceSetName(), getProject()));
+				run.getSourceSet().set(getSourceSetName());
 			}
 		};
 

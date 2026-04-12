@@ -33,13 +33,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import groovy.xml.XmlUtil;
-import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -52,11 +50,9 @@ import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
-import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.GradleUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
@@ -81,19 +77,12 @@ public class RunConfig {
 	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		LibraryContext context = new LibraryContext(extension.getMinecraftProvider().getVersionInfo(), JavaVersion.current());
-
-		if (settings.getRuntimeEnvironment().get().equals("client") && context.usesLWJGL3()) {
-			if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
-				settings.getJvmArguments().add("-XstartOnFirstThread");
-			}
-		}
+		DefaultRunConfigurationSettings.finialise(settings, project);
+		settings = RunConfigUtils.toSerialisable(settings, project);
 
 		String configName = settings.getDisplayName().get();
 		String environment = settings.getRuntimeEnvironment().get();
-		SourceSet sourceSet = settings.getSourceSet().get();
-		String mainClass = settings.getMainClass().get();
+		SourceSet sourceSet = SourceSetHelper.getSourceSetByName(settings.getSourceSet().get(), project);
 		File runDir = settings.getRunDirectory().get().getAsFile();
 
 		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
@@ -105,12 +94,6 @@ public class RunConfig {
 		}
 
 		runConfig.mainClass = settings.getDevLaunchMainClass().get();
-		runConfig.vmArgs.add("-Dfabric.dli.config=" + encodeEscaped(extension.getFiles().getDevLauncherConfig().getAbsolutePath()));
-		runConfig.vmArgs.add("-Dfabric.dli.env=" + environment.toLowerCase());
-
-		// TODO maybe pass these all via DLI
-		settings.getSystemProperties().get().forEach((key, value) -> runConfig.vmArgs.add("-D%s=%s".formatted(key, value)));
-
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir; // TODO check if the runDir is relative to the project root
@@ -121,18 +104,10 @@ public class RunConfig {
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArguments().get());
 		runConfig.vmArgs.addAll(settings.getJvmArguments().get());
-		runConfig.vmArgs.add("-Dfabric.dli.main=" + mainClass);
 		runConfig.environmentVariables = new HashMap<>();
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVars().get());
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
-
-		MinecraftVersionMeta.JavaVersion javaVersion = extension.getMinecraftProvider().getVersionInfo().javaVersion();
-
-		if (javaVersion != null && javaVersion.majorVersion() >= 25) {
-			runConfig.vmArgs.add("--sun-misc-unsafe-memory-access=allow");
-			runConfig.vmArgs.add("--enable-native-access=ALL-UNNAMED");
-		}
 
 		return runConfig;
 	}
@@ -227,21 +202,5 @@ public class RunConfig {
 				.map(ResolvedArtifact::getModuleVersion)
 				.map(ResolvedModuleVersion::getId)
 				.anyMatch(test -> test.getGroup().equals(identifier.getGroup()) && test.getName().equals(identifier.getName()));
-	}
-
-	private static String encodeEscaped(String s) {
-		StringBuilder ret = new StringBuilder();
-
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
-
-			if (c == '@' && i > 0 && s.charAt(i - 1) == '@' || c == ' ') {
-				ret.append(String.format(Locale.ENGLISH, "@@%04x", (int) c));
-			} else {
-				ret.append(c);
-			}
-		}
-
-		return ret.toString();
 	}
 }

@@ -24,14 +24,17 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.gradle.api.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,5 +94,25 @@ public class RunConfigUtils {
 		case "server" -> Constants.Knot.KNOT_SERVER;
 		default -> null;
 		};
+	}
+
+	/**
+	 * Format the run directory for use in an IDE run configuration. If the run directory is within the root project, it will be formatted as a relative path from the root project. Otherwise, it will be formatted as an absolute path.
+	 *
+	 * @param runConfig The run configuration to format the run directory for.
+	 * @param project The project to format the run directory for.
+	 * @param absoluteFormatter A function that formats an absolute path for use in an IDE run configuration.
+	 * @param relativeFormatter A function that formats a relative path for use in an IDE run configuration.
+	 */
+	public static String formatRunDir(RunConfiguration runConfig, Project project, Function<File, String> absoluteFormatter, Function<String, String> relativeFormatter) {
+		File runDir = runConfig.getRunDirectory().getAsFile().get();
+		File projectDir = project.getRootProject().getProjectDir();
+
+		if (runDir.toPath().startsWith(projectDir.toPath())) {
+			String relativePath = projectDir.toPath().relativize(runDir.toPath()).toString();
+			return relativeFormatter.apply(relativePath);
+		} else {
+			return absoluteFormatter.apply(runDir);
+		}
 	}
 }

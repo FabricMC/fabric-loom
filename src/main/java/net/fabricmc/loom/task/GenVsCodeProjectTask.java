@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +54,7 @@ import org.gradle.work.DisableCachingByDefault;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
@@ -162,27 +164,14 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			Map<String, Object> env,
 			String projectName,
 			String runDir) implements Serializable {
-		private static String resolveCwd(Path rootPath, Path absoluteRunDir) {
-			if (absoluteRunDir.startsWith(rootPath)) {
-				return "${workspaceFolder}/" + rootPath.relativize(absoluteRunDir);
-			}
-
-			return absoluteRunDir.toString();
-		}
-
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
-			Path rootPath = project.getRootDir().toPath();
-			Path projectPath = project.getProjectDir().toPath();
-			// Resolve runDir: if relative, resolve against the project dir; if absolute, use as-is
-			Path absoluteRunDir = runConfig.runDir.isAbsolute()
-					? runConfig.runDir.toPath()
-					: projectPath.resolve(runConfig.runDir.toPath()).normalize();
+			String cwd = RunConfigUtils.formatRunDir(runConfig.runConfiguration, project, File::getAbsolutePath, path -> "${workspaceFolder}/" + path);
 
 			return new VsCodeConfiguration(
 					"java",
 					runConfig.configName,
 					"launch",
-					resolveCwd(rootPath, absoluteRunDir),
+					cwd,
 					"integratedTerminal",
 					false,
 					runConfig.mainClass,
@@ -190,7 +179,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 					RunConfig.joinArguments(runConfig.programArgs),
 					new HashMap<>(runConfig.environmentVariables),
 					runConfig.projectName,
-					absoluteRunDir.toString()
+					cwd
 			);
 		}
 	}

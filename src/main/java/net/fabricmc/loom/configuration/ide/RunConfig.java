@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +60,8 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
+	public final RunConfiguration runConfiguration;
+
 	public String configName;
 	public String eclipseProjectName;
 	public String ideaModuleName;
@@ -74,6 +75,10 @@ public class RunConfig {
 	public Map<String, Object> environmentVariables;
 	public String projectName;
 	public String folderName;
+
+	public RunConfig(RunConfiguration runConfiguration) {
+		this.runConfiguration = runConfiguration;
+	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -92,7 +97,7 @@ public class RunConfig {
 		File runDir = settings.getRunDirectory().get().getAsFile();
 
 		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
-		RunConfig runConfig = new RunConfig();
+		RunConfig runConfig = new RunConfig(settings);
 		runConfig.configName = configName;
 
 		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
@@ -132,29 +137,15 @@ public class RunConfig {
 		return runConfig;
 	}
 
-	// TODO work to replace this.
-	@Deprecated(forRemoval = true)
-	private String getRelativeRunDir() {
-		// TODO fix me
-		return this.runDir.toString();
-	}
-
-	public String fromDummy(String dummy, boolean relativeDir, Project project) throws IOException {
+	public String fromDummy(String dummy) throws IOException {
 		String dummyConfig;
 
 		try (InputStream input = IdeaSyncTask.class.getClassLoader().getResourceAsStream(dummy)) {
 			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		}
 
-		String runDir = getRelativeRunDir();
-
-		if (relativeDir && project.getRootProject() != project) {
-			Path rootPath = project.getRootDir().toPath();
-			Path projectPath = project.getProjectDir().toPath();
-			String relativePath = rootPath.relativize(projectPath).toString();
-
-			runDir = relativePath + "/" + runDir;
-		}
+		// TODO make relative for the given IDE.
+		String runDir = this.runDir.getAbsolutePath();
 
 		dummyConfig = dummyConfig.replace("%NAME%", configName);
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);

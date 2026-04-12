@@ -87,7 +87,7 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 			final String config;
 
 			try {
-				config = configInst.fromDummy("eclipse_run_config_template.xml", false, project);
+				config = configInst.fromDummy("eclipse_run_config_template.xml");
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to generate Eclipse run configuration", e);
 			}

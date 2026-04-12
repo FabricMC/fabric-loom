@@ -162,15 +162,27 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			Map<String, Object> env,
 			String projectName,
 			String runDir) implements Serializable {
+		private static String resolveCwd(Path rootPath, Path absoluteRunDir) {
+			if (absoluteRunDir.startsWith(rootPath)) {
+				return "${workspaceFolder}/" + rootPath.relativize(absoluteRunDir);
+			}
+
+			return absoluteRunDir.toString();
+		}
+
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
 			Path rootPath = project.getRootDir().toPath();
 			Path projectPath = project.getProjectDir().toPath();
-			String relativeRunDir = rootPath.relativize(projectPath).resolve(runConfig.getRelativeRunDir()).toString();
+			// Resolve runDir: if relative, resolve against the project dir; if absolute, use as-is
+			Path absoluteRunDir = runConfig.runDir.isAbsolute()
+					? runConfig.runDir.toPath()
+					: projectPath.resolve(runConfig.runDir.toPath()).normalize();
+
 			return new VsCodeConfiguration(
 					"java",
 					runConfig.configName,
 					"launch",
-					"${workspaceFolder}/" + relativeRunDir,
+					resolveCwd(rootPath, absoluteRunDir),
 					"integratedTerminal",
 					false,
 					runConfig.mainClass,
@@ -178,7 +190,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 					RunConfig.joinArguments(runConfig.programArgs),
 					new HashMap<>(runConfig.environmentVariables),
 					runConfig.projectName,
-					rootPath.resolve(relativeRunDir).toAbsolutePath().toString()
+					absoluteRunDir.toString()
 			);
 		}
 	}

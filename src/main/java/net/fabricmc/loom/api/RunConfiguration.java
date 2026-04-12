@@ -34,7 +34,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
@@ -132,7 +132,7 @@ public interface RunConfiguration extends Named {
 
 	default void configureDefaults(Project project) {
 		getAppendProjectPathToConfigName().convention(true);
-		getMainClass().convention(project.provider(() -> RunConfig.getMainClass(getRuntimeEnvironment().get(), LoomGradleExtension.get(project))));
+		getMainClass().convention(project.provider(() -> RunConfigUtils.getMainClass(getRuntimeEnvironment().get(), LoomGradleExtension.get(project))));
 		getDevLaunchMainClass().convention(Constants.DLI_ENTRYPOINT);
 		getSourceSet().convention(getRuntimeEnvironment().map(runtimeEnvironment -> {
 			final String sourceSetName = MinecraftSourceSets.get(project).getSourceSetForEnv(runtimeEnvironment);

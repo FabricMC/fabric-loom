@@ -28,10 +28,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.annotation.Nullable;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
+import net.fabricmc.loom.configuration.InstallerData;
+import net.fabricmc.loom.util.Constants;
 
 public class RunConfigUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RunConfigUtils.class);
@@ -44,5 +51,45 @@ public class RunConfigUtils {
 		} else if (!Files.isDirectory(runDirectory)) {
 			LOGGER.warn("Run directory {} is not a directory", runDirectory);
 		}
+	}
+
+	@Nullable
+	public static String getMainClass(String side, LoomGradleExtension extension) {
+		InstallerData installerData = extension.getInstallerData();
+
+		if (installerData == null) {
+			return getDefaultMainClass(side);
+		}
+
+		JsonObject installerJson = installerData.installerJson();
+
+		if (installerJson != null && installerJson.has("mainClass")) {
+			JsonElement mainClassJson = installerJson.get("mainClass");
+
+			String mainClassName = "";
+
+			if (mainClassJson.isJsonObject()) {
+				JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
+
+				if (mainClassesJson.has(side)) {
+					mainClassName = mainClassesJson.get(side).getAsString();
+				}
+			} else {
+				mainClassName = mainClassJson.getAsString();
+			}
+
+			return mainClassName;
+		}
+
+		return getDefaultMainClass(side);
+	}
+
+	@Nullable
+	private static String getDefaultMainClass(String side) {
+		return switch (side) {
+		case "client" -> Constants.Knot.KNOT_CLIENT;
+		case "server" -> Constants.Knot.KNOT_SERVER;
+		default -> null;
+		};
 	}
 }

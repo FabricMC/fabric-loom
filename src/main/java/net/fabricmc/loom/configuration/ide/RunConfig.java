@@ -39,10 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nullable;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import groovy.xml.XmlUtil;
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
@@ -54,7 +50,6 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
@@ -79,16 +74,6 @@ public class RunConfig {
 	public Map<String, Object> environmentVariables;
 	public String projectName;
 	public String folderName;
-
-	// Turns camelCase/PascalCase into Capital Case
-	// caseConversionExample -> Case Conversion Example
-	private static String capitalizeCamelCaseName(String name) {
-		if (name.isEmpty()) {
-			return "";
-		}
-
-		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
-	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -149,7 +134,7 @@ public class RunConfig {
 
 	// TODO work to replace this.
 	@Deprecated(forRemoval = true)
-	public String getRelativeRunDir() {
+	private String getRelativeRunDir() {
 		// TODO fix me
 		return this.runDir.toString();
 	}
@@ -211,46 +196,6 @@ public class RunConfig {
 		}
 
 		return sb.toString();
-	}
-
-	@Nullable
-	public static String getMainClass(String side, LoomGradleExtension extension) {
-		InstallerData installerData = extension.getInstallerData();
-
-		if (installerData == null) {
-			return getDefaultMainClass(side);
-		}
-
-		JsonObject installerJson = installerData.installerJson();
-
-		if (installerJson != null && installerJson.has("mainClass")) {
-			JsonElement mainClassJson = installerJson.get("mainClass");
-
-			String mainClassName = "";
-
-			if (mainClassJson.isJsonObject()) {
-				JsonObject mainClassesJson = mainClassJson.getAsJsonObject();
-
-				if (mainClassesJson.has(side)) {
-					mainClassName = mainClassesJson.get(side).getAsString();
-				}
-			} else {
-				mainClassName = mainClassJson.getAsString();
-			}
-
-			return mainClassName;
-		}
-
-		return getDefaultMainClass(side);
-	}
-
-	@Nullable
-	private static String getDefaultMainClass(String side) {
-		return switch (side) {
-			case "client" -> Constants.Knot.KNOT_CLIENT;
-			case "server" -> Constants.Knot.KNOT_SERVER;
-			default -> null;
-		};
 	}
 
 	public List<String> getExcludedLibraryPaths(Project project) {

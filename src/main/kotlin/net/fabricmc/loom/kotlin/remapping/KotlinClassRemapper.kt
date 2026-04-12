@@ -88,7 +88,15 @@ class KotlinClassRemapper(
 
     private fun remap(name: ClassName): ClassName {
         val local = name.isLocalClassName()
-        val remapped = remapper.map(name.toJvmInternalName()).replace('$', '.')
+
+        // Ensure that none inner classes with names containing $ are persisted.
+        // See: https://github.com/FabricMC/fabric-loom/issues/1363 fix suggested by fan87
+        val normalizedName = name.replace('$', '\n')
+        val remapped =
+            remapper
+                .map(normalizedName.toJvmInternalName())
+                .replace('$', '.')
+                .replace('\n', '$')
 
         if (local) {
             return ".$remapped"
@@ -115,6 +123,7 @@ class KotlinClassRemapper(
     private fun remap(function: KmFunction): KmFunction {
         function.typeParameters.replaceAll(this::remap)
         function.receiverParameterType = function.receiverParameterType?.let { remap(it) }
+        @Suppress("DEPRECATION_ERROR")
         function.contextReceiverTypes.replaceAll(this::remap)
         function.valueParameters.replaceAll(this::remap)
         function.returnType = remap(function.returnType)
@@ -125,6 +134,7 @@ class KotlinClassRemapper(
     private fun remap(property: KmProperty): KmProperty {
         property.typeParameters.replaceAll(this::remap)
         property.receiverParameterType = property.receiverParameterType?.let { remap(it) }
+        @Suppress("DEPRECATION_ERROR")
         property.contextReceiverTypes.replaceAll(this::remap)
         property.setterParameter = property.setterParameter?.let { remap(it) }
         property.returnType = remap(property.returnType)

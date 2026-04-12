@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -55,7 +55,8 @@ public record FileMappingsLayer(
 		boolean enigma, // Enigma cannot be automatically detected since it's stored in a directory.
 		boolean unpick,
 		boolean annotations,
-		String mergeNamespace
+		String mergeNamespace,
+		String fallbackUnpickConstants
 ) implements MappingLayer, UnpickLayer, AnnotationsLayer {
 	@Override
 	public void visit(MappingVisitor mappingVisitor) throws IOException {
@@ -90,7 +91,11 @@ public record FileMappingsLayer(
 
 	@Override
 	public List<Class<? extends MappingLayer>> dependsOn() {
-		return List.of(IntermediaryMappingLayer.class);
+		if (mergeNamespace.equals(MappingsNamespace.INTERMEDIARY.toString()) || fallbackSourceNamespace.equals(MappingsNamespace.INTERMEDIARY.toString())) {
+			return List.of(IntermediaryMappingLayer.class);
+		}
+
+		return List.of();
 	}
 
 	@Override
@@ -114,6 +119,15 @@ public record FileMappingsLayer(
 
 			return UnpickData.read(unpickMetadata, unpickDefinitions);
 		}
+	}
+
+	@Override
+	public @Nullable String getFallbackConstants() {
+		if (!unpick) {
+			return null;
+		}
+
+		return fallbackUnpickConstants;
 	}
 
 	@Override

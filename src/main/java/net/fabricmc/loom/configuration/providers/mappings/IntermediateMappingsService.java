@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -48,6 +47,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -68,7 +68,7 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		Property<String> getMinecraftVersion();
 	}
 
-	private final Supplier<MemoryMappingTree> memoryMappingTree = Suppliers.memoize(this::createMemoryMappingTree);
+	private final Supplier<MemoryMappingTree> memoryMappingTree = Lazy.of(this::createMemoryMappingTree);
 
 	public IntermediateMappingsService(Options options, ServiceFactory serviceFactory) {
 		super(options, serviceFactory);
@@ -76,6 +76,11 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 
 	public static Provider<Options> createOptions(Project project, MinecraftProvider minecraftProvider) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+
+		if (!extension.getUseIntermediateMappings().get()) {
+			throw new IllegalStateException("Intermediary mappings is disabled");
+		}
+
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		final Path intermediaryTiny = minecraftProvider.file(intermediateProvider.getName() + ".tiny").toPath();
 
@@ -103,9 +108,9 @@ public final class IntermediateMappingsService extends Service<IntermediateMappi
 		final IntermediateMappingsProvider intermediateProvider = extension.getIntermediateMappingsProvider();
 		// When merging legacy versions there will be multiple named namespaces, so use intermediary as the common src ns
 		// Newer versions will use intermediary as the src ns
-		final String expectedSrcNs = minecraftProvider.isLegacyVersion()
-				? MappingsNamespace.INTERMEDIARY.toString() // <1.3
-				: MappingsNamespace.OFFICIAL.toString(); // >=1.3
+		final String expectedSrcNs = minecraftProvider.isLegacySplitOfficialNamespaceVersion()
+				? MappingsNamespace.INTERMEDIARY.toString() // >=beta 1.0 and <1.3
+				: MappingsNamespace.OFFICIAL.toString(); // >=1.3 or <b1.0
 
 		return TYPE.create(project, options -> {
 			options.getIntermediaryTiny().set(intermediaryTiny.toFile());

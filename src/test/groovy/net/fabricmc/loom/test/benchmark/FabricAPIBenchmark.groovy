@@ -43,18 +43,10 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 				gradleHomeDir: new File(dir, "gradlehome"),
 				allowExistingRepo: true,
 
-				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "41bc64cd617f03d49ecc4a4f7788cb65d465415c",
-				patch: "fabric_api"
+				repo: "https://github.com/FabricMC/fabric-api.git",
+				commit: "7053354728ece4a68d098b07b2526eb4303fbac1",
+				patch: "fabric_api_unobf"
 				)
-
-		if (gradle.buildGradle.text.contains("loom.mixin.useLegacyMixinAp")) {
-			gradle.buildGradle << """
-				allprojects {
-					loom.mixin.useLegacyMixinAp = true
-				}
-				""".stripIndent()
-		}
 
 		def timeStart = new Date()
 

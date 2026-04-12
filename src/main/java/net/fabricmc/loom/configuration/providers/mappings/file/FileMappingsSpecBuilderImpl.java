@@ -25,10 +25,12 @@
 package net.fabricmc.loom.configuration.providers.mappings.file;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.mappings.layered.spec.FileMappingsSpecBuilder;
 import net.fabricmc.loom.api.mappings.layered.spec.FileSpec;
+import net.fabricmc.loom.configuration.providers.mappings.utils.MavenFileSpec;
 
 public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	/**
@@ -38,12 +40,13 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 
 	private final FileSpec fileSpec;
 	private String mappingPath = DEFAULT_MAPPING_PATH;
-	private String fallbackSourceNamespace = MappingsNamespace.INTERMEDIARY.toString();
+	private Optional<String> fallbackSourceNamespace = Optional.empty();
 	private String fallbackTargetNamespace = MappingsNamespace.NAMED.toString();
 	private boolean enigma = false;
 	private boolean unpick = false;
 	private boolean annotations = false;
-	private String mergeNamespace = MappingsNamespace.INTERMEDIARY.toString();
+	private Optional<String> mergeNamespace = Optional.empty();
+	private Optional<String> fallbackUnpickConstants = Optional.empty();
 
 	private FileMappingsSpecBuilderImpl(FileSpec fileSpec) {
 		this.fileSpec = fileSpec;
@@ -61,7 +64,7 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 
 	@Override
 	public FileMappingsSpecBuilderImpl fallbackNamespaces(String sourceNamespace, String targetNamespace) {
-		fallbackSourceNamespace = Objects.requireNonNull(sourceNamespace, "fallback source namespace cannot be null");
+		fallbackSourceNamespace = Optional.of(Objects.requireNonNull(sourceNamespace, "fallback source namespace cannot be null"));
 		fallbackTargetNamespace = Objects.requireNonNull(targetNamespace, "fallback target namespace cannot be null");
 		return this;
 	}
@@ -81,12 +84,24 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 	@Override
 	public FileMappingsSpecBuilderImpl containsUnpick() {
 		unpick = true;
+
+		if (fileSpec instanceof MavenFileSpec mavenFileSpec) {
+			String dependencyNotation = mavenFileSpec.dependencyNotation();
+			String[] notationParts = dependencyNotation.split(":");
+
+			if (notationParts.length == 4) {
+				dependencyNotation = dependencyNotation.substring(0, dependencyNotation.lastIndexOf(':'));
+			}
+
+			fallbackUnpickConstants = Optional.of(dependencyNotation + ":constants");
+		}
+
 		return this;
 	}
 
 	@Override
 	public FileMappingsSpecBuilderImpl mergeNamespace(MappingsNamespace namespace) {
-		mergeNamespace = Objects.requireNonNull(namespace, "merge namespace cannot be null").toString();
+		mergeNamespace = Optional.of(Objects.requireNonNull(namespace, "merge namespace cannot be null").toString());
 		return this;
 	}
 
@@ -98,11 +113,11 @@ public class FileMappingsSpecBuilderImpl implements FileMappingsSpecBuilder {
 			throw new IllegalArgumentException("Namespace '" + namespace + "' is unsupported! It must be either 'official', 'intermediary' or 'named'.");
 		}
 
-		mergeNamespace = namespace;
+		mergeNamespace = Optional.of(namespace);
 		return this;
 	}
 
 	public FileMappingsSpec build() {
-		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, annotations, mergeNamespace);
+		return new FileMappingsSpec(fileSpec, mappingPath, fallbackSourceNamespace, fallbackTargetNamespace, enigma, unpick, annotations, mergeNamespace, fallbackUnpickConstants);
 	}
 }

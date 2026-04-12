@@ -29,7 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -43,12 +43,13 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceTask;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -71,6 +72,7 @@ import net.fabricmc.tinyremapper.extension.mixin.common.data.Constant;
  * }
  * }</pre>
  */
+@DisableCachingByDefault
 public abstract class ValidateMixinNameTask extends SourceTask {
 	@Input
 	abstract Property<Boolean> getSoftFailures();
@@ -106,7 +108,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 		@Override
 		public void execute() {
 			final Set<File> files = getParameters().getInputClasses().getAsFileTree().getFiles();
-			final List<String> errors = new LinkedList<>();
+			final List<String> errors = new ArrayList<>();
 
 			for (File file : files) {
 				final Mixin mixin = getMixin(file);

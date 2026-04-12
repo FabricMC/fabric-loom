@@ -29,7 +29,6 @@ import java.nio.file.Path
 import java.util.function.Supplier
 import java.util.zip.ZipFile
 
-import groovy.transform.EqualsAndHashCode
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.MinimalExternalModuleDependency
 import org.gradle.api.logging.Logger
@@ -43,7 +42,7 @@ import net.fabricmc.loom.configuration.providers.mappings.IntermediateMappingsSe
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsProcessor
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer
-import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingLayer
+import net.fabricmc.loom.configuration.providers.mappings.intermediary.IntermediaryMappingsSpec
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider
 import net.fabricmc.loom.test.LoomTestConstants
@@ -51,7 +50,6 @@ import net.fabricmc.loom.test.unit.LoomMocks
 import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 import net.fabricmc.loom.util.download.DownloadBuilder
-import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter
@@ -92,7 +90,7 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	MemoryMappingTree getSingleMapping(MappingsSpec<? extends MappingLayer> spec) {
 		MemoryMappingTree mappingTree = new MemoryMappingTree()
-		spec.createLayer(new TestMappingContext([spec])).visit(mappingTree)
+		spec.createLayer(createMappingContext(spec)).visit(mappingTree)
 		return mappingTree
 	}
 
@@ -110,13 +108,18 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 	UnpickLayer.UnpickData getUnpickData(MappingsSpec<? extends MappingLayer>... specs) {
 		LayeredMappingsProcessor processor = createLayeredMappingsProcessor(specs)
-		return processor.getUnpickData(processor.resolveLayers(new TestMappingContext(specs.toList())))
+		MappingContext context = createMappingContext(specs)
+		return processor.getUnpickData(processor.resolveLayers(context))
+	}
+
+	MappingContext createMappingContext(MappingsSpec<? extends MappingLayer>... specs) {
+		return new TestMappingContext(specs.toList())
 	}
 
 	private static LayeredMappingsProcessor createLayeredMappingsProcessor(MappingsSpec<? extends MappingLayer>... specs) {
-		boolean usingNoIntermediateSpec = specs.any { it instanceof NoIntermediateMappingsSpec }
+		boolean noIntermediateMappings = !specs.any { it instanceof IntermediaryMappingsSpec }
 		LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
-		return new LayeredMappingsProcessor(spec, usingNoIntermediateSpec)
+		return new LayeredMappingsProcessor(spec, noIntermediateMappings)
 	}
 
 	String getTiny(MemoryMappingTree mappingTree) {
@@ -182,7 +185,12 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 
 		@Override
 		boolean isUsingIntermediateMappings() {
-			return !specs.any { it instanceof NoIntermediateMappingsSpec }
+			return specs.any { it instanceof IntermediaryMappingsSpec }
+		}
+
+		@Override
+		String productionNamespace() {
+			return "intermediary"
 		}
 
 		@Override
@@ -213,22 +221,6 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		@Override
 		boolean hasProperty(String property) {
 			return enabledProperties.contains(property)
-		}
-	}
-
-	@EqualsAndHashCode
-	static class NoIntermediateMappingsSpec implements MappingsSpec<IntermediaryMappingLayer> {
-		static String NO_OP_MAPPINGS = "tiny\t2\t0\tofficial\tintermediary"
-
-		@Override
-		IntermediaryMappingLayer createLayer(MappingContext context) {
-			return new IntermediaryMappingLayer(NoIntermediateMappingsSpec.&createNoOpMappings)
-		}
-
-		private static MemoryMappingTree createNoOpMappings() {
-			def tree = new MemoryMappingTree()
-			MappingReader.read(new StringReader(NO_OP_MAPPINGS), tree)
-			return tree
 		}
 	}
 }

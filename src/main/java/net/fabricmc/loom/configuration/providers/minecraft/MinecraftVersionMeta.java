@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,8 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 
 @SuppressWarnings("unused")
@@ -62,6 +63,37 @@ public record MinecraftVersionMeta(
 
 	public boolean isVersionOrNewer(String releaseTime) {
 		return this.releaseTime().compareTo(releaseTime) >= 0;
+	}
+
+	/**
+	 * Returns true if the version was released before 1.3.
+	 * This means that the client and server can't be merged normally due to different obfuscation
+	 * or one of the environments missing.
+	 */
+	public boolean isLegacyVersion() {
+		return !isVersionOrNewer(Constants.RELEASE_TIME_1_3);
+	}
+
+	public boolean hasClient() {
+		return downloads().containsKey("client");
+	}
+
+	public boolean hasServer() {
+		return downloads().containsKey("server");
+	}
+
+	/**
+	 * Returns true if the version was released after Beta 1.0 (inclusive) but before 1.3 (exclusive).
+	 *
+	 * <p>This includes some versions that only have a client jar or a server jar to match behaviour
+	 * across all versions in the range.
+	 */
+	public boolean isLegacySplitOfficialNamespaceVersion() {
+		// TODO: Allow "official" as the obf namespace on single-env versions in this range by checking the mappings
+		//       to see which one they have.
+		//       Likewise, "clientOfficial"/"serverOfficial" could be allowed older single-env releases
+		//       as an alternative to "official".
+		return isLegacyVersion() && isVersionOrNewer(Constants.RELEASE_TIME_BETA_1_0);
 	}
 
 	public boolean hasNativesToExtract() {

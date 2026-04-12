@@ -32,7 +32,9 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.provider.Provider;
 
+import net.fabricmc.loom.LoomCompanionGradlePlugin;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 
 public final class GradleUtils {
 	private GradleUtils() {
@@ -59,7 +61,11 @@ public final class GradleUtils {
 	}
 
 	public static boolean isLoomProject(Project project) {
-		return project.getPluginManager().hasPlugin("fabric-loom");
+		return project.getPluginManager().hasPlugin(LoomGradlePlugin.NAME);
+	}
+
+	public static boolean isLoomCompanionProject(Project project) {
+		return project.getPluginManager().hasPlugin(LoomCompanionGradlePlugin.NAME);
 	}
 
 	public static Provider<Boolean> getBooleanPropertyProvider(Project project, String key) {
@@ -103,7 +109,11 @@ public final class GradleUtils {
 	}
 
 	public static boolean getBooleanProperty(Project project, String key) {
-		return getBooleanPropertyProvider(project, key).getOrElse(false);
+		return getBooleanProperty(project, key, false);
+	}
+
+	public static boolean getBooleanProperty(Project project, String key, boolean defaultValue) {
+		return getBooleanPropertyProvider(project, key).getOrElse(defaultValue);
 	}
 
 	public static Object getProperty(Project project, String key) {
@@ -123,5 +133,9 @@ public final class GradleUtils {
 		final RegularFileProperty property = project.getObjects().fileProperty();
 		property.set(file);
 		return property.getAsFile().get();
+	}
+
+	public static boolean isRootProject(Project project) {
+		return project.getRootProject() == project;
 	}
 }

@@ -24,23 +24,25 @@
 
 package net.fabricmc.loom.configuration.providers.mappings;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
 import org.gradle.api.Project;
-import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
-import org.jetbrains.annotations.Nullable;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
@@ -51,8 +53,9 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 	public static final ServiceType<Options, TinyMappingsService> TYPE = new ServiceType<>(Options.class, TinyMappingsService.class);
 
 	public interface Options extends Service.Options {
-		@InputFiles
-		ConfigurableFileCollection getMappings(); // Only a single file
+		@InputFile
+		@PathSensitive(PathSensitivity.NONE)
+		RegularFileProperty getMappings(); // Only a single file
 
 		/**
 		 * When present, the mappings will be read from the specified zip entry path.
@@ -64,14 +67,14 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 
 	public static Provider<Options> createOptions(Project project, Path mappings) {
 		return TYPE.create(project, options -> {
-			options.getMappings().from(project.file(mappings));
+			options.getMappings().fileValue(project.file(mappings));
 			options.getZipEntryPath().unset();
 		});
 	}
 
-	public static Provider<Options> createOptions(Project project, FileCollection mappings, @Nullable String zipEntryPath) {
+	public static Provider<Options> createOptions(Project project, Provider<File> mappings, @Nullable String zipEntryPath) {
 		return TYPE.create(project, options -> {
-			options.getMappings().from(mappings);
+			options.getMappings().fileProvider(mappings);
 			options.getZipEntryPath().set(zipEntryPath);
 		});
 	}
@@ -80,8 +83,8 @@ public final class TinyMappingsService extends Service<TinyMappingsService.Optio
 		super(options, serviceFactory);
 	}
 
-	private final Supplier<MemoryMappingTree> mappingTree = Suppliers.memoize(() -> {
-		Path mappings = getOptions().getMappings().getSingleFile().toPath();
+	private final Supplier<MemoryMappingTree> mappingTree = Lazy.of(() -> {
+		Path mappings = getOptions().getMappings().getAsFile().get().toPath();
 
 		if (getOptions().getZipEntryPath().isPresent()) {
 			try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(mappings)) {

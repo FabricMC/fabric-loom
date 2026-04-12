@@ -13,7 +13,7 @@ loom {
 		cfr {
 			options.put("test", "value")
 		}
-		fernflower {
+		vineflower {
 			options.put("test", "value")
 		}
 	}

@@ -33,6 +33,8 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.util.service.Service;
@@ -54,8 +56,10 @@ public abstract class ClientEntriesService<O extends ClientEntriesService.Option
 
 		public interface Options extends ClientEntriesService.Options {
 			@InputFiles
+			@PathSensitive(PathSensitivity.ABSOLUTE)
 			ConfigurableFileCollection getAllSourceFiles();
 			@InputFiles
+			@PathSensitive(PathSensitivity.ABSOLUTE)
 			ConfigurableFileCollection getSourceDirectories();
 		}
 
@@ -83,6 +87,7 @@ public abstract class ClientEntriesService<O extends ClientEntriesService.Option
 
 		public interface Options extends ClientEntriesService.Options {
 			@InputFiles
+			@PathSensitive(PathSensitivity.ABSOLUTE)
 			ConfigurableFileCollection getAllOutputDirs();
 		}
 

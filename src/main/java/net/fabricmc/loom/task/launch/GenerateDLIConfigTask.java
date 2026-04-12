@@ -27,32 +27,40 @@ package net.fabricmc.loom.task.launch;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.logging.configuration.ConsoleOutput;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.MappedMinecraftProvider;
 import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.task.service.ClasspathGroupService;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
+@DisableCachingByDefault
 public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@Input
 	protected abstract Property<String> getVersionInfoJson();
@@ -68,10 +76,6 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 
 	@Input
 	protected abstract Property<Boolean> getANSISupportedIDE();
-
-	@Input
-	@Optional
-	protected abstract Property<String> getClassPathGroups();
 
 	@Input
 	protected abstract Property<String> getLog4jConfigPaths();
@@ -90,11 +94,22 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 	@Input
 	protected abstract Property<String> getNativesDirectoryPath();
 
+	@Input
+	protected abstract Property<String> getProductionNamespace();
+
+	@Input
+	protected abstract Property<String> getDefaultMixinRemapType();
+
 	@InputFile
+	@PathSensitive(PathSensitivity.ABSOLUTE)
+	@Optional
 	public abstract RegularFileProperty getRemapClasspathFile();
 
 	@OutputFile
 	protected abstract RegularFileProperty getDevLauncherConfig();
+
+	@Nested
+	protected abstract Property<ClasspathGroupService.Options> getClasspathGroupOptions();
 
 	public GenerateDLIConfigTask() {
 		getVersionInfoJson().set(LoomGradlePlugin.GSON.toJson(getExtension().getMinecraftProvider().getVersionInfo()));
@@ -102,10 +117,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getSplitSourceSets().set(getExtension().areEnvironmentSourceSetsSplit());
 		getANSISupportedIDE().set(ansiSupportedIde(getProject()));
 		getPlainConsole().set(getProject().getGradle().getStartParameter().getConsoleOutput() == ConsoleOutput.Plain);
-
-		if (!getExtension().getMods().isEmpty()) {
-			getClassPathGroups().set(buildClassPathGroups(getProject()));
-		}
+		getClasspathGroupOptions().set(ClasspathGroupService.create(getProject()));
 
 		getLog4jConfigPaths().set(getAllLog4JConfigFiles(getProject()));
 
@@ -117,6 +129,8 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		getAssetsDirectoryPath().set(new File(getExtension().getFiles().getUserCache(), "assets").getAbsolutePath());
 		getNativesDirectoryPath().set(getExtension().getFiles().getNativesDirectory(getProject()).getAbsolutePath());
 		getDevLauncherConfig().set(getExtension().getFiles().getDevLauncherConfig());
+		getProductionNamespace().set(getExtension().getProductionNamespaceEnum().map(MappingsNamespace::toString));
+		getDefaultMixinRemapType().set(getExtension().getDefaultMixinRemapTypeEnum().map(remapType -> remapType.toString().toLowerCase(Locale.ROOT)));
 	}
 
 	@TaskAction
@@ -130,14 +144,19 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 
 		final LaunchConfig launchConfig = new LaunchConfig()
 				.property("fabric.development", "true")
-				.property("fabric.remapClasspathFile", getRemapClasspathFile().get().getAsFile().getAbsolutePath())
 				.property("log4j.configurationFile", getLog4jConfigPaths().get())
 				.property("log4j2.formatMsgNoLookups", "true")
+				.property("fabric.defaultModDistributionNamespace", getProductionNamespace().get())
+				.property("fabric.defaultMixinRemapType", getDefaultMixinRemapType().get())
 
 				.argument("client", "--assetIndex")
 				.argument("client", versionInfo.assetIndex().fabricId(getMinecraftVersion().get()))
 				.argument("client", "--assetsDir")
 				.argument("client", assetsDirectory.getAbsolutePath());
+
+		if (getRemapClasspathFile().isPresent()) {
+			launchConfig.property("fabric.remapClasspathFile", getRemapClasspathFile().get().getAsFile().getAbsolutePath());
+		}
 
 		if (versionInfo.hasNativesToExtract()) {
 			String nativesPath = getNativesDirectoryPath().get();
@@ -152,8 +171,12 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 			launchConfig.property("fabric.gameJarPath", getCommonGameJarPath().get());
 		}
 
-		if (getClassPathGroups().isPresent()) {
-			launchConfig.property("fabric.classPathGroups", getClassPathGroups().get());
+		try (ScopedServiceFactory serviceFactory = new ScopedServiceFactory()) {
+			ClasspathGroupService classpathGroupService = serviceFactory.get(getClasspathGroupOptions());
+
+			if (classpathGroupService.hasGroups()) {
+				launchConfig.property("fabric.classPathGroups", classpathGroupService.getClasspathGroupsPropertyValue());
+			}
 		}
 
 		//Enable ansi by default for idea and vscode when gradle is not ran with plain console.
@@ -161,7 +184,7 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 			launchConfig.property("fabric.log.disableAnsi", "false");
 		}
 
-		FileUtils.writeStringToFile(getDevLauncherConfig().getAsFile().get(), launchConfig.asString(), StandardCharsets.UTF_8);
+		Files.writeString(getDevLauncherConfig().getAsFile().get().toPath(), launchConfig.asString(), StandardCharsets.UTF_8);
 	}
 
 	private static String getAllLog4JConfigFiles(Project project) {
@@ -178,19 +201,6 @@ public abstract class GenerateDLIConfigTask extends AbstractLoomTask {
 		case "common" -> split.getCommonJar().getPath().toAbsolutePath().toString();
 		default -> throw new UnsupportedOperationException();
 		};
-	}
-
-	/**
-	 * See: https://github.com/FabricMC/fabric-loader/pull/585.
-	 */
-	private static String buildClassPathGroups(Project project) {
-		return LoomGradleExtension.get(project).getMods().stream()
-				.map(modSettings ->
-						SourceSetHelper.getClasspath(modSettings, project).stream()
-							.map(File::getAbsolutePath)
-							.collect(Collectors.joining(File.pathSeparator))
-				)
-				.collect(Collectors.joining(File.pathSeparator+File.pathSeparator));
 	}
 
 	private static boolean ansiSupportedIde(Project project) {

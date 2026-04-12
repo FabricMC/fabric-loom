@@ -40,6 +40,7 @@ import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.fabricapi.GameTestSettings;
@@ -98,7 +99,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 				configureBase.accept(run);
 			});
 
-			tasks.named("test", task -> task.dependsOn(LoomTasks.getRunConfigTaskName(gameTest)));
+			tasks.named("check", task -> task.dependsOn(LoomTasks.getRunConfigTaskName(gameTest)));
 		}
 
 		if (settings.getEnableClientGameTests().get()) {
@@ -146,6 +147,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		}
 	}
 
+	@DisableCachingByDefault
 	public abstract static class AcceptEulaTask extends AbstractLoomTask {
 		@OutputFile
 		public abstract RegularFileProperty getEulaFile();

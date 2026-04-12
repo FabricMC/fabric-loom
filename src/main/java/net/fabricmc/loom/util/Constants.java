@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2022 FabricMC
+ * Copyright (c) 2016-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,9 @@ public class Constants {
 	public static final String DLI_ENTRYPOINT = "net.fabricmc.devlaunchinjector.Main";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
+	public static final String RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS = "2025-11-01T00:00:00+00:00";
 	public static final String RELEASE_TIME_1_3 = "2012-07-25T22:00:00+00:00";
+	public static final String RELEASE_TIME_BETA_1_0 = "2010-12-19T22:00:00+00:00";
 
 	private Constants() {
 	}
@@ -90,14 +92,18 @@ public class Constants {
 		 * Mods to be used by {@link net.fabricmc.loom.task.prod.AbstractProductionRunTask} tasks by default.
 		 */
 		public static final String PRODUCTION_RUNTIME_MODS = "productionRuntimeMods";
+		/**
+		 * Used to query classpath data across project boundaries.
+		 */
+		public static final String EXPORTED_CLASSPATH = "loomExportedClasspath";
 
 		private Configurations() {
 		}
 	}
 
 	public static final class MixinArguments {
-		public static final String IN_MAP_FILE_NAMED_INTERMEDIARY = "inMapFileNamedIntermediary";
-		public static final String OUT_MAP_FILE_NAMED_INTERMEDIARY = "outMapFileNamedIntermediary";
+		public static final String IN_MAP_FILE_NAMED = "inMapFileNamed";
+		public static final String OUT_MAP_FILE_NAMED = "outMapFileNamed";
 		public static final String OUT_REFMAP_FILE = "outRefMapFile";
 		public static final String DEFAULT_OBFUSCATION_ENV = "defaultObfuscationEnv";
 		public static final String QUIET = "quiet";
@@ -125,6 +131,7 @@ public class Constants {
 
 	public static final class Task {
 		public static final String PROCESS_INCLUDE_JARS = "processIncludeJars";
+		public static final String EXPORT_CLASSPATH = "exportClasspath";
 
 		private Task() {
 		}
@@ -137,6 +144,7 @@ public class Constants {
 
 	public static final class Properties {
 		public static final String DONT_REMAP = "fabric.loom.dontRemap";
+		public static final String DISABLE_OBFUSCATION = "fabric.loom.disableObfuscation";
 		public static final String DISABLE_REMAPPED_VARIANTS = "fabric.loom.disableRemappedVariants";
 		public static final String DISABLE_PROJECT_DEPENDENT_MODS = "fabric.loom.disableProjectDependentMods";
 		public static final String LIBRARY_PROCESSORS = "fabric.loom.libraryProcessors";
@@ -152,11 +160,15 @@ public class Constants {
 		/**
 		 * Skip the signature verification of the Minecraft jar after downloading it.
 		 */
-		public static final String DISABLE_MINECRAFT_VERIFICATION = "fabric.loom.disableMinecraftVerification";
+		public static final String ENABLE_MINECRAFT_VERIFICATION = "fabric.loom.enableMinecraftVerification";
 		/**
 		 * When using the MojangMappingLayer this will remove names for non root methods by using the intermediary mappings.
 		 */
 		public static final String DROP_NON_INTERMEDIATE_ROOT_METHODS = "fabric.loom.dropNonIntermediateRootMethods";
+		/**
+		 * Set to true in all {@link net.fabricmc.loom.task.RenderDocRunTask} can be used to determine at runtime if running with loom's renderdoc setup.
+		 */
+		public static final String RENDER_DOC = "fabric.loom.renderdoc.enabled";
 	}
 
 	public static final class Manifest {

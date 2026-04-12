@@ -35,10 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Iterables;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import org.apache.commons.io.FilenameUtils;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
@@ -64,12 +62,12 @@ public class FileDependencyInfo extends DependencyInfo {
 		case 0 -> //Don't think Gradle would ever let you do this
 				throw new IllegalStateException("Empty dependency?");
 		case 1 -> //Single file dependency
-				classifierToFile.put("", Iterables.getOnlyElement(files));
+				classifierToFile.put("", getOnlyElement(files));
 		default -> { //File collection, try work out the classifiers
 			List<File> sortedFiles = files.stream().sorted(Comparator.comparing(File::getName, Comparator.comparingInt(String::length))).collect(Collectors.toList());
 			//First element in sortedFiles is the one with the shortest name, we presume all the others are different classifier types of this
-			File shortest = sortedFiles.remove(0);
-			String shortestName = FilenameUtils.removeExtension(shortest.getName()); //name.jar -> name
+			File shortest = sortedFiles.removeFirst();
+			String shortestName = removeExtension(shortest); //name.jar -> name
 
 			for (File file : sortedFiles) {
 				if (!file.getName().startsWith(shortestName)) {
@@ -84,7 +82,7 @@ public class FileDependencyInfo extends DependencyInfo {
 
 			for (File file : sortedFiles) {
 				//Now we just have to work out what classifier type the other files are, this shouldn't even return an empty string
-				String classifier = FilenameUtils.removeExtension(file.getName()).substring(start);
+				String classifier = removeExtension(file).substring(start);
 
 				//The classifier could well be separated with a dash (thing name.jar and name-sources.jar), we don't want that leading dash
 				if (classifierToFile.put(classifier.charAt(0) == '-' ? classifier.substring(1) : classifier, file) != null) {
@@ -104,7 +102,7 @@ public class FileDependencyInfo extends DependencyInfo {
 			byte[] modJson;
 
 			try {
-				if ("jar".equals(FilenameUtils.getExtension(root.getName())) && (modJson = ZipUtils.unpackNullable(root.toPath(), "fabric.mod.json")) != null) {
+				if ("jar".equals(getExtension(root)) && (modJson = ZipUtils.unpackNullable(root.toPath(), "fabric.mod.json")) != null) {
 					//It's a Fabric mod, see how much we can extract out
 					JsonObject json = new Gson().fromJson(new String(modJson, StandardCharsets.UTF_8), JsonObject.class);
 
@@ -121,7 +119,7 @@ public class FileDependencyInfo extends DependencyInfo {
 					version = json.get("version").getAsString();
 				} else {
 					//Not a Fabric mod, just have to make something up
-					name = FilenameUtils.removeExtension(root.getName());
+					name = removeExtension(root);
 					version = "1.0";
 				}
 			} catch (IOException e) {
@@ -149,5 +147,37 @@ public class FileDependencyInfo extends DependencyInfo {
 	@Override
 	public Set<File> resolve() {
 		return this.resolvedFiles;
+	}
+
+	private static <T> T getOnlyElement(Set<T> set) {
+		if (set.size() != 1) {
+			throw new IllegalArgumentException("Expected exactly one element but got " + set.size());
+		}
+
+		return set.iterator().next();
+	}
+
+	private static String removeExtension(File file) {
+		String filename = file.getName();
+		int lastDot = filename.lastIndexOf('.');
+		int lastSeparator = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+
+		if (lastDot > lastSeparator) {
+			return filename.substring(0, lastDot);
+		}
+
+		return filename;
+	}
+
+	private static String getExtension(File file) {
+		String filename = file.getName();
+		int lastDot = filename.lastIndexOf('.');
+		int lastSeparator = Math.max(filename.lastIndexOf('/'), filename.lastIndexOf('\\'));
+
+		if (lastDot > lastSeparator && lastDot != filename.length() - 1) {
+			return filename.substring(lastDot + 1);
+		}
+
+		return "";
 	}
 }

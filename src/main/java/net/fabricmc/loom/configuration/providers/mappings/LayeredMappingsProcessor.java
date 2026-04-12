@@ -28,11 +28,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
@@ -42,7 +41,7 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.Ann
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.signatures.SignatureFixesLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
-import net.fabricmc.mappingio.adapter.MappingNsCompleter;
+import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
@@ -56,7 +55,7 @@ public class LayeredMappingsProcessor {
 	}
 
 	public List<MappingLayer> resolveLayers(MappingContext context) {
-		List<MappingLayer> layers = new LinkedList<>();
+		List<MappingLayer> layers = new ArrayList<>();
 		List<Class<? extends MappingLayer>> visitedLayers = new ArrayList<>();
 
 		for (MappingsSpec<?> spec : layeredMappingSpec.layers()) {
@@ -109,30 +108,18 @@ public class LayeredMappingsProcessor {
 			}
 		}
 
-		if (noIntermediateMappings) {
-			// HACK: Populate intermediary with named when there are no intermediary mappings being used.
-			MemoryMappingTree completedTree = new MemoryMappingTree();
-			mappingTree.accept(new MappingNsCompleter(completedTree, Map.of("intermediary", "named")));
-			return completedTree;
-		}
-
 		return mappingTree;
 	}
 
-	@Nullable
-	public AnnotationsData getAnnotationsData(List<MappingLayer> layers) throws IOException {
-		AnnotationsData result = null;
+	public List<AnnotationsData> getAnnotationsData(List<MappingLayer> layers) throws IOException {
+		List<AnnotationsData> result = new ArrayList<>();
 
 		for (MappingLayer layer : layers) {
 			if (layer instanceof AnnotationsLayer annotationsLayer) {
 				AnnotationsData annotationsData = annotationsLayer.getAnnotationsData();
 
 				if (annotationsData != null) {
-					if (result == null) {
-						result = annotationsData;
-					} else {
-						result = result.merge(annotationsData);
-					}
+					result.add(annotationsData);
 				}
 			}
 		}
@@ -157,14 +144,26 @@ public class LayeredMappingsProcessor {
 		return Collections.unmodifiableMap(signatureFixes);
 	}
 
-	@Nullable
-	public UnpickLayer.UnpickData getUnpickData(List<MappingLayer> layers) throws IOException {
+	public UnpickLayer.@Nullable UnpickData getUnpickData(List<MappingLayer> layers) throws IOException {
 		List<UnpickLayer.UnpickData> unpickDataList = new ArrayList<>();
 
 		for (MappingLayer layer : layers) {
 			if (layer instanceof UnpickLayer unpickLayer) {
 				UnpickLayer.UnpickData data = unpickLayer.getUnpickData();
 				if (data == null) continue;
+
+				if (!data.metadata().hasConstantsLocation()) {
+					// if the constants location is not provided explicitly, Loom
+					// cannot trick its way into finding them, since the mappings
+					// dependency points to the layered mappings instead of the
+					// individual layer that provided the unpick data
+					String fallbackConstants = unpickLayer.getFallbackConstants();
+					UnpickMetadata metadata = fallbackConstants == null
+								? data.metadata().withoutConstants()
+								: data.metadata().withConstants(fallbackConstants);
+
+					data = new UnpickLayer.UnpickData(metadata, data.definitions());
+				}
 
 				unpickDataList.add(data);
 			}

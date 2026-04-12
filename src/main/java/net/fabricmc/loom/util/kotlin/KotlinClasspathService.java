@@ -36,8 +36,8 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFiles;
 
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -47,7 +47,7 @@ public final class KotlinClasspathService extends Service<KotlinClasspathService
 	public static ServiceType<Options, KotlinClasspathService> TYPE = new ServiceType<>(Options.class, KotlinClasspathService.class);
 
 	public interface Options extends Service.Options {
-		@InputFiles
+		@Classpath
 		ConfigurableFileCollection getClasspath();
 		@Input
 		Property<String> getKotlinVersion();

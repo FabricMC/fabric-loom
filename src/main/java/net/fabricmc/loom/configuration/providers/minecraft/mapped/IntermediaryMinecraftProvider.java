@@ -41,6 +41,10 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftProvider> extends AbstractMappedMinecraftProvider<M> permits IntermediaryMinecraftProvider.MergedImpl, IntermediaryMinecraftProvider.LegacyMergedImpl, IntermediaryMinecraftProvider.SingleJarImpl, IntermediaryMinecraftProvider.SplitImpl {
 	public IntermediaryMinecraftProvider(Project project, M minecraftProvider) {
 		super(project, minecraftProvider);
+
+		if (extension.disableObfuscation()) {
+			throw new UnsupportedOperationException("Intermediary Minecraft providers cannot be used when obfuscation is disabled");
+		}
 	}
 
 	@Override

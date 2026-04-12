@@ -1,0 +1,2 @@
+classTweaker v1 intermediary
+transitive-inject-interface net/minecraft/class_2248 InjectedInterface2

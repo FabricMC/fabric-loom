@@ -118,7 +118,6 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		mockMinecraftProvider.getVersionInfo() >> VERSION_META_1_17
 		when:
 		def mappings = getLayeredMappings(
-				new NoIntermediateMappingsSpec(),
 				buildMojangMappingsSpec(true)
 				)
 		def tiny = getTiny(mappings)
@@ -126,9 +125,8 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		def officialId = mappings.getNamespaceId("official")
 		then:
 		mappings.srcNamespace == "named"
-		mappings.dstNamespaces == ["intermediary", "official"]
+		mappings.dstNamespaces == ["official"]
 		mappings.classes.size() == 6113
-		mappings.getClass("com/mojang/blaze3d/Blaze3D").getDstName(intermediaryId) == "com/mojang/blaze3d/Blaze3D"
 		mappings.getClass("com/mojang/blaze3d/Blaze3D").getDstName(officialId) == "doe"
 		mappings.getClass("com/mojang/blaze3d/Blaze3D").getSrcName() == "com/mojang/blaze3d/Blaze3D"
 	}

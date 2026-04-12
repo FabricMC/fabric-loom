@@ -36,6 +36,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
@@ -50,6 +51,7 @@ import net.fabricmc.loom.util.download.DownloadException;
 /**
  * A general purpose task for downloading files from a URL, using the loom {@link Download} utility.
  */
+@DisableCachingByDefault
 public abstract class DownloadTask extends DefaultTask {
 	/**
 	 * The URL to download the file from.

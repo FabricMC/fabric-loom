@@ -48,6 +48,8 @@ public interface MappingContext {
 
 	boolean isUsingIntermediateMappings();
 
+	String productionNamespace();
+
 	MinecraftProvider minecraftProvider();
 
 	default String minecraftVersion() {

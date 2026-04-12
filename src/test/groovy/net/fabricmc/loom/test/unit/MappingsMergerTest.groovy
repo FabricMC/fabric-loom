@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,6 @@ import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger
 import net.fabricmc.mappingio.MappingReader
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch
 import net.fabricmc.mappingio.tree.MemoryMappingTree
-
-import static org.junit.jupiter.api.Assertions.*
 
 class MappingsMergerTest {
 	@TempDir
@@ -106,7 +104,7 @@ class MappingsMergerTest {
 		IntermediateMappingsService intermediateMappingsService = LoomMocks.intermediateMappingsServiceMock(intermediateMappingsServiceOptions)
 
 		when:
-		MappingsMerger.legacyMergeAndSaveMappings(mappingsTiny, mergedMappingsTiny, intermediateMappingsService)
+		MappingsMerger.legacyMergedMergeAndSaveMappings(mappingsTiny, mergedMappingsTiny, intermediateMappingsService)
 
 		def mappings = new MemoryMappingTree()
 		MappingReader.read(mergedMappingsTiny, mappings)

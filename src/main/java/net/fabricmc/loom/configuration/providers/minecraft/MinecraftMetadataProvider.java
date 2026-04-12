@@ -33,7 +33,7 @@ import java.util.function.Function;
 
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
@@ -92,12 +92,18 @@ public final class MinecraftMetadataProvider {
 		return versionMeta;
 	}
 
+	public boolean isUnobfuscated() {
+		return getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS)
+				&& !getVersionMeta().downloads().containsKey("client_mappings");
+	}
+
 	private ManifestEntryLocation getVersionEntry() throws IOException {
 		// Custom URL always takes priority
 		if (options.customManifestUrl() != null) {
-			VersionsManifest.Version customVersion = new VersionsManifest.Version();
-			customVersion.id = options.minecraftVersion();
-			customVersion.url = options.customManifestUrl();
+			VersionsManifest.Version customVersion = new VersionsManifest.Version(
+					options.minecraftVersion(),
+					options.customManifestUrl()
+			);
 			return new ManifestEntryLocation(null, customVersion);
 		}
 
@@ -124,6 +130,7 @@ public final class MinecraftMetadataProvider {
 		throw new RuntimeException("Failed to find minecraft version: " + options.minecraftVersion());
 	}
 
+	@Nullable
 	private ManifestEntryLocation getManifestEntry(ManifestLocation location, boolean forceDownload) throws IOException {
 		DownloadBuilder builder = download.apply(location.url());
 
@@ -146,10 +153,10 @@ public final class MinecraftMetadataProvider {
 	}
 
 	private MinecraftVersionMeta readVersionMeta() throws IOException {
-		final DownloadBuilder builder = download.apply(versionEntry.entry.url);
+		final DownloadBuilder builder = download.apply(versionEntry.entry.url());
 
-		if (versionEntry.entry.sha1 != null) {
-			builder.sha1(versionEntry.entry.sha1);
+		if (versionEntry.entry.sha1() != null) {
+			builder.sha1(versionEntry.entry.sha1());
 		} else {
 			builder.defaultCache();
 		}
@@ -163,7 +170,7 @@ public final class MinecraftMetadataProvider {
 	private String getVersionMetaFileName() {
 		// custom version metadata
 		if (versionEntry.manifest == null) {
-			return "minecraft_info_" + Integer.toHexString(versionEntry.entry.url.hashCode()) + ".json";
+			return "minecraft_info_" + Integer.toHexString(versionEntry.entry.url().hashCode()) + ".json";
 		}
 
 		// metadata url taken from versions manifest

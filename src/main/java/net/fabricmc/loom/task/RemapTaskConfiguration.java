@@ -67,17 +67,19 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 		SyncTaskBuildService.register(getProject());
 
-		if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)) {
-			extension.getUnmappedModCollection().from(getTasks().getByName(JavaPlugin.JAR_TASK_NAME));
+		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE_INTERNAL);
+		TaskProvider<NestableJarGenerationTask> processIncludeJarsTask = getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
+			task.from(includeConfiguration);
+			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));
+			task.getUncompressNestedJars().set(extension.getUncompressNestedJars());
+		});
+
+		if (extension.dontRemapOutputs()) {
+			new NonRemappedJarTaskConfiguration(getProject(), extension, processIncludeJarsTask).configure();
 			return;
 		}
 
-		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE_INTERNAL);
-		getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
-			task.from(includeConfiguration);
-			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));
-		});
-
+		// Remapping needed - use the traditional remapJar task with JIJ support (original logic)
 		Action<RemapJarTask> remapJarTaskAction = task -> {
 			final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
 

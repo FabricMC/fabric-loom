@@ -95,13 +95,13 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return mappingsZip;
 		}
 
-		boolean noIntermediateMappings = extension.getIntermediateMappingsProvider() instanceof NoOpIntermediateMappingsProvider;
-		var processor = new LayeredMappingsProcessor(spec, noIntermediateMappings);
+		boolean useIntermediateMappings = extension.getUseIntermediateMappings().get();
+		var processor = new LayeredMappingsProcessor(spec, !useIntermediateMappings);
 		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
 		Files.deleteIfExists(mappingsZip);
 
-		writeMapping(processor, layers, mappingsZip);
+		writeMapping(processor, layers, mappingsZip, useIntermediateMappings);
 		writeAnnotationData(processor, layers, mappingsZip);
 		writeSignatureFixes(processor, layers, mappingsZip);
 		writeUnpickData(processor, layers, mappingsZip);
@@ -117,14 +117,14 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion());
 	}
 
-	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
+	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile, boolean useIntermediateMappings) throws IOException {
 		MemoryMappingTree mappings = processor.getMappings(layers);
 
 		try (Writer writer = new StringWriter()) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
 
-			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()));
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, MappingsNamespace.INTERMEDIARY.toString(), true);
+			MappingDstNsReorder nsReorder = new MappingDstNsReorder(tiny2Writer, useIntermediateMappings ? List.of(MappingsNamespace.NAMED.toString(), MappingsNamespace.OFFICIAL.toString()) : List.of(MappingsNamespace.NAMED.toString()));
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(nsReorder, useIntermediateMappings ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.OFFICIAL.toString(), true);
 			AddConstructorMappingVisitor addConstructor = new AddConstructorMappingVisitor(nsSwitch);
 			mappings.accept(addConstructor);
 
@@ -134,13 +134,13 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	private void writeAnnotationData(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile) throws IOException {
-		AnnotationsData annotationsData = processor.getAnnotationsData(layers);
+		List<AnnotationsData> annotationsData = processor.getAnnotationsData(layers);
 
-		if (annotationsData == null) {
+		if (annotationsData.isEmpty()) {
 			return;
 		}
 
-		byte[] data = AnnotationsData.GSON.toJson(annotationsData.toJson()).getBytes(StandardCharsets.UTF_8);
+		byte[] data = AnnotationsData.GSON.toJson(AnnotationsData.listToJson(annotationsData)).getBytes(StandardCharsets.UTF_8);
 
 		ZipUtils.add(mappingsFile, AnnotationsLayer.ANNOTATIONS_PATH, data);
 	}
@@ -164,7 +164,9 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 			return;
 		}
 
+		byte[] data = UnpickMetadata.toJson(unpickData.metadata()).getBytes(StandardCharsets.UTF_8);
+
 		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_DEFINITIONS_PATH, unpickData.definitions());
-		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_METADATA_PATH, unpickData.rawMetadata());
+		ZipUtils.add(mappingsFile, UnpickMetadata.UNPICK_METADATA_PATH, data);
 	}
 }

@@ -258,4 +258,55 @@ class ZipUtilsTest extends Specification {
 		ZipUtils.unpack(zip, "text.txt") == "hello world".bytes
 		Checksum.of(zip).sha1().hex() == "e699fa52a520553241aac798f72255ac0a912b05"
 	}
+
+	def "transform async"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "a.txt").text = "one"
+		new File(dir, "b.txt").text = "two"
+
+		when:
+		ZipUtils.pack(dir.toPath(), zip)
+		def transformed = ZipUtils.transformAsync(zip, [
+			new Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>("a.txt", new ZipUtils.UnsafeUnaryOperator<byte[]>() {
+				@Override
+				byte[] apply(byte[] arg) throws IOException {
+					return new String(arg, StandardCharsets.UTF_8).toUpperCase().getBytes(StandardCharsets.UTF_8)
+				}
+			}),
+			new Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>("b.txt", new ZipUtils.UnsafeUnaryOperator<byte[]>() {
+				@Override
+				byte[] apply(byte[] arg) throws IOException {
+					return new String(arg, StandardCharsets.UTF_8).toUpperCase().getBytes(StandardCharsets.UTF_8)
+				}
+			})
+		])
+
+		then:
+		transformed == 2
+		new String(ZipUtils.unpack(zip, "a.txt"), StandardCharsets.UTF_8) == "ONE"
+		new String(ZipUtils.unpack(zip, "b.txt"), StandardCharsets.UTF_8) == "TWO"
+	}
+
+	def "transform async throws"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "a.txt").text = "one"
+
+		when:
+		ZipUtils.pack(dir.toPath(), zip)
+		ZipUtils.transformAsync(zip, [
+			new Pair<String, ZipUtils.UnsafeUnaryOperator<byte[]>>("a.txt", new ZipUtils.UnsafeUnaryOperator<byte[]>() {
+				@Override
+				byte[] apply(byte[] arg) throws IOException {
+					throw new RuntimeException("Test exception")
+				}
+			})
+		])
+
+		then:
+		thrown(RuntimeException)
+	}
 }

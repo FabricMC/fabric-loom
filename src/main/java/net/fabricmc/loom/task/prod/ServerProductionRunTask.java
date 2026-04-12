@@ -34,6 +34,7 @@ import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.work.DisableCachingByDefault;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.util.LoomVersions;
@@ -43,6 +44,7 @@ import net.fabricmc.loom.util.ZipUtils;
  * A task that runs the server using the production server launcher. You must manually register a task of this type to use it.
  */
 @ApiStatus.Experimental
+@DisableCachingByDefault
 public abstract non-sealed class ServerProductionRunTask extends AbstractProductionRunTask {
 	/**
 	 * The version of Fabric Loader to use.

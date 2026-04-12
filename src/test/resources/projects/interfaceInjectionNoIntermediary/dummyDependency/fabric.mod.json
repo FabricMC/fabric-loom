@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "dummy",
+  "version": "1",
+  "name": "Dummy Mod",
+  "custom": {
+    "loom:injected_interfaces": {
+      "bzp": ["InjectedInterface"]
+    }
+  }
+}

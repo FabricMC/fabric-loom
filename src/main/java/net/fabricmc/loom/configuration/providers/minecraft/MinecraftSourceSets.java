@@ -27,7 +27,6 @@ package net.fabricmc.loom.configuration.providers.minecraft;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.plugins.JavaPlugin;
@@ -37,6 +36,7 @@ import org.gradle.jvm.tasks.Jar;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
+import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
@@ -53,7 +53,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	public void evaluateSplit(Project project) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		Preconditions.checkArgument(extension.areEnvironmentSourceSetsSplit());
+		Check.require(extension.areEnvironmentSourceSetsSplit());
 
 		Split.INSTANCE.evaluate(project);
 	}
@@ -151,9 +151,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 		@Override
 		public void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets) {
-			Preconditions.checkArgument(targets.size() == 2);
-			Preconditions.checkArgument(targets.contains(MinecraftJar.Type.COMMON));
-			Preconditions.checkArgument(targets.contains(MinecraftJar.Type.CLIENT_ONLY));
+			Check.require(targets.size() == 2);
+			Check.require(targets.contains(MinecraftJar.Type.COMMON));
+			Check.require(targets.contains(MinecraftJar.Type.CLIENT_ONLY));
 
 			consumer.accept(MINECRAFT_COMMON_NAMED.runtime(), MinecraftJar.Type.COMMON);
 			consumer.accept(MINECRAFT_CLIENT_ONLY_NAMED.runtime(), MinecraftJar.Type.CLIENT_ONLY);

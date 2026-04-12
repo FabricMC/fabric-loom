@@ -43,7 +43,7 @@ public final class ContextImplHelper {
 			try {
 				TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext.project(), configContext.serviceFactory(), from.toString(), to.toString());
 
-				for (Path minecraftJar : configContext.extension().getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
+				for (Path minecraftJar : configContext.extension().getMinecraftJars(from)) {
 					tinyRemapper.readClassPath(minecraftJar);
 				}
 

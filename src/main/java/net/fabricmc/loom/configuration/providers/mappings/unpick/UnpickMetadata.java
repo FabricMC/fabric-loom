@@ -30,15 +30,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 
 public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata.V2 {
 	String UNPICK_METADATA_PATH = "extras/unpick.json";
 	String UNPICK_DEFINITIONS_PATH = "extras/definitions.unpick";
 
+	/**
+	 * @return whether constants are required by the Unpick definitions
+	 */
 	boolean hasConstants();
+
+	/**
+	 * @return whether the maven location of the constants is specified by this metadata
+	 */
+	boolean hasConstantsLocation();
+
+	UnpickMetadata withConstants(String constants);
+
+	default UnpickMetadata withoutConstants() {
+		return withConstants(null);
+	}
 
 	/**
 	 * @param unpickGroup Deprecated, always uses the version of unpick loom depends on.
@@ -48,6 +63,18 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		@Override
 		public boolean hasConstants() {
 			return true;
+		}
+
+		@Override
+		public boolean hasConstantsLocation() {
+			return false;
+		}
+
+		@Override
+		public UnpickMetadata withConstants(String constants) {
+			// all v1 data is deprecated and ignored by Loom
+			// and only v2 format allows setting the constants location
+			return new UnpickMetadata.V2(MappingsNamespace.NAMED.toString(), constants);
 		}
 	}
 
@@ -62,6 +89,28 @@ public sealed interface UnpickMetadata permits UnpickMetadata.V1, UnpickMetadata
 		public boolean hasConstants() {
 			return constants != null;
 		}
+
+		@Override
+		public boolean hasConstantsLocation() {
+			return true;
+		}
+
+		@Override
+		public UnpickMetadata withConstants(String constants) {
+			return new UnpickMetadata.V2(namespace, constants);
+		}
+	}
+
+	static String toJson(UnpickMetadata metadata) {
+		JsonObject json = LoomGradlePlugin.GSON.toJsonTree(metadata).getAsJsonObject();
+
+		int version = switch (metadata) {
+		case UnpickMetadata.V1 v1 -> 1;
+		case UnpickMetadata.V2 v2 -> 2;
+		};
+		json.addProperty("version", version);
+
+		return json.toString();
 	}
 
 	static UnpickMetadata parse(Path path) throws IOException {

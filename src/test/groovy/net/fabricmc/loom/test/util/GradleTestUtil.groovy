@@ -33,10 +33,10 @@ import org.gradle.api.internal.tasks.DefaultSourceSet
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.plugins.ExtensionContainer
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.util.PatternFilterable
-import org.jetbrains.annotations.Nullable
+import org.gradle.testfixtures.ProjectBuilder
+import org.jspecify.annotations.Nullable
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 
@@ -64,24 +64,10 @@ class GradleTestUtil {
 	}
 
 	static Project mockProject() {
-		def mock = mock(Project.class)
-		def serviceRegistry = TestServiceFactory.createServiceRegistry(mock)
-		def objectFactory = serviceRegistry.get(ObjectFactory)
-		def providerFactory = serviceRegistry.get(ProviderFactory)
-		def extensions = mockExtensionContainer()
-		when(mock.getExtensions()).thenReturn(extensions)
-		when(mock.getObjects()).thenReturn(objectFactory)
-		when(mock.provider(any())).thenAnswer {
-			providerFactory.provider(it.getArgument(0))
-		}
-		return mock
-	}
-
-	static ExtensionContainer mockExtensionContainer() {
-		def mock = mock(ExtensionContainer.class)
 		def extension = mockLoomGradleExtension()
-		when(mock.getByName("loom")).thenReturn(extension)
-		return mock
+		def realProject = ProjectBuilder.builder().build()
+		realProject.extensions.add("loom", extension)
+		return realProject
 	}
 
 	static LoomGradleExtension mockLoomGradleExtension() {

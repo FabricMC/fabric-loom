@@ -67,8 +67,12 @@ public class SourceRemapper {
 		remapTasks.add((logger) -> {
 			try {
 				logger.progress("remapping sources - " + source.getName());
+				Files.deleteIfExists(destination.toPath());
 				remapSourcesInner(source, destination);
-				ZipReprocessorUtil.reprocessZip(destination.toPath(), reproducibleFileOrder, preserveFileTimestamps);
+
+				if (reproducibleFileOrder || !preserveFileTimestamps) {
+					ZipReprocessorUtil.reprocessZip(destination.toPath(), reproducibleFileOrder, preserveFileTimestamps);
+				}
 
 				// Set the remapped sources creation date to match the sources if we're likely succeeded in making it
 				destination.setLastModified(source.lastModified());
@@ -161,12 +165,13 @@ public class SourceRemapper {
 
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
+		MappingsNamespace prodNamespace = extension.getProductionNamespaceEnum().get();
 
 		LorenzMappingService lorenzMappingService = serviceFactory.get(LorenzMappingService.createOptions(
 				project,
 				mappingConfiguration,
-				toNamed ? MappingsNamespace.INTERMEDIARY : MappingsNamespace.NAMED,
-				toNamed ? MappingsNamespace.NAMED : MappingsNamespace.INTERMEDIARY));
+				toNamed ? prodNamespace : MappingsNamespace.NAMED,
+				toNamed ? MappingsNamespace.NAMED : prodNamespace));
 		MappingSet mappings = lorenzMappingService.getMappings();
 
 		Mercury mercury = createMercuryWithClassPath(project, toNamed);
@@ -181,8 +186,8 @@ public class SourceRemapper {
 			}
 		}
 
-		for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY)) {
-			mercury.getClassPath().add(intermediaryJar);
+		for (Path productionJar : extension.getMinecraftJars(prodNamespace)) {
+			mercury.getClassPath().add(productionJar);
 		}
 
 		for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.NAMED)) {

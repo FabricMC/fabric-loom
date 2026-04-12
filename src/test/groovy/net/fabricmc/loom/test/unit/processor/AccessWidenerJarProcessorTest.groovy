@@ -40,7 +40,7 @@ class AccessWidenerJarProcessorTest extends Specification {
 		def localAccessWidenerProperty = GradleTestUtil.mockRegularFileProperty(file)
 
 		def processor = new AccessWidenerJarProcessor("AccessWidener", true, localAccessWidenerProperty)
-		specContext.modDependencies() >> []
+		specContext.modDependenciesCompileRuntime() >> []
 
 		when:
 		def spec = processor.buildSpec(specContext)
@@ -61,7 +61,7 @@ class AccessWidenerJarProcessorTest extends Specification {
 		mod2.getClassTweakers() >> ["test2.accesswidener": ModEnvironment.UNIVERSAL]
 		mod2.getId() >> "modid2"
 
-		specContext.modDependencies() >> [mod1, mod2].shuffled()
+		specContext.modDependenciesCompileRuntime() >> [mod1, mod2].shuffled()
 
 		def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
 
@@ -75,7 +75,7 @@ class AccessWidenerJarProcessorTest extends Specification {
 	def "No AWs"() {
 		given:
 		def specContext = Mock(SpecContext)
-		specContext.modDependencies() >> []
+		specContext.modDependenciesCompileRuntime() >> []
 
 		def processor = new AccessWidenerJarProcessor("AccessWidener", true, GradleTestUtil.mockRegularFileProperty(null))
 

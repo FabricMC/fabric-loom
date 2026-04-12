@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.benf.cfr.reader.bytecode.analysis.types.JavaRefTypeInstance;
@@ -53,8 +52,8 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 public class CFRObfuscationMapping extends NullMapping {
 	private final MappingTree mappingTree;
 
-	public CFRObfuscationMapping(Path mappings) {
-		mappingTree = readMappings(mappings);
+	public CFRObfuscationMapping(Path mappings, String runtimeNamespace) {
+		mappingTree = readMappings(mappings, runtimeNamespace);
 	}
 
 	@Override
@@ -62,10 +61,10 @@ public class CFRObfuscationMapping extends NullMapping {
 		return new JavadocProvidingDumper(d);
 	}
 
-	private static MappingTree readMappings(Path input) {
+	private static MappingTree readMappings(Path input, String runtimeNamespace) {
 		try (BufferedReader reader = Files.newBufferedReader(input)) {
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, "named");
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, runtimeNamespace);
 			MappingReader.read(reader, nsSwitch);
 
 			return mappingTree;
@@ -87,7 +86,7 @@ public class CFRObfuscationMapping extends NullMapping {
 				return this;
 			}
 
-			List<String> recordComponentDocs = new LinkedList<>();
+			List<String> recordComponentDocs = new ArrayList<>();
 
 			if (isRecord(owner)) {
 				ClassFile classFile = ((JavaRefTypeInstance) owner).getClassFile();

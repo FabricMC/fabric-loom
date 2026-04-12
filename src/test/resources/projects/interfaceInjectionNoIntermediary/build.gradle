@@ -1,0 +1,28 @@
+// This is used by a range of tests that append to this file before running the gradle tasks.
+// Can be used for tests that require minimal custom setup
+plugins {
+	id 'fabric-loom'
+	id 'maven-publish'
+}
+
+version = "1.0.0"
+group = "com.example"
+
+dependencies {
+	minecraft "com.mojang:minecraft:1.17.1"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:0.11.6"
+
+	// I-faces will still be applied as the jar is on both configurations.
+	modCompileOnly files("dummy.jar")
+	modRuntimeOnly files("dummy.jar")
+}
+
+loom {
+	productionNamespace = "official"
+	useIntermediateMappings = false
+}
+
+base {
+	archivesName = "fabric-example-mod"
+}

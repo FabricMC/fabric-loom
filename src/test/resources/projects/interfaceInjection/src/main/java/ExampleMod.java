@@ -9,6 +9,7 @@ public class ExampleMod implements ModInitializer {
 		Blocks.AIR.newMethodThatDidNotExist();
 		Blocks.AIR.anotherNewMethodThatDidNotExist();
 		Blocks.AIR.typedMethodThatDidNotExist();
+		Blocks.AIR.classTweakerInjected();
 		Registry.BLOCK_KEY.genericMethodThatDidNotExist();
 	}
 }

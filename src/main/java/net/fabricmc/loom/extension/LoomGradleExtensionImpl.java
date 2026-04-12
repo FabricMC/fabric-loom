@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2024 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,24 +39,33 @@ import org.gradle.api.configuration.BuildFeatures;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomNoRemapGradlePlugin;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
-import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
+import net.fabricmc.loom.task.NestJarsAction;
+import net.fabricmc.loom.task.RemapJarTask;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -78,6 +87,8 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	private final boolean configurationCacheActive;
 	private final boolean isolatedProjectsActive;
 	private final boolean isCollectingDependencyVerificationMetadata;
+	private final Property<Boolean> disableObfuscation;
+	private final Property<Boolean> dontRemap;
 
 	@Inject
 	protected abstract BuildFeatures getBuildFeatures();
@@ -108,6 +119,19 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		configurationCacheActive = getBuildFeatures().getConfigurationCache().getActive().get();
 		isolatedProjectsActive = getBuildFeatures().getIsolatedProjects().getActive().get();
 		isCollectingDependencyVerificationMetadata = !project.getGradle().getStartParameter().getWriteDependencyVerifications().isEmpty();
+		disableObfuscation = project.getObjects().property(Boolean.class);
+		dontRemap = project.getObjects().property(Boolean.class);
+
+		if (project.getPluginManager().hasPlugin(LoomNoRemapGradlePlugin.NAME)) {
+			disableObfuscation.set(true);
+			disableObfuscation.finalizeValue();
+		} else {
+			disableObfuscation.set(project.provider(() -> GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_OBFUSCATION)));
+			disableObfuscation.finalizeValueOnRead();
+		}
+
+		dontRemap.set(disableObfuscation.map(notObfuscated -> notObfuscated || GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)));
+		dontRemap.finalizeValueOnRead();
 
 		if (refreshDeps) {
 			project.getLogger().lifecycle("Refresh dependencies is in use, loom will be significantly slower.");
@@ -126,16 +150,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public LoomFiles getFiles() {
 		return loomFiles;
-	}
-
-	@Override
-	public void setDependencyManager(LoomDependencyManager dependencyManager) {
-		this.dependencyManager = dependencyManager;
-	}
-
-	@Override
-	public LoomDependencyManager getDependencyManager() {
-		return Objects.requireNonNull(dependencyManager, "Cannot get LoomDependencyManager before it has been setup");
 	}
 
 	@Override
@@ -160,11 +174,20 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 	@Override
 	public MappingConfiguration getMappingConfiguration() {
+		if (disableObfuscation()) {
+			project.getLogger().lifecycle("help", new RuntimeException());
+			throw new UnsupportedOperationException("Cannot get mappings configuration in a non-obfuscated environment");
+		}
+
 		return Objects.requireNonNull(mappingConfiguration, "Cannot get MappingsProvider before it has been setup");
 	}
 
 	@Override
 	public void setMappingConfiguration(MappingConfiguration mappingConfiguration) {
+		if (disableObfuscation()) {
+			throw new UnsupportedOperationException("Cannot set mappings configuration in a non-obfuscated environment");
+		}
+
 		this.mappingConfiguration = mappingConfiguration;
 	}
 
@@ -190,7 +213,7 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 	@Override
 	public void noIntermediateMappings() {
-		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+		getUseIntermediateMappings().set(false);
 	}
 
 	@Override
@@ -214,11 +237,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public InstallerData getInstallerData() {
 		return installerData;
-	}
-
-	@Override
-	public boolean isRootProject() {
-		return project.getRootProject() == project;
 	}
 
 	@Override
@@ -283,6 +301,10 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 	@Override
 	public Collection<LayeredMappingsFactory> getLayeredMappingFactories() {
+		if (disableObfuscation()) {
+			throw new UnsupportedOperationException("Cannot get layered mapping factories in a non-obfuscated environment");
+		}
+
 		hasEvaluatedLayeredMappings = true;
 		return Collections.unmodifiableCollection(layeredMappingsDependencyMap.values());
 	}
@@ -295,8 +317,8 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 		provider.getDownloader().set(this::download);
 		provider.getDownloader().disallowChanges();
 
-		provider.getIsLegacyMinecraft().set(getProject().provider(() -> getMinecraftProvider().isLegacyVersion()));
-		provider.getIsLegacyMinecraft().disallowChanges();
+		provider.getUseSplitOfficialNamespaces().set(getProject().provider(() -> getMinecraftProvider().isLegacySplitOfficialNamespaceVersion()));
+		provider.getUseSplitOfficialNamespaces().disallowChanges();
 	}
 
 	@Override
@@ -312,5 +334,38 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public boolean isCollectingDependencyVerificationMetadata() {
 		return isCollectingDependencyVerificationMetadata;
+	}
+
+	@Override
+	public boolean dontRemapOutputs() {
+		return dontRemap.get();
+	}
+
+	@Override
+	public boolean disableObfuscation() {
+		return disableObfuscation.get();
+	}
+
+	@Override
+	public Provider<MappingsNamespace> getProductionNamespaceEnum() {
+		return getProductionNamespace().map(s -> Objects.requireNonNull(MappingsNamespace.of(s), "Invalid production namespace"));
+	}
+
+	@Override
+	public Provider<ArtifactMetadata.MixinRemapType> getDefaultMixinRemapTypeEnum() {
+		return getDefaultMixinRemapType().map(ArtifactMetadata.MixinRemapType::valueOf);
+	}
+
+	@Override
+	public void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars) {
+		jarTask.configure(task -> {
+			if (task instanceof RemapJarTask remapJarTask) {
+				// For RemapJarTask, add to the nestedJars property
+				remapJarTask.getNestedJars().from(jars);
+			} else {
+				// For regular Jar tasks (non-remap mode), add a NestJarsAction with the FileCollection
+				NestJarsAction.addToTask(task, jars);
+			}
+		});
 	}
 }

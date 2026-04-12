@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.configuration.fabricapi;
 
-import java.io.IOException;
-
 import javax.inject.Inject;
 
 import org.gradle.api.Project;
@@ -64,17 +62,13 @@ abstract class FabricApiAbstractSourceSet {
 		});
 
 		modId.convention(getProject().provider(() -> {
-			try {
-				final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), sourceSet);
+			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), sourceSet);
 
-				if (fabricModJson == null) {
-					throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
-				}
-
-				return fabricModJson.getId();
-			} catch (IOException e) {
-				throw new org.gradle.api.UncheckedIOException("Failed to read mod id from the datagen source set.", e);
+			if (fabricModJson == null) {
+				throw new RuntimeException("Could not find a fabric.mod.json file in the data source set or a value for DataGenerationSettings.getModId()");
 			}
+
+			return fabricModJson.getId();
 		}));
 
 		extension.getMods().create(modId.get(), mod -> {
@@ -82,7 +76,9 @@ abstract class FabricApiAbstractSourceSet {
 			mod.sourceSet(getSourceSetName());
 		});
 
-		extension.createRemapConfigurations(sourceSets.getByName(getSourceSetName()));
+		if (!extension.disableObfuscation()) {
+			extension.createRemapConfigurations(sourceSets.getByName(getSourceSetName()));
+		}
 
 		return sourceSet;
 	}

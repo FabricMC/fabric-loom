@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test
 
+import java.lang.management.ManagementFactory
+
 import org.gradle.util.GradleVersion
 
 class LoomTestConstants {
@@ -37,7 +39,6 @@ class LoomTestConstants {
 	// Randomly sorted to ensure that all versions can run with a clean gradle home.
 	public final static List<String> STANDARD_TEST_VERSIONS = (NIGHTLY_EXISTS ? [
 		DEFAULT_GRADLE,
-		LoomTestVersions.GRADLE_LATEST.version(),
 		PRE_RELEASE_GRADLE
 	] : [
 		DEFAULT_GRADLE,
@@ -45,6 +46,9 @@ class LoomTestConstants {
 	]).shuffled().toArray()
 
 	public static final File TEST_DIR = new File("./.gradle/test-files")
+
+	// Try to detect if the debugging agent is enabled.
+	public static final boolean IS_DEBUGGING_ENABLED = ManagementFactory.runtimeMXBean.inputArguments.any { it.startsWith('-agentlib:jdwp') || it.contains("libasyncProfiler") }
 
 	/**
 	 * Nightly gradle versions get removed after a certain amount of time, lets check to see if its still online before running the tests.

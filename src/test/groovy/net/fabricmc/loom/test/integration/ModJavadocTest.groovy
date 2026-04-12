@@ -56,6 +56,26 @@ class ModJavadocTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
+	@Unroll
+	def "mod javadoc official production (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "modJavadocOfficialProd", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "genSources")
+		def blocks = getClassSource(gradle, "net/minecraft/block/Blocks.java")
+
+		then:
+		result.task(":genSources").outcome == SUCCESS
+		blocks.contains("An example of a mod added class javadoc")
+		blocks.contains("An example of a mod added field javadoc")
+		blocks.contains("An example of a mod added method javadoc")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
 	private static String getClassSource(GradleProject gradle, String classname) {
 		File sourcesJar = gradle.getGeneratedLocalSources("1.17.1-net.fabricmc.yarn.1_17_1.1.17.1+build.59-v2")
 		return new String(ZipUtils.unpack(sourcesJar.toPath(), classname), StandardCharsets.UTF_8)

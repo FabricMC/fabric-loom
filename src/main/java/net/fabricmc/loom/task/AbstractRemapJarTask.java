@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,16 +27,18 @@ package net.fabricmc.loom.task;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Preconditions;
 import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
@@ -44,35 +46,51 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.bundling.ZipEntryCompression;
 import org.gradle.jvm.tasks.Jar;
+import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
 import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 import org.jetbrains.annotations.ApiStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
+@DisableCachingByDefault(because = "Jar task cannot be cached")
 public abstract class AbstractRemapJarTask extends Jar {
+	/**
+	 * The main input jar to remap.
+	 * Other contents can be added to this task, but this jar must always be present.
+	 *
+	 * <p>The input file's manifest will be copied into the remapped jar.
+	 */
+	@PathSensitive(PathSensitivity.NONE)
 	@InputFile
 	public abstract RegularFileProperty getInputFile();
 
-	@InputFiles
+	@Classpath
 	public abstract ConfigurableFileCollection getClasspath();
 
 	@Input
@@ -99,6 +117,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 	 */
 	@ApiStatus.Experimental
 	@InputFiles
+	@PathSensitive(PathSensitivity.NONE)
 	@Optional
 	public abstract ConfigurableFileCollection getCustomMappings();
 
@@ -115,6 +134,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	@Inject
 	public AbstractRemapJarTask() {
+		from(getProject().zipTree(getInputFile()));
 		getSourceNamespace().convention(MappingsNamespace.NAMED.toString()).finalizeValueOnRead();
 		getTargetNamespace().convention(MappingsNamespace.INTERMEDIARY.toString()).finalizeValueOnRead();
 		getIncludesClientOnlyClasses().convention(false).finalizeValueOnRead();
@@ -133,17 +153,12 @@ public abstract class AbstractRemapJarTask extends Jar {
 		usesService(jarManifestServiceProvider);
 	}
 
-	@Override
-	protected void copy() {
-		// Skip the default copy behaviour of AbstractCopyTask.
-	}
-
 	public final <P extends AbstractRemapParams> void submitWork(Class<? extends AbstractRemapAction<P>> workAction, Action<P> action) {
 		final WorkQueue workQueue = getWorkerExecutor().noIsolation();
 
 		workQueue.submit(workAction, params -> {
 			params.getInputFile().set(getInputFile());
-			params.getOutputFile().set(getArchiveFile());
+			params.getArchiveFile().set(getArchiveFile());
 
 			params.getSourceNamespace().set(getSourceNamespace());
 			params.getTargetNamespace().set(getTargetNamespace());
@@ -182,7 +197,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 
 	public interface AbstractRemapParams extends WorkParameters {
 		RegularFileProperty getInputFile();
-		RegularFileProperty getOutputFile();
+		RegularFileProperty getArchiveFile();
 
 		Property<String> getSourceNamespace();
 		Property<String> getTargetNamespace();
@@ -217,18 +232,46 @@ public abstract class AbstractRemapJarTask extends Jar {
 	}
 
 	public abstract static class AbstractRemapAction<T extends AbstractRemapParams> implements WorkAction<T> {
-		protected final Path inputFile;
+		private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRemapAction.class);
 		protected final Path outputFile;
 
 		@Inject
 		public AbstractRemapAction() {
-			inputFile = getParameters().getInputFile().getAsFile().get().toPath();
-			outputFile = getParameters().getOutputFile().getAsFile().get().toPath();
+			outputFile = getParameters().getArchiveFile().getAsFile().get().toPath();
 		}
+
+		@Override
+		public final void execute() {
+			try {
+				Path tempInput = Files.createTempFile("loom-remapJar-", "-input.jar");
+				Files.copy(outputFile, tempInput, StandardCopyOption.REPLACE_EXISTING);
+				execute(tempInput);
+				Files.delete(tempInput);
+			} catch (Exception e) {
+				try {
+					Files.deleteIfExists(outputFile);
+				} catch (IOException ex) {
+					LOGGER.error("Failed to delete output file", ex);
+				}
+
+				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to remap " + outputFile.toAbsolutePath(), e);
+			}
+		}
+
+		// Note: the inputFile parameter is the remapping input file.
+		// The main input jar is available in the parameters, but should not be used
+		// for remapping as it might be missing some files added manually to this task.
+		protected abstract void execute(Path inputFile) throws IOException;
 
 		protected void modifyJarManifest() throws IOException {
 			int count = ZipUtils.transform(outputFile, Map.of(Constants.Manifest.PATH, bytes -> {
 				var manifest = new Manifest(new ByteArrayInputStream(bytes));
+				byte[] sourceManifestBytes = ZipUtils.unpackNullable(getParameters().getInputFile().get().getAsFile().toPath(), Constants.Manifest.PATH);
+
+				if (sourceManifestBytes != null) {
+					var sourceManifest = new Manifest(new ByteArrayInputStream(sourceManifestBytes));
+					mergeManifests(manifest, sourceManifest);
+				}
 
 				getParameters().getJarManifestService().get().apply(manifest, getParameters().getManifestAttributes().get());
 				manifest.getMainAttributes().putValue(Constants.Manifest.MAPPING_NAMESPACE, getParameters().getTargetNamespace().get());
@@ -238,7 +281,7 @@ public abstract class AbstractRemapJarTask extends Jar {
 				return out.toByteArray();
 			}));
 
-			Preconditions.checkState(count > 0, "Did not transform any jar manifest");
+			Check.require(count > 0, "Did not transform any jar manifest");
 		}
 
 		protected void rewriteJar() throws IOException {
@@ -250,16 +293,35 @@ public abstract class AbstractRemapJarTask extends Jar {
 				ZipReprocessorUtil.reprocessZip(outputFile, isReproducibleFileOrder, isPreserveFileTimestamps, compression);
 			}
 		}
+
+		private static void mergeManifests(Manifest target, Manifest source) {
+			mergeAttributes(target.getMainAttributes(), source.getMainAttributes());
+
+			source.getEntries().forEach((name, sourceAttributes) -> {
+				final Attributes targetAttributes = target.getAttributes(name);
+
+				if (targetAttributes != null) {
+					mergeAttributes(targetAttributes, sourceAttributes);
+				} else {
+					target.getEntries().put(name, sourceAttributes);
+				}
+			});
+		}
+
+		private static void mergeAttributes(Attributes target, Attributes source) {
+			source.forEach(target::putIfAbsent);
+		}
 	}
 
 	@Deprecated
 	@InputFile
+	@PathSensitive(PathSensitivity.NONE)
 	public RegularFileProperty getInput() {
 		return getInputFile();
 	}
 
 	private SourceSet getClientSourceSet() {
-		Preconditions.checkArgument(LoomGradleExtension.get(getProject()).areEnvironmentSourceSetsSplit(), "Cannot get client sourceset as project is not split");
+		Check.require(LoomGradleExtension.get(getProject()).areEnvironmentSourceSetsSplit(), "Cannot get client sourceset as project is not split");
 		return SourceSetHelper.getSourceSetByName(getClientOnlySourceSetName().get(), getProject());
 	}
 }

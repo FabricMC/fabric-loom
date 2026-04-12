@@ -25,7 +25,7 @@
 package net.fabricmc.loom.api.remapping;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -41,8 +41,7 @@ public interface TinyRemapperExtension {
 	 *
 	 * @return A {@link TinyRemapper.AnalyzeVisitorProvider} or {@code null}.
 	 */
-	@Nullable
-	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider(Context context) {
+	default TinyRemapper.@Nullable AnalyzeVisitorProvider getAnalyzeVisitorProvider(Context context) {
 		return getAnalyzeVisitorProvider();
 	}
 
@@ -51,8 +50,7 @@ public interface TinyRemapperExtension {
 	 *
 	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
 	 */
-	@Nullable
-	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor(Context context) {
+	default TinyRemapper.@Nullable ApplyVisitorProvider getPreApplyVisitor(Context context) {
 		return getPreApplyVisitor();
 	}
 
@@ -61,8 +59,7 @@ public interface TinyRemapperExtension {
 	 *
 	 * @return A {@link TinyRemapper.ApplyVisitorProvider} or {@code null}.
 	 */
-	@Nullable
-	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor(Context context) {
+	default TinyRemapper.@Nullable ApplyVisitorProvider getPostApplyVisitor(Context context) {
 		return getPostApplyVisitor();
 	}
 
@@ -84,8 +81,7 @@ public interface TinyRemapperExtension {
 	 * @deprecated Use {@link #getAnalyzeVisitorProvider(Context)} instead.
 	 */
 	@Deprecated(forRemoval = true)
-	@Nullable
-	default TinyRemapper.AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
+	default TinyRemapper.@Nullable AnalyzeVisitorProvider getAnalyzeVisitorProvider() {
 		return null;
 	}
 
@@ -93,8 +89,7 @@ public interface TinyRemapperExtension {
 	 * @deprecated Use {@link #getPreApplyVisitor(Context)} instead.
 	 */
 	@Deprecated(forRemoval = true)
-	@Nullable
-	default TinyRemapper.ApplyVisitorProvider getPreApplyVisitor() {
+	default TinyRemapper.@Nullable ApplyVisitorProvider getPreApplyVisitor() {
 		return null;
 	}
 
@@ -102,8 +97,7 @@ public interface TinyRemapperExtension {
 	 * @deprecated Use {@link #getPostApplyVisitor(Context)} instead.
 	 */
 	@Deprecated(forRemoval = true)
-	@Nullable
-	default TinyRemapper.ApplyVisitorProvider getPostApplyVisitor() {
+	default TinyRemapper.@Nullable ApplyVisitorProvider getPostApplyVisitor() {
 		return null;
 	}
 }

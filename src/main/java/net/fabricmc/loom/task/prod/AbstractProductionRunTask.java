@@ -36,6 +36,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
@@ -61,7 +62,6 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.GradleUtils;
 
 /**
  * This is the base task for running the game in a "production" like environment. Using intermediary names, and not enabling development only features.
@@ -129,7 +129,12 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 		getJavaLauncher().convention(getJavaToolchainService().launcherFor(defaultToolchain));
 		getRunDir().convention(getProject().getLayout().getProjectDirectory().dir("run"));
 
-		if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DONT_REMAP)) {
+		// Use the appropriate jar based on whether remapping is enabled
+		if (getExtension().dontRemapOutputs()) {
+			// No remapping - use the standard jar task
+			getMods().from(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME));
+		} else {
+			// Remapping enabled - use the remapJar task
 			getMods().from(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME));
 		}
 
@@ -147,6 +152,7 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 			configureMainClass(exec);
 			configureProgramArgs(exec);
 
+			exec.setStandardInput(System.in);
 			exec.setWorkingDir(getRunDir());
 
 			LOGGER.debug("Running command: {}", exec.getCommandLine());

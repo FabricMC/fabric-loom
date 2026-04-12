@@ -43,14 +43,15 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.project.IsolatedProject;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,11 +66,12 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
+@DisableCachingByDefault
 public abstract class IdeaSyncTask extends AbstractLoomTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(IdeaSyncTask.class);
 
 	@Nested
-	protected abstract ListProperty<IntelijRunConfig> getIdeaRunConfigs();
+	protected abstract ListProperty<IntellijRunConfig> getIdeaRunConfigs();
 
 	@Inject
 	public IdeaSyncTask() {
@@ -79,19 +81,19 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 	@TaskAction
 	public void runTask() throws IOException {
-		for (IntelijRunConfig config : getIdeaRunConfigs().get()) {
+		for (IntellijRunConfig config : getIdeaRunConfigs().get()) {
 			config.writeLaunchFile();
 		}
 	}
 
 	// See: https://github.com/FabricMC/fabric-loom/pull/206#issuecomment-986054254 for the reason why XML's are still used to provide the run configs
-	private List<IntelijRunConfig> getRunConfigs() throws IOException {
-		Project rootProject = getProject().getRootProject();
+	private List<IntellijRunConfig> getRunConfigs() throws IOException {
+		IsolatedProject rootProject = getProject().getIsolated().getRootProject();
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		String projectPath = getProject() == rootProject ? "" : getProject().getPath().replace(':', '_');
-		File runConfigsDir = new File(rootProject.file(".idea"), "runConfigurations");
+		String projectPath = getProject().getPath().equals(rootProject.getPath()) ? "" : getProject().getPath().replace(':', '_');
+		File runConfigsDir = new File(rootProject.getProjectDirectory().file(".idea").getAsFile(), "runConfigurations");
 
-		List<IntelijRunConfig> configs = new ArrayList<>();
+		List<IntellijRunConfig> configs = new ArrayList<>();
 
 		for (RunConfigSettings settings : extension.getRunConfigs()) {
 			if (!settings.isIdeConfigGenerated()) {
@@ -105,7 +107,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			String runConfigXml = config.fromDummy("idea_run_config_template.xml", true, getProject());
 			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
 
-			IntelijRunConfig irc = getProject().getObjects().newInstance(IntelijRunConfig.class);
+			IntellijRunConfig irc = getProject().getObjects().newInstance(IntellijRunConfig.class);
 			irc.getRunConfigXml().set(runConfigXml);
 			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
 			irc.getLaunchFile().set(runConfigFile);
@@ -117,7 +119,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		return configs;
 	}
 
-	public interface IntelijRunConfig {
+	public interface IntellijRunConfig {
 		@Input
 		Property<String> getRunConfigXml();
 

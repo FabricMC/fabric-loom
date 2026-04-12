@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2022 FabricMC
+ * Copyright (c) 2021-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,7 +41,8 @@ import javax.inject.Inject;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Contract;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -56,12 +57,14 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.processors.MappingProcessing;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.Pair;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.mappingio.tree.MappingTree;
+import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.api.TrRemapper;
@@ -84,7 +87,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	}
 
 	@Override
-	public @Nullable InterfaceInjectionProcessor.Spec buildSpec(SpecContext context) {
+	public InterfaceInjectionProcessor.@Nullable Spec buildSpec(SpecContext context) {
 		List<InjectedInterface> injectedInterfaces = new ArrayList<>();
 
 		injectedInterfaces.addAll(InjectedInterface.fromMods(context.localMods()));
@@ -111,12 +114,26 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 
 	@Override
 	public void processJar(Path jar, Spec spec, ProcessorContext context) throws IOException {
-		// Remap from intermediary->named
+		List<InjectedInterface> injectedInterfaces = getInjectedInterfaces(spec, context);
+
+		try {
+			ZipUtils.transformAsync(jar, getTransformers(injectedInterfaces));
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to apply interface injections to " + jar, e);
+		}
+	}
+
+	private List<InjectedInterface> getInjectedInterfaces(Spec spec, ProcessorContext context) throws IOException {
+		if (context.disableObfuscation()) {
+			return spec.injectedInterfaces();
+		}
+
+		// Remap from productionNamespace->named
 		final MemoryMappingTree mappings = context.getMappings();
-		final int intermediaryIndex = mappings.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+		final int productionIndex = mappings.getNamespaceId(context.getProductionNamespace().toString());
 		final int namedIndex = mappings.getNamespaceId(MappingsNamespace.NAMED.toString());
 
-		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(MappingsNamespace.INTERMEDIARY, MappingsNamespace.NAMED)) {
+		try (LazyCloseable<TinyRemapper> tinyRemapper = context.createRemapper(context.getProductionNamespace(), MappingsNamespace.NAMED)) {
 			final List<InjectedInterface> remappedInjectedInterfaces = spec.injectedInterfaces().stream()
 					.filter(injectedInterface -> {
 						return context.includesClient() // The client jar depends on the server, so always apply all to it
@@ -124,15 +141,11 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 					})
 					.map(injectedInterface -> remap(
 							injectedInterface,
-							s -> mappings.mapClassName(s, intermediaryIndex, namedIndex),
+							s -> mappings.mapClassName(s, productionIndex, namedIndex),
 							tinyRemapper.get().getEnvironment().getRemapper()
 					))
 					.toList();
-			try {
-				ZipUtils.transform(jar, getTransformers(remappedInjectedInterfaces));
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to apply interface injections to " + jar, e);
-			}
+			return remappedInjectedInterfaces;
 		}
 	}
 
@@ -176,8 +189,10 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 	@Override
 	public MappingsProcessor<Spec> processMappings() {
 		return (mappings, spec, context) -> {
-			if (!MappingsNamespace.INTERMEDIARY.toString().equals(mappings.getSrcNamespace())) {
-				throw new IllegalStateException("Mapping tree must have intermediary src mappings not " + mappings.getSrcNamespace());
+			int productionNamespaceId = mappings.getNamespaceId(context.getProductionNamespace().toString());
+
+			if (productionNamespaceId == MappingTreeView.NULL_NAMESPACE_ID) {
+				throw new IllegalStateException("Mapping tree must have namespace %s".formatted(context.getProductionNamespace().toString()));
 			}
 
 			Map<String, List<InjectedInterface>> map = spec.injectedInterfaces().stream()
@@ -187,7 +202,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 				final String className = entry.getKey();
 				final List<InjectedInterface> injectedInterfaces = entry.getValue();
 
-				MappingTree.ClassMapping classMapping = mappings.getClass(className);
+				MappingTree.ClassMapping classMapping = MappingProcessing.getOrCreateClassMapping(mappings, className, productionNamespaceId, context.disableObfuscation());
 
 				if (classMapping == null) {
 					final String modIds = injectedInterfaces.stream().map(InjectedInterface::modId).distinct().collect(Collectors.joining(","));
@@ -202,7 +217,9 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		};
 	}
 
-	private static String appendComment(String comment, List<InjectedInterface> injectedInterfaces) {
+	@Nullable
+	@Contract("!null, _ -> !null")
+	private static String appendComment(@Nullable String comment, List<InjectedInterface> injectedInterfaces) {
 		if (injectedInterfaces.isEmpty()) {
 			return comment;
 		}
@@ -221,7 +238,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 			}
 		}
 
-		return comment;
+		return commentBuilder.toString();
 	}
 
 	private record InjectedInterface(String modId, String className, String ifaceName, @Nullable String generics) {

@@ -42,4 +42,8 @@ public interface ProcessorContext {
 	LazyCloseable<TinyRemapper> createRemapper(MappingsNamespace from, MappingsNamespace to);
 
 	MemoryMappingTree getMappings();
+
+	boolean disableObfuscation();
+
+	MappingsNamespace getProductionNamespace();
 }

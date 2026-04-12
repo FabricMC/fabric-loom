@@ -2,7 +2,7 @@ unpick v3
 
 target_field mapped.bar.Y quux I g
 
-target_field mapped.bar.Z null Lmapped/foo/X; g
+target_field mapped.bar.Z foo Lmapped/foo/X; g
 
 target_method mapped.bar.Y bar2 (Lmapped/foo/X;)V
 
@@ -13,7 +13,7 @@ group float
 	mapped.bar.Y.quux:int
 
 group float
-	mapped.bar.Y.*:float
+	mapped.bar.Y.baz:float
 
 group int
 	@scope class mapped.bar.Y

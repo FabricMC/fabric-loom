@@ -74,6 +74,10 @@
 			<property name="option" value="top"/>
 			<property name="sortStaticImportsAlphabetically" value="true"/>
 		</module>
+        <module name="IllegalImport">
+            <property name="illegalClasses" value="org.jetbrains.annotations.NotNull"/>
+            <property name="illegalClasses" value="org.jetbrains.annotations.Nullable"/>
+        </module>
 
 		<!-- Ensures braces are at the end of a line -->
 		<module name="LeftCurly"/>

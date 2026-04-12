@@ -26,10 +26,8 @@ package net.fabricmc.loom.util;
 
 import java.util.List;
 
-import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import kotlin.metadata.jvm.KotlinClassMetadata;
-import org.apache.commons.io.FileUtils;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.tree.ClassNode;
@@ -52,9 +50,7 @@ public final class LibraryLocationLogger {
 			ClassRemapper.class,
 			ClassNode.class,
 			ASMifier.class,
-			Gson.class,
-			Preconditions.class,
-			FileUtils.class
+			Gson.class
 	);
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LibraryLocationLogger.class);

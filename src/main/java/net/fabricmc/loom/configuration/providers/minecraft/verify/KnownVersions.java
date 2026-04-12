@@ -33,9 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import com.google.common.base.Suppliers;
-
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.util.Lazy;
 
 /**
  * The know versions keep track of the versions that are signed using SHA1 or not signature at all.
@@ -44,7 +43,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 public record KnownVersions(
 		Map<String, String> client,
 		Map<String, String> server) {
-	public static final Supplier<KnownVersions> INSTANCE = Suppliers.memoize(KnownVersions::load);
+	public static final Supplier<KnownVersions> INSTANCE = Lazy.of(KnownVersions::load);
 
 	private static KnownVersions load() {
 		try (InputStream is = KnownVersions.class.getClassLoader().getResourceAsStream("certs/known_versions.json");

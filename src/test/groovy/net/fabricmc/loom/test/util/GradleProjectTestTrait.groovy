@@ -24,12 +24,10 @@
 
 package net.fabricmc.loom.test.util
 
-import groovy.io.FileType
 import groovy.transform.Immutable
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
-import org.gradle.util.GradleVersion
 import spock.lang.Shared
 
 import net.fabricmc.loom.test.LoomTestConstants
@@ -150,7 +148,6 @@ trait GradleProjectTestTrait {
 		private String gradleHomeDir
 		private String warningMode
 		private boolean useBuildSrc
-		private boolean enableDebugging = true
 
 		BuildResult run(Map options) {
 			// Setup the system props to tell loom that its running in a test env
@@ -166,7 +163,8 @@ trait GradleProjectTestTrait {
 				args << options.task
 			}
 
-			boolean configurationCache = true
+			// Configuration cache is not compatible with the debugging agent.
+			boolean configurationCache = !LoomTestConstants.IS_DEBUGGING_ENABLED
 
 			if (options.containsKey("configurationCache")) {
 				configurationCache = options.configurationCache
@@ -198,10 +196,6 @@ trait GradleProjectTestTrait {
 				writeBuildSrcDeps(runner)
 			}
 
-			if (options.disableDebugging) {
-				enableDebugging = false
-			}
-
 			return options.expectFailure ? runner.buildAndFail() : runner.build()
 		}
 
@@ -211,8 +205,7 @@ trait GradleProjectTestTrait {
 					.withPluginClasspath()
 					.withGradleVersion(gradleVersion)
 					.forwardOutput()
-					// Only enable debugging when the current gradle version matches the version we are testing
-					.withDebug(enableDebugging && gradleVersion == GradleVersion.current().getVersion())
+					.withDebug(LoomTestConstants.IS_DEBUGGING_ENABLED)
 		}
 
 		File getProjectDir() {
@@ -261,25 +254,33 @@ trait GradleProjectTestTrait {
 			return ZipUtils.unpackNullable(file.toPath(), entryName) != null
 		}
 
-		File getGeneratedSources(String mappings, String jarType = "merged") {
-			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}-sources.jar")
+		File getGeneratedMinecraft(String mappings, String jarType = "merged", String classifier = "") {
+			String classifierSuffix = classifier.isEmpty() ? "" : "-$classifier"
+			return new File(getGradleHomeDir(), "caches/fabric-loom/minecraftMaven/net/minecraft/minecraft-${jarType}/${mappings}/minecraft-${jarType}-${mappings}${classifierSuffix}.jar")
 		}
 
-		File getGeneratedLocalSources(String mappings) {
-			File file
-			getProjectDir().traverse(type: FileType.FILES) {
-				if (it.name.startsWith("minecraft-merged-")
-						&& it.name.contains(mappings)
-						&& it.name.endsWith("-sources.jar")) {
-					file = it
-				}
+		File getGeneratedSources(String mappings, String jarType = "merged") {
+			return getGeneratedMinecraft(mappings, jarType, "sources")
+		}
+
+		File getGeneratedLocalMinecraft(String mappings, String jarType = "merged", String classifier = "") {
+			String classifierSuffix = classifier.isEmpty() ? "" : "-$classifier"
+
+			File file = new File(getProjectDir(), ".gradle/loom-cache/minecraftMaven/net/minecraft")
+			file = file.listFiles().find {
+				it.name.startsWith("minecraft-${jarType}-")
 			}
 
 			if (file == null) {
 				throw new FileNotFoundException()
 			}
 
-			return file
+			String jarFileName = "${file.name}-${mappings}${classifierSuffix}.jar"
+			return new File(file, "${mappings}/${jarFileName}")
+		}
+
+		File getGeneratedLocalSources(String mappings, String jarType = "merged") {
+			return getGeneratedLocalMinecraft(mappings, jarType, "sources")
 		}
 
 		void buildSrc(String name, boolean apply = true) {

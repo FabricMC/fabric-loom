@@ -30,7 +30,7 @@ class MappingsServiceTest extends ServiceTestBase {
 	def "get mapping tree"() {
 		given:
 		def options = MappingsService.TYPE.create(project) {
-			it.mappingsFile.set(new File("src/test/resources/mappings/PosInChunk.mappings"))
+			it.mappingsFile.set(new File("src/test/resources/mappings/PosInChunk.mappings").absoluteFile)
 			it.from.set("intermediary")
 			it.to.set("named")
 		}

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2023 FabricMC
+ * Copyright (c) 2019-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,8 +48,8 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 
 	private final MappingTree mappingTree;
 
-	public TinyJavadocProvider(File tinyFile) {
-		mappingTree = readMappings(tinyFile);
+	public TinyJavadocProvider(File tinyFile, String runtimeNamespace) {
+		mappingTree = readMappings(tinyFile, runtimeNamespace);
 	}
 
 	@Override
@@ -166,10 +166,10 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 		return null;
 	}
 
-	private static MappingTree readMappings(File input) {
+	private static MappingTree readMappings(File input, String runtimeNamespace) {
 		try (BufferedReader reader = Files.newBufferedReader(input.toPath())) {
 			MemoryMappingTree mappingTree = new MemoryMappingTree();
-			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, "named");
+			MappingSourceNsSwitch nsSwitch = new MappingSourceNsSwitch(mappingTree, runtimeNamespace);
 			MappingReader.read(reader, nsSwitch);
 
 			return mappingTree;

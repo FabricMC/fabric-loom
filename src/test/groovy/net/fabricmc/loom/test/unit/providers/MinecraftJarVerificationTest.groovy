@@ -141,9 +141,9 @@ class MinecraftJarVerificationTest extends Specification {
 		final VersionsManifest versions = LoomGradlePlugin.GSON.fromJson(versionManifest, VersionsManifest.class)
 
 		def version = versions.getVersion(id)
-		def manifest = Download.create(version.url)
-				.sha1(version.sha1)
-				.downloadString(dir.resolve(version.id + ".json"))
+		def manifest = Download.create(version.url())
+				.sha1(version.sha1())
+				.downloadString(dir.resolve(version.id() + ".json"))
 		def meta = LoomGradlePlugin.GSON.fromJson(manifest, MinecraftVersionMeta.class)
 
 		def download = meta.download(type)

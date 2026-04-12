@@ -30,12 +30,16 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.annotations.SerializedName;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
+import net.fabricmc.tinyremapper.api.TrRemapper;
 
 public record ClassAnnotationData(
 		@SerializedName("remove")
@@ -48,7 +52,7 @@ public record ClassAnnotationData(
 		List<TypeAnnotationNode> typeAnnotationsToAdd,
 		Map<String, GenericAnnotationData> fields,
 		Map<String, MethodAnnotationData> methods
-) {
+) implements BaseAnnotationData {
 	public ClassAnnotationData {
 		if (annotationsToRemove == null) {
 			annotationsToRemove = new LinkedHashSet<>();
@@ -75,6 +79,21 @@ public record ClassAnnotationData(
 		}
 	}
 
+	public ClassAnnotationData() {
+		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashMap<>(), new LinkedHashMap<>());
+	}
+
+	public ClassAnnotationData(ClassAnnotationData other) {
+		this(
+				new LinkedHashSet<>(other.annotationsToRemove),
+				AnnotationsData.copyAnnotations(other.annotationsToAdd),
+				new LinkedHashSet<>(other.typeAnnotationsToRemove),
+				AnnotationsData.copyTypeAnnotations(other.typeAnnotationsToAdd),
+				AnnotationsData.copyMap(other.fields, GenericAnnotationData::new),
+				AnnotationsData.copyMap(other.methods, MethodAnnotationData::new)
+		);
+	}
+
 	ClassAnnotationData merge(ClassAnnotationData other) {
 		Set<String> newAnnotationsToRemove = new LinkedHashSet<>(annotationsToRemove);
 		newAnnotationsToRemove.addAll(other.annotationsToRemove);
@@ -88,6 +107,49 @@ public record ClassAnnotationData(
 		Map<String, MethodAnnotationData> newMethods = new LinkedHashMap<>(methods);
 		other.methods.forEach((key, value) -> newMethods.merge(key, value, MethodAnnotationData::merge));
 		return new ClassAnnotationData(newAnnotationsToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd, newFields, newMethods);
+	}
+
+	ClassAnnotationData remap(String className, TinyRemapper remapper) {
+		return new ClassAnnotationData(
+				annotationsToRemove.stream().map(remapper.getEnvironment().getRemapper()::map).collect(Collectors.toCollection(LinkedHashSet::new)),
+				annotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				typeAnnotationsToRemove.stream().map(key -> key.remap(remapper)).collect(Collectors.toCollection(LinkedHashSet::new)),
+				typeAnnotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				AnnotationsData.remapMap(
+						fields,
+						entry -> remapField(className, entry.getKey(), remapper),
+						entry -> entry.getValue().remap(remapper)
+				),
+				AnnotationsData.remapMap(
+						methods,
+						entry -> remapMethod(className, entry.getKey(), remapper),
+						entry -> entry.getValue().remap(remapper)
+				)
+		);
+	}
+
+	private static String remapField(String className, String field, TinyRemapper remapper) {
+		String[] nameDesc = field.split(":", 2);
+
+		if (nameDesc.length != 2) {
+			return field;
+		}
+
+		TrRemapper trRemapper = remapper.getEnvironment().getRemapper();
+		return trRemapper.mapFieldName(className, nameDesc[0], nameDesc[1]) + ":" + trRemapper.mapDesc(nameDesc[1]);
+	}
+
+	private static String remapMethod(String className, String method, TinyRemapper remapper) {
+		int parenIndex = method.indexOf('(');
+
+		if (parenIndex == -1) {
+			return method;
+		}
+
+		String name = method.substring(0, parenIndex);
+		String desc = method.substring(parenIndex);
+		TrRemapper trRemapper = remapper.getEnvironment().getRemapper();
+		return trRemapper.mapMethodName(className, name, desc) + trRemapper.mapMethodDesc(desc);
 	}
 
 	public int modifyAccessFlags(int access) {

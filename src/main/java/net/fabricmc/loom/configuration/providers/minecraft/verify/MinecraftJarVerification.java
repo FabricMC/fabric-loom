@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.providers.minecraft.verify;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Function;
@@ -72,6 +73,13 @@ public abstract class MinecraftJarVerification {
 			}
 
 			LOGGER.error("Verification of Minecraft {} signature failed: {}", path.getFileName(), e.getMessage());
+
+			try {
+				Files.delete(path);
+			} catch (IOException ioe) {
+				LOGGER.error("Failed to delete invalid Minecraft jar: {}", path, ioe);
+			}
+
 			throw e;
 		}
 	}

@@ -39,6 +39,8 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,7 @@ public abstract class TracyCapture {
 	 * The path to the tracy-capture executable.
 	 */
 	@InputFile
+	@PathSensitive(PathSensitivity.NONE)
 	@Optional
 	public abstract RegularFileProperty getTracyCapture();
 
@@ -74,7 +77,7 @@ public abstract class TracyCapture {
 		getMaxShutdownWaitSeconds().convention(10);
 	}
 
-	void runWithTracy(IORunnable runnable) throws IOException {
+	public void runWithTracy(IORunnable runnable) throws IOException {
 		TracyCaptureRunner tracyCaptureRunner = createRunner();
 
 		boolean success = false;

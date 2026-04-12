@@ -36,6 +36,8 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	// TODO use a nested TinyMappingsService instead of duplicating it
 	public interface Options extends Service.Options {
 		@InputFile
+		@PathSensitive(PathSensitivity.NONE)
 		RegularFileProperty getMappingsFile();
 		@Input
 		Property<String> getFrom();
@@ -94,7 +97,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	 */
 	public static Provider<Options> createOptionsWithProjectMappings(Project project, Provider<String> from, Provider<String> to) {
 		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
-		return createOptions(project, mappingConfiguration.tinyMappings, from, to, false);
+		return createOptions(project, mappingConfiguration.tinyMappings, from, to, true);
 	}
 
 	public static Provider<MappingsService.Options> createForRemapTask(AbstractRemapJarTask remapJarTask) {
@@ -122,7 +125,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 							project,
 							mappingsFile.toPath(),
 							remapJarTask.getSourceNamespace(), remapJarTask.getTargetNamespace(),
-							false)
+							true)
 					.get();
 		});
 	}

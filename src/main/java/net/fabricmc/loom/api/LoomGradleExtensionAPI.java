@@ -40,6 +40,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -51,7 +53,6 @@ import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
-import net.fabricmc.loom.configuration.providers.mappings.NoOpIntermediateMappingsProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.ManifestLocations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.task.GenerateSourcesTask;
@@ -65,6 +66,22 @@ public interface LoomGradleExtensionAPI {
 	DeprecationHelper getDeprecationHelper();
 
 	RegularFileProperty getAccessWidenerPath();
+
+	/**
+	 * Specifies the {@code fabric.mod.json} file location used in injected interface processing.
+	 *
+	 * <p>
+	 *     By default, either {@code src/main/resources/fabric.mod.json}
+	 *     or {@code src/client/resources/fabric.mod.json} in the project directory is used.
+	 * </p>
+	 *
+	 * <p>
+	 *     Providing a path to a different location allows using a shared or preprocessed
+	 *     file. However, at the end it must be put into the root of the processed
+	 *     resources directory (usually {@code build/resources/main}).
+	 * </p>
+	 */
+	RegularFileProperty getFabricModJsonPath();
 
 	NamedDomainObjectContainer<DecompilerOptions> getDecompilerOptions();
 
@@ -201,11 +218,14 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	default void noIntermediateMappings() {
-		setIntermediateMappingsProvider(NoOpIntermediateMappingsProvider.class, p -> { });
+		getUseIntermediateMappings().set(false);
+		getUseIntermediateMappings().finalizeValue();
 	}
 
 	/**
 	 * Returns the tiny mappings file used to remap the game and mods.
+	 *
+	 * @return the mappings file, or null if in a non-obfuscated environment
 	 */
 	File getMappingsFile();
 
@@ -221,6 +241,21 @@ public interface LoomGradleExtensionAPI {
 	 * @return the intermediary url template
 	 */
 	Property<String> getIntermediaryUrl();
+
+	/**
+	 * @return the production namespace
+	 */
+	Property<String> getProductionNamespace();
+
+	/**
+	 * @return whether to use intermediate mappings
+	 */
+	Property<Boolean> getUseIntermediateMappings();
+
+	/**
+	 * @return the default mixin remap type
+	 */
+	Property<String> getDefaultMixinRemapType();
 
 	@ApiStatus.Experimental
 	Property<MinecraftJarConfiguration<?, ?, ?>> getMinecraftJarConfiguration();
@@ -241,9 +276,40 @@ public interface LoomGradleExtensionAPI {
 
 	boolean areEnvironmentSourceSetsSplit();
 
+	/**
+	 * When enabled, Loom remaps JSR {@code Nullable}, {@code Nonnull}, and {@code Immutable} annotations to their JetBrains counterparts in the Minecraft JAR.
+	 *
+	 * <p>When disabled, Loom keeps JSR annotations as-is, and remaps any JetBrains {@code Nullable}, {@code NotNull}, and {@code Unmodifiable} annotations to their JSR counterparts in the Minecraft JAR.
+	 *
+	 * <p>This has no effect on Minecraft versions that solely use JSpecify annotations.
+	 *
+	 * <p>Default: true
+	 *
+	 * @return the property controlling the remapping of JSR annotations
+	 */
+	Property<Boolean> getRemapJsrAnnotationsToJetBrains();
+
 	Property<Boolean> getRuntimeOnlyLog4j();
 
+	/**
+	 * When enabled, lwjgl-opengl or lwjgl-vulkan will be added as a runtime dependency preventing the mod from compiling against a specific graphics API.
+	 */
+	Property<Boolean> getRuntimeOnlyLwjglGraphics();
+
 	Property<Boolean> getSplitModDependencies();
+
+	/**
+	 * Whether to transform zip entries within nested jars to be using STORED compression.
+	 *
+	 * <p>This will usually reduce the resulting jar size by avoiding double-compression.
+	 *
+	 * <p>However, this will very likely increase the decompressed size during runtime as a side effect.
+	 *
+	 * <p>Default: false
+	 *
+	 * @return the property controlling this toggle
+	 */
+	Property<Boolean> getUncompressNestedJars();
 
 	<T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction);
 
@@ -256,4 +322,26 @@ public interface LoomGradleExtensionAPI {
 	 * @return A lazily evaluated {@link FileCollection} containing the named minecraft jars.
 	 */
 	FileCollection getNamedMinecraftJars();
+
+	/**
+	 * Nest mod jars from a {@link FileCollection} into the specified jar task.
+	 * This is useful for including locally built mod jars or jars that don't come from Maven.
+	 *
+	 * <p>Important: The jars must already be valid mod jars (containing a fabric.mod.json file).
+	 * Non-mod jars will be rejected.
+	 *
+	 * <p>Example usage:
+	 * {@snippet lang=groovy :
+	 * loom {
+	 *     nestJars(tasks.jar, files('local-mod.jar'))
+	 *     nestJars(tasks.remapJar, tasks.named('buildOtherMod'))
+	 * }
+	 * }
+	 *
+	 * @param jarTask the jar task to nest jars into (can be jar or remapJar)
+	 * @param jars the file collection containing mod jars to nest
+	 * @since 1.14
+	 */
+	@ApiStatus.Experimental
+	void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars);
 }

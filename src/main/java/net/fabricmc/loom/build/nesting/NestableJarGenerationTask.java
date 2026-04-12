@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,7 +39,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.google.gson.JsonObject;
-import org.apache.commons.io.FileUtils;
 import org.gradle.api.artifacts.ArtifactView;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
@@ -48,22 +48,27 @@ import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.MapProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
-import org.jetbrains.annotations.Nullable;
+import org.gradle.api.tasks.bundling.ZipEntryCompression;
+import org.gradle.work.DisableCachingByDefault;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.ZipReprocessorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
+@DisableCachingByDefault
 public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(NestableJarGenerationTask.class);
 	private static final String SEMVER_REGEX = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
@@ -79,6 +84,9 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 	@Input
 	protected abstract MapProperty<String, Metadata> getJarIds();
 
+	@Input
+	public abstract Property<Boolean> getUncompressNestedJars();
+
 	@TaskAction
 	void makeNestableJars() {
 		Map<String, String> fabricModJsons = new HashMap<>();
@@ -88,7 +96,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 
 		try {
 			File targetDir = getOutputDirectory().get().getAsFile();
-			FileUtils.deleteDirectory(targetDir);
+			DeletingFileVisitor.deleteDirectory(targetDir.toPath());
 			targetDir.mkdirs();
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
@@ -215,7 +223,11 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 
 	private void makeNestableJar(final File input, final File output, final String modJsonFile) {
 		try {
-			FileUtils.copyFile(input, output);
+			Files.copy(input.toPath(), output.toPath());
+
+			if (getUncompressNestedJars().get()) {
+				ZipReprocessorUtil.reprocessZip(output.toPath(), false, true, ZipEntryCompression.STORED);
+			}
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to copy mod file %s".formatted(input), e);
 		}

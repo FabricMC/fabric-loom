@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +48,7 @@ import org.gradle.api.services.ServiceReference;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.ide.RunConfig;
@@ -58,6 +58,7 @@ import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 // Recommended vscode plugin pack:
 // https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-java-pack
+@DisableCachingByDefault
 public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 	// Prevent Gradle from running vscode task asynchronously
 	@ServiceReference(SyncTaskBuildService.NAME)
@@ -73,7 +74,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 	public GenVsCodeProjectTask() {
 		setGroup(Constants.TaskGroup.IDE);
 		getLaunchConfigurations().set(getProject().provider(this::getConfigurations));
-		getLaunchJson().convention(getProject().getRootProject().getLayout().getProjectDirectory().file(".vscode/launch.json"));
+		getLaunchJson().convention(getProject().getIsolated().getRootProject().getProjectDirectory().file(".vscode/launch.json"));
 	}
 
 	private List<VsCodeConfiguration> getConfigurations() {
@@ -121,7 +122,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			JsonObject configurationJson = LoomGradlePlugin.GSON.toJsonTree(configuration).getAsJsonObject();
 			configurationJson.remove("runDir");
 
-			final List<JsonElement> toRemove = new LinkedList<>();
+			final List<JsonElement> toRemove = new ArrayList<>();
 
 			// Remove any existing with the same name
 			for (JsonElement jsonElement : configurations) {

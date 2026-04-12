@@ -40,10 +40,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -246,7 +252,7 @@ public class ZipUtils {
 			for (Map.Entry<String, UnsafeUnaryOperator<byte[]>> entry : transforms.entrySet()) {
 				Path fsPath = fs.get().getPath(entry.getKey());
 
-				if (Files.exists(fsPath) && entry.getValue() != null) {
+				if (Files.exists(fsPath)) {
 					Files.write(fsPath, entry.getValue().apply(Files.readAllBytes(fsPath)), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 					replacedCount++;
 				}
@@ -254,6 +260,67 @@ public class ZipUtils {
 		}
 
 		return replacedCount;
+	}
+
+	public static int transformAsync(Path zip, Collection<Pair<String, UnsafeUnaryOperator<byte[]>>> transforms) throws IOException {
+		return transformAsync(zip, Executors::newWorkStealingPool, transforms.stream());
+	}
+
+	public static int transformAsync(Path zip, Stream<Pair<String, UnsafeUnaryOperator<byte[]>>> transforms) throws IOException {
+		return transformAsync(zip, Executors::newWorkStealingPool, collectTransformersStream(transforms));
+	}
+
+	public static int transformAsync(Path zip, Supplier<ExecutorService> executorSupplier, Collection<Pair<String, UnsafeUnaryOperator<byte[]>>> transforms) throws IOException {
+		return transformAsync(zip, executorSupplier, transforms.stream());
+	}
+
+	public static int transformAsync(Path zip, Supplier<ExecutorService> executorSupplier, Stream<Pair<String, UnsafeUnaryOperator<byte[]>>> transforms) throws IOException {
+		return transformAsync(zip, executorSupplier, collectTransformersStream(transforms));
+	}
+
+	public static int transformAsync(Path zip, Supplier<ExecutorService> executorSupplier, Map<String, UnsafeUnaryOperator<byte[]>> transforms) throws IOException {
+		final AtomicInteger replacedCount = new AtomicInteger(0);
+		final Collection<Future<?>> futures = new java.util.ArrayList<>();
+
+		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(zip, false);
+				ExecutorService service = executorSupplier.get()) {
+			for (Map.Entry<String, UnsafeUnaryOperator<byte[]>> entry : transforms.entrySet()) {
+				futures.add(service.submit(() -> {
+					Path fsPath = fs.get().getPath(entry.getKey());
+
+					if (Files.exists(fsPath)) {
+						try {
+							Files.write(fsPath, entry.getValue().apply(Files.readAllBytes(fsPath)), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+							replacedCount.incrementAndGet();
+						} catch (IOException ioe) {
+							throw new UncheckedIOException("Failed to apply transformation to " + fsPath, ioe);
+						} catch (Exception e) {
+							throw new RuntimeException("Failed to apply transformation to " + fsPath, e);
+						}
+					}
+				}));
+			}
+
+			for (Future<?> future : futures) {
+				try {
+					future.get();
+				} catch (InterruptedException e) {
+					throw new IOException("Transformation was interrupted", e);
+				} catch (ExecutionException e) {
+					Throwable cause = e.getCause();
+
+					if (cause instanceof UncheckedIOException uncheckedIOException) {
+						throw uncheckedIOException.getCause();
+					} else if (cause instanceof RuntimeException runtimeException) {
+						throw runtimeException;
+					} else {
+						throw new IOException("Failed to apply transformation", cause);
+					}
+				}
+			}
+		}
+
+		return replacedCount.get();
 	}
 
 	@FunctionalInterface

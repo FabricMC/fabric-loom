@@ -1,0 +1,3 @@
+tiny	2	0	official	intermediary
+c	net/minecraft/resources/Identifier	net/minecraft/class_2960
+	m	(Ljava/lang/String;Ljava/lang/String;)Lnet/minecraft/resources/Identifier;	fromNamespaceAndPath	method_60655

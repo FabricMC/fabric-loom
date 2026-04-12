@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.configuration;
 
+import java.nio.charset.StandardCharsets;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -36,12 +38,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.LoomRepositoryPlugin;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
 
 public record InstallerData(String version, JsonObject installerJson) {
+	public static final String INSTALLER_PATH = "fabric-installer.json";
 	private static final Logger LOGGER = LoggerFactory.getLogger(InstallerData.class);
+
+	public static InstallerData fromBytes(byte[] bytes, String version) {
+		return new InstallerData(version, LoomGradlePlugin.GSON.fromJson(new String(bytes, StandardCharsets.UTF_8), JsonObject.class));
+	}
 
 	public void applyToProject(Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);

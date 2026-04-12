@@ -48,8 +48,10 @@ import net.fabricmc.loom.extension.LoomGradleExtensionImpl;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.task.RemapTaskConfiguration;
 import net.fabricmc.loom.util.LibraryLocationLogger;
+import net.fabricmc.loom.util.OneDrive;
 
 public class LoomGradlePlugin implements Plugin<PluginAware> {
+	public static final String NAME = "fabric-loom";
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
@@ -80,6 +82,7 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		project.getLogger().lifecycle("Fabric Loom: " + LOOM_VERSION);
 
 		LibraryLocationLogger.logLibraryVersions();
+		OneDrive.verify(project);
 
 		// Apply default plugins
 		project.apply(Map.of("plugin", "java-library"));
@@ -92,5 +95,7 @@ public class LoomGradlePlugin implements Plugin<PluginAware> {
 		for (Class<? extends Runnable> jobClass : SETUP_JOBS) {
 			project.getObjects().newInstance(jobClass).run();
 		}
+
+		project.apply(Map.of("plugin", LoomCompanionGradlePlugin.NAME));
 	}
 }

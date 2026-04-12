@@ -29,16 +29,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InnerClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.util.Constants;
 
@@ -47,6 +52,11 @@ public class MinecraftClassMerger {
 	private static final String ITF_DESCRIPTOR = "Lnet/fabricmc/api/EnvironmentInterface;";
 	private static final String ITF_LIST_DESCRIPTOR = "Lnet/fabricmc/api/EnvironmentInterfaces;";
 	private static final String SIDED_DESCRIPTOR = "Lnet/fabricmc/api/Environment;";
+
+	// The permission flags that are allowed to differ between client and server.
+	private static final int PERMISSION_BITS = Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MinecraftClassMerger.class);
 
 	private abstract static class Merger<T> {
 		private final Map<String, T> entriesClient, entriesServer;
@@ -66,6 +76,10 @@ public class MinecraftClassMerger {
 
 		public abstract void applySide(T entry, String side);
 
+		public T merge(T clientEntry, T serverEntry) {
+			return clientEntry;
+		}
+
 		private List<String> toMap(List<T> entries, Map<String, T> map) {
 			List<String> list = new ArrayList<>(entries.size());
 
@@ -84,7 +98,7 @@ public class MinecraftClassMerger {
 				T entryServer = entriesServer.get(s);
 
 				if (entryClient != null && entryServer != null) {
-					list.add(entryClient);
+					list.add(merge(entryClient, entryServer));
 				} else if (entryClient != null) {
 					applySide(entryClient, "CLIENT");
 					list.add(entryClient);
@@ -232,6 +246,21 @@ public class MinecraftClassMerger {
 				AnnotationVisitor av = entry.visitAnnotation(SIDED_DESCRIPTOR, false);
 				visitSideAnnotation(av, side);
 			}
+
+			@Override
+			public FieldNode merge(FieldNode clientEntry, FieldNode serverEntry) {
+				if (clientEntry.access == serverEntry.access) {
+					return super.merge(clientEntry, serverEntry);
+				}
+
+				LOGGER.debug("Field has different access modifiers: {}#{}{}, client: '{}', server: '{}'",
+						nodeOut.name, clientEntry.name, clientEntry.desc,
+						formatMethodAccessFlags(clientEntry.access),
+						formatMethodAccessFlags(serverEntry.access));
+
+				clientEntry.access = mergeAccess(clientEntry.access, serverEntry.access);
+				return clientEntry;
+			}
 		}.merge(nodeOut.fields);
 
 		new Merger<>(nodeC.methods, nodeS.methods) {
@@ -244,6 +273,26 @@ public class MinecraftClassMerger {
 			public void applySide(MethodNode entry, String side) {
 				AnnotationVisitor av = entry.visitAnnotation(SIDED_DESCRIPTOR, false);
 				visitSideAnnotation(av, side);
+			}
+
+			@Override
+			public MethodNode merge(MethodNode clientEntry, MethodNode serverEntry) {
+				if (clientEntry.access == serverEntry.access) {
+					return super.merge(clientEntry, serverEntry);
+				}
+
+				LOGGER.debug("Method has different access modifiers: {}#{}{}, client: '{}', server: '{}'",
+						nodeOut.name, clientEntry.name, clientEntry.desc,
+						formatMethodAccessFlags(clientEntry.access),
+						formatMethodAccessFlags(serverEntry.access));
+
+				try {
+					clientEntry.access = mergeAccess(clientEntry.access, serverEntry.access);
+				} catch (IllegalStateException e) {
+					throw new IllegalStateException("Failed to merge method %s#%s%s %s".formatted(nodeOut.name, clientEntry.name, clientEntry.desc, e.getMessage()), e);
+				}
+
+				return clientEntry;
 			}
 		}.merge(nodeOut.methods);
 
@@ -292,5 +341,66 @@ public class MinecraftClassMerger {
 		}
 
 		return out;
+	}
+
+	/**
+	 * When merging 2 members with differing access we pick the least permissive access.
+	 * This ensures that the mod is compiled against the "worst case" access level.
+	 * At runtime fabric-loader will make all methods public, meaning it doesn't cause an issue in dev envs.
+	 * If a mod needs to uses one of these members it should use an access widener.
+	 *
+	 * <p>Allow merging private final members as the final modifier is irrelevant for private members.
+	 */
+	@VisibleForTesting
+	public static int mergeAccess(int clientAccess, int serverAccess) {
+		validateAccessMerge(clientAccess, serverAccess);
+
+		if (getAccessRating(clientAccess) > getAccessRating(serverAccess)) {
+			return serverAccess;
+		}
+
+		return clientAccess;
+	}
+
+	private static void validateAccessMerge(int clientAccess, int serverAccess) {
+		int clientFlags = clientAccess & ~PERMISSION_BITS;
+		int serverFlags = serverAccess & ~PERMISSION_BITS;
+
+		if (clientFlags != serverFlags) {
+			// If the access flags are different beyond the permission bits, we cannot merge them.
+			throw new IllegalStateException("Cannot merge methods with differing non-permission bits: client: %s server: %s"
+					.formatted(formatMethodAccessFlags(clientAccess), formatMethodAccessFlags(serverAccess)));
+		}
+	}
+
+	private static int getAccessRating(int access) {
+		if ((access & Opcodes.ACC_PUBLIC) != 0) {
+			return 2;
+		} else if ((access & Opcodes.ACC_PROTECTED) != 0) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	@VisibleForTesting
+	public static String formatMethodAccessFlags(int access) {
+		var joiner = new StringJoiner(" ");
+
+		if ((access & Opcodes.ACC_PUBLIC) != 0) joiner.add("public");
+		if ((access & Opcodes.ACC_PRIVATE) != 0) joiner.add("private");
+		if ((access & Opcodes.ACC_PROTECTED) != 0) joiner.add("protected");
+		if ((access & Opcodes.ACC_STATIC) != 0) joiner.add("static");
+		if ((access & Opcodes.ACC_FINAL) != 0) joiner.add("final");
+		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) joiner.add("synchronized");
+		if ((access & Opcodes.ACC_BRIDGE) != 0) joiner.add("bridge");
+		if ((access & Opcodes.ACC_VARARGS) != 0) joiner.add("varargs");
+		if ((access & Opcodes.ACC_NATIVE) != 0) joiner.add("native");
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) joiner.add("abstract");
+		if ((access & Opcodes.ACC_STRICT) != 0) joiner.add("strictfp");
+		if ((access & Opcodes.ACC_SYNTHETIC) != 0) joiner.add("synthetic");
+		if ((access & Opcodes.ACC_MANDATED) != 0) joiner.add("mandated");
+
+		return joiner.toString();
 	}
 }

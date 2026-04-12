@@ -237,7 +237,7 @@ class ArtifactMetadataTest extends Specification {
 	}
 
 	private static ArtifactMetadata createMetadata(Path zip, String loomVersion = "1.4") {
-		return ArtifactMetadata.create(createArtifact(zip), loomVersion)
+		return ArtifactMetadata.create(createArtifact(zip), loomVersion, ArtifactMetadata.MixinRemapType.MIXIN)
 	}
 
 	private static ArtifactRef createArtifact(Path zip) {

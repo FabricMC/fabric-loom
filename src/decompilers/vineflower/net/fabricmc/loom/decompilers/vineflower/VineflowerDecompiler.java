@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2019-2023 FabricMC
+ * Copyright (c) 2019-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,10 +48,13 @@ public final class VineflowerDecompiler implements LoomInternalDecompiler {
 					IFernflowerPreferences.REMOVE_SYNTHETIC, "1",
 					IFernflowerPreferences.LOG_LEVEL, "trace",
 					IFernflowerPreferences.THREADS, String.valueOf(context.numberOfThreads()),
-					IFernflowerPreferences.INDENT_STRING, "\t",
-					IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(context.javaDocs().toFile())
+					IFernflowerPreferences.INDENT_STRING, "\t"
 				)
 		);
+
+		if (context.javaDocs() != null) {
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(context.javaDocs().toFile(), context.runtimeNamespace()));
+		}
 
 		options.putAll(context.options());
 

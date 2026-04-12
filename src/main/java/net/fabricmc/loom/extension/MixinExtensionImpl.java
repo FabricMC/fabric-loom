@@ -47,7 +47,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 
 public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
@@ -68,7 +67,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	public Property<String> getDefaultRefmapName() {
-		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+		if (!super.getUseLegacyMixinAp().get()) logLegacyMixinAPConfiguration();
 
 		return defaultRefmapName;
 	}
@@ -81,7 +80,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	@Override
 	protected PatternSet add0(SourceSet sourceSet, Provider<String> refmapName) {
-		if (!super.getUseLegacyMixinAp().get()) throw new IllegalStateException("You need to set useLegacyMixinAp = true to configure Mixin annotation processor.");
+		if (!super.getUseLegacyMixinAp().get()) logLegacyMixinAPConfiguration();
 
 		PatternSet pattern = new PatternSet().setIncludes(Collections.singletonList("**/*.json"));
 		MixinExtension.setMixinInformationContainer(sourceSet, new MixinExtension.MixinInformationContainer(sourceSet, refmapName, pattern));
@@ -92,21 +91,18 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	}
 
 	@Override
-	@NotNull
 	public Stream<SourceSet> getMixinSourceSetsStream() {
 		return project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().stream()
 				.filter(sourceSet -> MixinExtension.getMixinInformationContainer(sourceSet) != null);
 	}
 
 	@Override
-	@NotNull
 	public Stream<Configuration> getApConfigurationsStream(Function<SourceSet, String> getApConfigNameFunc) {
 		return getMixinSourceSetsStream()
 				.map(sourceSet -> project.getConfigurations().getByName(getApConfigNameFunc.apply(sourceSet)));
 	}
 
 	@Override
-	@NotNull
 	public <T extends Task> Stream<Map.Entry<SourceSet, TaskProvider<T>>> getInvokerTasksStream(String compileTaskLanguage, Class<T> taskType) {
 		return getMixinSourceSetsStream()
 				.flatMap(sourceSet -> {
@@ -120,7 +116,6 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 	}
 
 	@Override
-	@NotNull
 	@Input
 	public Collection<SourceSet> getMixinSourceSets() {
 		return getMixinSourceSetsStream().collect(Collectors.toList());

@@ -30,11 +30,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.gson.annotations.SerializedName;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.TypeAnnotationNode;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
 
 public record MethodAnnotationData(
 		@SerializedName("remove")
@@ -46,7 +49,7 @@ public record MethodAnnotationData(
 		@SerializedName("type_add")
 		List<TypeAnnotationNode> typeAnnotationsToAdd,
 		Map<Integer, GenericAnnotationData> parameters
-) {
+) implements BaseAnnotationData {
 	public MethodAnnotationData {
 		if (annotationsToRemove == null) {
 			annotationsToRemove = new LinkedHashSet<>();
@@ -69,6 +72,20 @@ public record MethodAnnotationData(
 		}
 	}
 
+	public MethodAnnotationData() {
+		this(new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashSet<>(), new ArrayList<>(), new LinkedHashMap<>());
+	}
+
+	public MethodAnnotationData(MethodAnnotationData other) {
+		this(
+				new LinkedHashSet<>(other.annotationsToRemove),
+				AnnotationsData.copyAnnotations(other.annotationsToAdd),
+				new LinkedHashSet<>(other.typeAnnotationsToRemove),
+				AnnotationsData.copyTypeAnnotations(other.typeAnnotationsToAdd),
+				AnnotationsData.copyMap(other.parameters, GenericAnnotationData::new)
+		);
+	}
+
 	MethodAnnotationData merge(MethodAnnotationData other) {
 		Set<String> newAnnotationsToRemove = new LinkedHashSet<>(annotationsToRemove);
 		newAnnotationsToRemove.addAll(other.annotationsToRemove);
@@ -81,6 +98,20 @@ public record MethodAnnotationData(
 		Map<Integer, GenericAnnotationData> newParameters = new LinkedHashMap<>(parameters);
 		other.parameters.forEach((key, value) -> newParameters.merge(key, value, GenericAnnotationData::merge));
 		return new MethodAnnotationData(newAnnotationsToRemove, newAnnotationsToAdd, newTypeAnnotationsToRemove, newTypeAnnotationsToAdd, newParameters);
+	}
+
+	MethodAnnotationData remap(TinyRemapper remapper) {
+		return new MethodAnnotationData(
+				annotationsToRemove.stream().map(remapper.getEnvironment().getRemapper()::map).collect(Collectors.toCollection(LinkedHashSet::new)),
+				annotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				typeAnnotationsToRemove.stream().map(key -> key.remap(remapper)).collect(Collectors.toCollection(LinkedHashSet::new)),
+				typeAnnotationsToAdd.stream().map(ann -> AnnotationsData.remap(ann, remapper)).collect(Collectors.toCollection(ArrayList::new)),
+				AnnotationsData.remapMap(
+						parameters,
+						Map.Entry::getKey,
+						entry -> entry.getValue().remap(remapper)
+				)
+		);
 	}
 
 	public int modifyAccessFlags(int access) {

@@ -68,22 +68,53 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 	}
 
 	@Unroll
+	def "transitive accesswidener official production (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "transitiveAccesswidenerOfficialProd", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "transitive accesswidener official production genSources (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "transitiveAccesswidenerOfficialProd", version: version)
+		ZipUtils.pack(new File(gradle.projectDir, "dummyDependency").toPath(), new File(gradle.projectDir, "dummy.jar").toPath())
+
+		when:
+		def result = gradle.run(task: "genSources")
+
+		then:
+		result.task(":genSources").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
 	def "invalid (#awLine)"() {
 		setup:
 		def gradle = gradleProject(project: "accesswidener", version: version)
 		new File(gradle.projectDir, "src/main/resources/modid.accesswidener").append(awLine)
-		def errorPrefix = "Failed to validate access-widener file modid.accesswidener on line 10: java.lang.RuntimeException: "
 
 		when:
 		def result = gradle.run(task: "check", expectFailure: true)
 
 		then:
-		result.output.contains(errorPrefix + error)
+		result.output.contains(error)
 
 		where:
-		awLine 																					| error																									| version
-		'accessible\tclass\tnet/minecraft/DoesntExists'											| "Could not find class (net/minecraft/DoesntExists)"													| DEFAULT_GRADLE
-		'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI'								| "Could not find field (abcI) in class (net/minecraft/screen/slot/Slot)"								| DEFAULT_GRADLE
-		'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V'	| "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main)"	| DEFAULT_GRADLE
+		awLine 																					| error																											| version
+		'accessible\tclass\tnet/minecraft/DoesntExists'											| "Could not find class (net/minecraft/DoesntExists) on line 10"												| DEFAULT_GRADLE
+		'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI'								| "Could not find field (abc:I) in class (net/minecraft/screen/slot/Slot) on line 10"							| DEFAULT_GRADLE
+		'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V'	| "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main) on line 10"	| DEFAULT_GRADLE
 	}
 }

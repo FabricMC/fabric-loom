@@ -40,8 +40,7 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.MixinExtensionAPI;
 
@@ -76,16 +75,12 @@ public interface MixinExtension extends MixinExtensionAPI {
 		extra.set(MIXIN_INFORMATION_CONTAINER, container);
 	}
 
-	@NotNull
 	Stream<SourceSet> getMixinSourceSetsStream();
 
-	@NotNull
 	Stream<Configuration> getApConfigurationsStream(Function<SourceSet, String> getApConfigNameFunc);
 
-	@NotNull
 	<T extends Task> Stream<Map.Entry<SourceSet, TaskProvider<T>>> getInvokerTasksStream(String compileTaskLanguage, Class<T> taskType);
 
-	@NotNull
 	@Input
 	Collection<SourceSet> getMixinSourceSets();
 

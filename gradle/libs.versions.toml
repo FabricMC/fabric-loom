@@ -1,23 +1,22 @@
 [versions]
-kotlin = "2.0.21"
-asm = "9.8"
-commons-io = "2.15.1"
+kotlin = "2.3.0"
+asm = "9.9"
 gson = "2.10.1"
-guava = "33.0.0-jre"
 
 stitch = "0.6.2"
-tiny-remapper = "0.11.2"
-access-widener = "2.1.0"
-mapping-io = "0.7.1"
+tiny-remapper = "0.13.0"
+clazz-tweaker = "0.3.0-beta.2"
+mapping-io = "0.8.0"
 lorenz-tiny = "4.0.2"
-mercury = "0.4.2"
+mercury = "0.4.3"
+mercury-mixin = "0.2.2"
 loom-native = "0.2.0"
-unpick = "3.0.0-beta.9"
+unpick = "3.0.0-beta.13"
 
 # Plugins
-spotless = "7.2.1"
+spotless = "8.0.0"
 test-retry = "1.6.2"
-checkstyle = "10.26.1"
+checkstyle = "12.1.1"
 codenarc = "3.6.0"
 
 [libraries]
@@ -28,16 +27,15 @@ asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm" }
 asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 
-commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-guava = { module = "com.google.guava:guava", version.ref = "guava" }
 
 fabric-stitch = { module = "net.fabricmc:stitch", version.ref = "stitch" }
 fabric-tiny-remapper = { module = "net.fabricmc:tiny-remapper", version.ref = "tiny-remapper" }
-fabric-access-widener = { module = "net.fabricmc:access-widener", version.ref = "access-widener" }
+fabric-clazz-tweaker = { module = "net.fabricmc:class-tweaker", version.ref = "clazz-tweaker" }
 fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping-io" }
 fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
+fabric-mercury-mixin = { module = "net.fabricmc:mercurymixin", version.ref = "mercury-mixin" }
 fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
 fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
 fabric-unpick-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }

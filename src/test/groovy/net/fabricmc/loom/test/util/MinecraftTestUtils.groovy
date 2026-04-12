@@ -42,9 +42,9 @@ class MinecraftTestUtils {
 	static MinecraftVersionMeta getVersionMeta(String id) {
 		def versionManifest = download(Constants.VERSION_MANIFESTS, "version_manifest.json")
 		def manifest = GSON.fromJson(versionManifest, VersionsManifest.class)
-		def version = manifest.versions().find { it.id == id }
+		def version = manifest.versions().find { it.id() == id }
 
-		def metaJson = download(version.url, "${id}.json")
+		def metaJson = download(version.url(), "${id}.json")
 		GSON.fromJson(metaJson, MinecraftVersionMeta.class)
 	}
 

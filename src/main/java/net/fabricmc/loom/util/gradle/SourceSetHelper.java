@@ -42,17 +42,17 @@ import javax.xml.xpath.XPathFactory;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.intellij.lang.annotations.Language;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
 
@@ -87,6 +87,10 @@ public final class SourceSetHelper {
 		return getSourceSetByName(SourceSet.MAIN_SOURCE_SET_NAME, project);
 	}
 
+	public static boolean isMainSourceSet(SourceSet sourceSet) {
+		return SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName());
+	}
+
 	public static SourceSet createSourceSet(String name, Project project) {
 		return getSourceSets(project).create(name);
 	}
@@ -113,19 +117,12 @@ public final class SourceSetHelper {
 		return it.hasNext() ? it.next().getProject() : null;
 	}
 
-	public static List<File> getClasspath(ModSettings modSettings, Project project) {
-		final List<File> files = new ArrayList<>();
-
-		files.addAll(modSettings.getModSourceSets().get().stream()
-				.flatMap(sourceSet -> getClasspath(sourceSet, project).stream())
-				.toList());
-		files.addAll(modSettings.getModFiles().getFiles());
-
-		return Collections.unmodifiableList(files);
-	}
-
-	public static List<File> getClasspath(SourceSetReference reference, Project project) {
-		final List<File> classpath = getGradleClasspath(reference, project);
+	/**
+	 * @param forExport set to true when this classpath is going to be exported for another project to consume.
+	 */
+	public static List<File> getClasspath(SourceSetReference reference, boolean forExport) {
+		final Project project = reference.project();
+		final List<File> classpath = getGradleClasspath(reference, forExport);
 
 		classpath.addAll(getIdeaClasspath(reference, project));
 		classpath.addAll(getIdeaModuleCompileOutput(reference));
@@ -135,7 +132,7 @@ public final class SourceSetHelper {
 		return classpath;
 	}
 
-	private static List<File> getGradleClasspath(SourceSetReference reference, Project project) {
+	private static List<File> getGradleClasspath(SourceSetReference reference, boolean forExport) {
 		final SourceSetOutput output = reference.sourceSet().getOutput();
 		final File resources = output.getResourcesDir();
 
@@ -148,9 +145,12 @@ public final class SourceSetHelper {
 		}
 
 		// Add dev jars from dependency projects if the source set is "main".
-		if (SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && !reference.project().getPath().equals(project.getPath())
-				&& GradleUtils.isLoomProject(reference.project())) {
-			final Configuration namedElements = reference.project().getConfigurations().getByName(Constants.Configurations.NAMED_ELEMENTS);
+		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomCompanionProject(reference.project())) {
+			boolean isLoom = GradleUtils.isLoomProject(reference.project());
+			boolean isDebof = isLoom && LoomGradleExtension.get(reference.project()).disableObfuscation();
+			String configurationName = isLoom && !isDebof
+					? Constants.Configurations.NAMED_ELEMENTS : JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME;
+			final Configuration namedElements = reference.project().getConfigurations().getByName(configurationName);
 
 			// Note: We're not looking at the artifacts from configuration variants. It's probably not needed
 			// (certainly not with Loom's setup), but technically someone could add child variants that add additional
@@ -308,5 +308,15 @@ public final class SourceSetHelper {
 		}
 
 		return null;
+	}
+
+	public static File getFirstSrcDir(SourceSet sourceSet) {
+		Iterator<File> iterator = sourceSet.getJava().getSrcDirs().iterator();
+
+		if (iterator.hasNext()) {
+			return iterator.next();
+		}
+
+		throw new IllegalStateException("SourceSet " + sourceSet.getName() + " has no source directories.");
 	}
 }

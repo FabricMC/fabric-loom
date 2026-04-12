@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021-2024 FabricMC
+ * Copyright (c) 2021-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,8 @@
 package net.fabricmc.loom.extension;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,7 +34,6 @@ import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
 import org.gradle.api.Project;
-import org.gradle.api.UncheckedIOException;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -46,6 +45,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SetProperty;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.tasks.TaskProvider;
+import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
@@ -62,6 +63,7 @@ import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
+import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.processors.JarProcessor;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpec;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingSpecBuilderImpl;
@@ -71,11 +73,10 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfigura
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.GenerateSourcesTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
-import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
@@ -87,6 +88,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final ListProperty<JarProcessor> jarProcessors;
 	protected final ConfigurableFileCollection log4jConfigs;
 	protected final RegularFileProperty accessWidener;
+	protected final RegularFileProperty fabricModJsonPath;
 	protected final ManifestLocations versionsManifests;
 	protected final Property<String> customMetadata;
 	protected final SetProperty<String> knownIndyBsms;
@@ -94,8 +96,14 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	protected final Property<Boolean> modProvidedJavadoc;
 	protected final Property<String> intermediary;
 	protected final Property<IntermediateMappingsProvider> intermediateMappingsProvider;
+	private final Property<String> productionNamespace;
+	private final Property<Boolean> useIntermediateMappings;
+	private final Property<String> defaultMixinRemapType;
+	private final Property<Boolean> remapJsrAnnotationsToJetBrains;
 	private final Property<Boolean> runtimeOnlyLog4j;
+	private final Property<Boolean> runtimeOnlyLwjglGraphics;
 	private final Property<Boolean> splitModDependencies;
+	private final Property<Boolean> uncompressNestedJars;
 	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
@@ -119,6 +127,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 				.empty();
 		this.log4jConfigs = project.files(directories.getDefaultLog4jConfigFile());
 		this.accessWidener = project.getObjects().fileProperty();
+		this.fabricModJsonPath = project.getObjects().fileProperty();
 		this.versionsManifests = new ManifestLocations();
 		this.versionsManifests.add("mojang", MirrorUtil.getVersionManifests(project), -2);
 		this.versionsManifests.add("fabric_experimental", MirrorUtil.getExperimentalVersions(project), -1);
@@ -137,6 +146,15 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.modProvidedJavadoc.finalizeValueOnRead();
 		this.intermediary = project.getObjects().property(String.class)
 				.convention(DEFAULT_INTERMEDIARY_URL);
+		this.productionNamespace = project.getObjects().property(String.class);
+		this.productionNamespace.convention(project.provider(() -> LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated() ? MappingsNamespace.OFFICIAL.toString() : MappingsNamespace.INTERMEDIARY.toString()));
+		this.productionNamespace.finalizeValueOnRead();
+		this.useIntermediateMappings = project.getObjects().property(Boolean.class);
+		this.useIntermediateMappings.convention(project.provider(() -> !LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated()));
+		this.useIntermediateMappings.finalizeValueOnRead();
+		this.defaultMixinRemapType = project.getObjects().property(String.class);
+		this.defaultMixinRemapType.convention(project.provider(() -> LoomGradleExtension.get(project).getMetadataProvider().isUnobfuscated() ? ArtifactMetadata.MixinRemapType.STATIC.name() : ArtifactMetadata.MixinRemapType.MIXIN.name()));
+		this.defaultMixinRemapType.finalizeValueOnRead();
 
 		this.intermediateMappingsProvider = project.getObjects().property(IntermediateMappingsProvider.class);
 		this.intermediateMappingsProvider.finalizeValueOnRead();
@@ -160,11 +178,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 					// if no configuration is selected by the user, attempt to select one
 					// based on the mc version and which sides are present for it
-					if (!metadataProvider.getVersionMeta().downloads().containsKey("server")) {
+					if (!metadataProvider.getVersionMeta().hasServer()) {
 						return MinecraftJarConfiguration.CLIENT_ONLY;
-					} else if (!metadataProvider.getVersionMeta().downloads().containsKey("client")) {
+					} else if (!metadataProvider.getVersionMeta().hasClient()) {
 						return MinecraftJarConfiguration.SERVER_ONLY;
-					} else if (metadataProvider.getVersionMeta().isVersionOrNewer(Constants.RELEASE_TIME_1_3)) {
+					} else if (!metadataProvider.getVersionMeta().isLegacyVersion()) {
 						return MinecraftJarConfiguration.MERGED;
 					} else {
 						return MinecraftJarConfiguration.LEGACY_MERGED;
@@ -175,11 +193,20 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		this.accessWidener.finalizeValueOnRead();
 		this.getGameJarProcessors().finalizeValueOnRead();
 
+		this.remapJsrAnnotationsToJetBrains = project.getObjects().property(Boolean.class).convention(true);
+		this.remapJsrAnnotationsToJetBrains.finalizeValueOnRead();
+
 		this.runtimeOnlyLog4j = project.getObjects().property(Boolean.class).convention(false);
 		this.runtimeOnlyLog4j.finalizeValueOnRead();
 
+		this.runtimeOnlyLwjglGraphics = project.getObjects().property(Boolean.class).convention(false);
+		this.runtimeOnlyLwjglGraphics.finalizeValueOnRead();
+
 		this.splitModDependencies = project.getObjects().property(Boolean.class).convention(true);
 		this.splitModDependencies.finalizeValueOnRead();
+
+		this.uncompressNestedJars = project.getObjects().property(Boolean.class).convention(false);
+		this.uncompressNestedJars.finalizeValueOnRead();
 
 		this.interfaceInjectionExtension = project.getObjects().newInstance(InterfaceInjectionExtensionAPI.class);
 		this.interfaceInjectionExtension.getIsEnabled().convention(true);
@@ -204,6 +231,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public RegularFileProperty getAccessWidenerPath() {
 		return accessWidener;
+	}
+
+	@Override
+	public RegularFileProperty getFabricModJsonPath() {
+		return fabricModJsonPath;
 	}
 
 	@Override
@@ -233,6 +265,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency officialMojangMappings() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot use Mojang mappings in a non-obfuscated environment");
+		}
+
 		if (layeredSpecBuilderScope.get()) {
 			throw new IllegalStateException("Use `officialMojangMappings()` when configuring layered mappings, not the extension method `loom.officialMojangMappings()`");
 		}
@@ -242,6 +278,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public Dependency layered(Action<LayeredMappingSpecBuilder> action) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot configure layered mappings in a non-obfuscated environment");
+		}
+
 		if (hasEvaluatedLayeredMappings) {
 			throw new IllegalStateException("Layered mappings have already been evaluated");
 		}
@@ -289,22 +329,22 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public SetProperty<String> getKnownIndyBsms() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot configure known indyBsms in a non-obfuscated environment");
+		}
+
 		return knownIndyBsms;
 	}
 
 	@Override
 	public String getModVersion() {
-		try {
-			final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(getProject(), SourceSetHelper.getMainSourceSet(getProject()));
+		List<FabricModJson> fabricModJsons = FabricModJsonHelpers.getModsInProject(getProject());
 
-			if (fabricModJson == null) {
-				throw new RuntimeException("Could not find a fabric.mod.json file in the main sourceset");
-			}
-
-			return fabricModJson.getModVersion();
-		} catch (IOException e) {
-			throw new UncheckedIOException("Failed to read mod version from main sourceset.", e);
+		if (fabricModJsons.isEmpty()) {
+			throw new RuntimeException("Could not find a fabric.mod.json file in the main sourceset");
 		}
+
+		return fabricModJsons.getFirst().getModVersion();
 	}
 
 	@Override
@@ -327,7 +367,26 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public Property<String> getProductionNamespace() {
+		return productionNamespace;
+	}
+
+	@Override
+	public Property<Boolean> getUseIntermediateMappings() {
+		return useIntermediateMappings;
+	}
+
+	@Override
+	public Property<String> getDefaultMixinRemapType() {
+		return defaultMixinRemapType;
+	}
+
+	@Override
 	public IntermediateMappingsProvider getIntermediateMappingsProvider() {
+		if (LoomGradleExtension.get(getProject()).disableObfuscation()) {
+			throw new UnsupportedOperationException("Cannot get intermediate mappings provider in a non-obfuscated environment");
+		}
+
 		return intermediateMappingsProvider.get();
 	}
 
@@ -341,11 +400,15 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		T provider = getProject().getObjects().newInstance(clazz);
 		configureIntermediateMappingsProviderInternal(provider);
 		action.execute(provider);
-		intermediateMappingsProvider.set(provider);
+		setIntermediateMappingsProvider(provider);
 	}
 
 	@Override
 	public File getMappingsFile() {
+		if (notObfuscated()) {
+			return null;
+		}
+
 		return LoomGradleExtension.get(getProject()).getMappingConfiguration().tinyMappings.toFile();
 	}
 
@@ -376,13 +439,28 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	}
 
 	@Override
+	public Property<Boolean> getRemapJsrAnnotationsToJetBrains() {
+		return remapJsrAnnotationsToJetBrains;
+	}
+
+	@Override
 	public Property<Boolean> getRuntimeOnlyLog4j() {
 		return runtimeOnlyLog4j;
 	}
 
 	@Override
+	public Property<Boolean> getRuntimeOnlyLwjglGraphics() {
+		return runtimeOnlyLwjglGraphics;
+	}
+
+	@Override
 	public Property<Boolean> getSplitModDependencies() {
 		return splitModDependencies;
+	}
+
+	@Override
+	public Property<Boolean> getUncompressNestedJars() {
+		return uncompressNestedJars;
 	}
 
 	@Override
@@ -420,11 +498,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public NamedDomainObjectList<RemapConfigurationSettings> getRemapConfigurations() {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot get remap configurations in a non-obfuscated environment");
+		}
+
 		return remapConfigurations;
 	}
 
 	@Override
 	public RemapConfigurationSettings addRemapConfiguration(String name, Action<RemapConfigurationSettings> action) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot add remap configuration in a non-obfuscated environment");
+		}
+
 		final RemapConfigurationSettings configurationSettings = getProject().getObjects().newInstance(RemapConfigurationSettings.class, name);
 
 		// TODO remove in 2.0, this is a fallback to mimic the previous (Broken) behaviour
@@ -439,11 +525,19 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void createRemapConfigurations(SourceSet sourceSet) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot create remap configurations in a non-obfuscated environment");
+		}
+
 		RemapConfigurations.setupForSourceSet(getProject(), sourceSet);
 	}
 
 	@Override
 	public <T extends RemapperParameters> void addRemapperExtension(Class<? extends RemapperExtension<T>> remapperExtensionClass, Class<T> parametersClass, Action<T> parameterAction) {
+		if (notObfuscated()) {
+			throw new UnsupportedOperationException("Cannot add remapper extension in a non-obfuscated environment");
+		}
+
 		final ObjectFactory objectFactory = getProject().getObjects();
 		final RemapperExtensionHolder holder;
 
@@ -469,6 +563,10 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		final ConfigurableFileCollection jars = getProject().getObjects().fileCollection();
 		jars.from(getProject().provider(() -> LoomGradleExtension.get(getProject()).getMinecraftJars(MappingsNamespace.NAMED)));
 		return jars;
+	}
+
+	private boolean notObfuscated() {
+		return LoomGradleExtension.get(getProject()).disableObfuscation();
 	}
 
 	// This is here to ensure that LoomGradleExtensionApiImpl compiles without any unimplemented methods
@@ -500,6 +598,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		public MixinExtension getMixin() {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		public void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

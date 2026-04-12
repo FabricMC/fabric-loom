@@ -46,10 +46,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntConsumer;
 import java.util.zip.GZIPInputStream;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ public final class Download {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
 	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+			.executor(Executors.newVirtualThreadPerTaskExecutor())
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.proxy(ProxySelector.getDefault())
 			.connectTimeout(TIMEOUT)
@@ -71,7 +74,7 @@ public final class Download {
 	}
 
 	private final URI url;
-	private final String expectedHash;
+	private final @Nullable String expectedHash;
 	private final boolean useEtag;
 	private final boolean forceDownload;
 	private final boolean offline;
@@ -80,7 +83,7 @@ public final class Download {
 	private final HttpClient.Version httpVersion;
 	private final int downloadAttempt;
 
-	Download(URI url, String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
+	Download(URI url, @Nullable String expectedHash, boolean useEtag, boolean forceDownload, boolean offline, Duration maxAge, DownloadProgressListener progressListener, HttpClient.Version httpVersion, int downloadAttempt) {
 		this.url = url;
 		this.expectedHash = expectedHash;
 		this.useEtag = useEtag;
@@ -230,9 +233,6 @@ public final class Download {
 
 				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
 			}
-
-			// Write the hash to the file attribute, saves a lot of time trying to re-compute the hash when re-visiting this file.
-			writeHash(output, expectedHash);
 		}
 	}
 
@@ -326,16 +326,8 @@ public final class Download {
 		}
 
 		if (expectedHash != null) {
-			final String hashAttribute = readHash(output).orElse("");
-
-			if (expectedHash.equalsIgnoreCase(hashAttribute)) {
-				// File has a matching hash attribute, assume file intact.
-				return false;
-			}
-
 			if (isHashValid(output)) {
 				// Valid hash, no need to re-download
-				writeHash(output, expectedHash);
 				return false;
 			}
 
@@ -391,22 +383,6 @@ public final class Download {
 			AttributeHelper.writeAttribute(output, E_TAG, eTag);
 		} catch (IOException e) {
 			throw error(e, "Failed to write etag to (%s)", output);
-		}
-	}
-
-	private Optional<String> readHash(Path output) {
-		try {
-			return AttributeHelper.readAttribute(output, "LoomHash");
-		} catch (IOException e) {
-			return Optional.empty();
-		}
-	}
-
-	private void writeHash(Path output, String value) throws DownloadException {
-		try {
-			AttributeHelper.writeAttribute(output, "LoomHash", value);
-		} catch (IOException e) {
-			throw error(e, "Failed to write hash to (%s)", output);
 		}
 	}
 

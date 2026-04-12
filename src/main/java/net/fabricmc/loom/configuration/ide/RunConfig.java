@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -59,9 +58,11 @@ import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryContext;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
@@ -78,6 +79,16 @@ public class RunConfig {
 	public Map<String, Object> environmentVariables;
 	public String projectName;
 	public String folderName;
+
+	// Turns camelCase/PascalCase into Capital Case
+	// caseConversionExample -> Case Conversion Example
+	private static String capitalizeCamelCaseName(String name) {
+		if (name.isEmpty()) {
+			return "";
+		}
+
+		return name.substring(0, 1).toUpperCase() + name.substring(1).replaceAll("([^A-Z])([A-Z])", "$1 $2");
+	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
@@ -99,7 +110,7 @@ public class RunConfig {
 		RunConfig runConfig = new RunConfig();
 		runConfig.configName = configName;
 
-		if (appendProjectPath && !extension.isRootProject()) {
+		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
 			runConfig.configName += " (" + project.getPath() + ")";
 		}
 
@@ -121,6 +132,13 @@ public class RunConfig {
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVars().get());
 		runConfig.projectName = project.getName();
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
+
+		MinecraftVersionMeta.JavaVersion javaVersion = extension.getMinecraftProvider().getVersionInfo().javaVersion();
+
+		if (javaVersion != null && javaVersion.majorVersion() >= 25) {
+			runConfig.vmArgs.add("--sun-misc-unsafe-memory-access=allow");
+			runConfig.vmArgs.add("--enable-native-access=ALL-UNNAMED");
+		}
 
 		return runConfig;
 	}
@@ -236,7 +254,7 @@ public class RunConfig {
 
 		final Set<ResolvedArtifact> clientLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
 		final Set<ResolvedArtifact> serverLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
-		final List<String> clientOnlyLibraries = new LinkedList<>();
+		final List<String> clientOnlyLibraries = new ArrayList<>();
 
 		for (ResolvedArtifact library : clientLibraries) {
 			if (!containsLibrary(serverLibraries, library.getModuleVersion().getId())) {

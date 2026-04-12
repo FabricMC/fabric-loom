@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2024 FabricMC
+ * Copyright (c) 2024-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,9 +33,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.gradle.api.Project;
-import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,34 +60,64 @@ import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
+/// Provides mappings for decompilation (MC *source* code).
+/// This also works in projects with disabled obfuscation
+/// where the mappings are just based on javadocs.
 public class SourceMappingsService extends Service<SourceMappingsService.Options> {
 	public static final ServiceType<Options, SourceMappingsService> TYPE = new ServiceType<>(Options.class, SourceMappingsService.class);
 	private static final Logger LOGGER = LoggerFactory.getLogger(SourceMappingsService.class);
 
 	public interface Options extends Service.Options {
-		@InputFiles
-		ConfigurableFileCollection getMappings(); // Only a single file
+		@InputFile
+		@PathSensitive(PathSensitivity.NONE)
+		RegularFileProperty getMappings();
+
+		@Input
+		@Optional
+		Property<String> getProcessorHash(); // the hash of the processors applied to the mappings
 	}
 
 	public static Provider<Options> create(Project project) {
-		final Path mappings = getMappings(project);
+		final Property<String> hash = project.getObjects().property(String.class);
+		final Path mappings = getMappings(project, hash);
 
 		return TYPE.create(project, options -> {
-			options.getMappings().from(project.file(mappings));
+			options.getMappings().fileValue(project.file(mappings));
+			options.getProcessorHash().set(hash);
 		});
 	}
 
-	private static Path getMappings(Project project) {
+	private static Path getMappings(Project project, Property<String> hashProperty) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 		final MinecraftJarProcessorManager jarProcessor = MinecraftJarProcessorManager.create(project);
+		final Path dir = extension.getFiles().getProjectPersistentCache().toPath().resolve("source_mappings");
+		final Path emptyMappingsPath = dir.resolve("empty.tiny"); // empty base mappings for unobf
+		final boolean disableObf = extension.disableObfuscation();
 
-		if (jarProcessor == null) {
-			LOGGER.info("No jar processor found, not creating source mappings, using project mappings");
-			return extension.getMappingConfiguration().tinyMappings;
+		if (disableObf && (!Files.exists(emptyMappingsPath) || extension.refreshDeps())) {
+			try {
+				Files.createDirectories(dir);
+				Files.deleteIfExists(emptyMappingsPath);
+				Files.writeString(emptyMappingsPath, "tiny\t2\t0\tofficial\n", StandardCharsets.UTF_8);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to create empty source mappings", e);
+			}
 		}
 
-		final Path dir = extension.getFiles().getProjectPersistentCache().toPath().resolve("source_mappings");
-		final Path path = dir.resolve(jarProcessor.getSourceMappingsHash() + ".tiny");
+		if (jarProcessor == null) {
+			if (!disableObf) {
+				LOGGER.info("No jar processor found, not creating source mappings, using project mappings");
+				return extension.getMappingConfiguration().tinyMappings;
+			} else {
+				LOGGER.info("No jar processor found, using empty source mappings");
+				return emptyMappingsPath;
+			}
+		}
+
+		final String hash = jarProcessor.getSourceMappingsHash();
+		hashProperty.set(hash);
+
+		final Path path = dir.resolve(hash + ".tiny");
 
 		if (Files.exists(path) && !extension.refreshDeps()) {
 			LOGGER.debug("Using cached source mappings");
@@ -93,7 +129,8 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		try {
 			Files.createDirectories(dir);
 			Files.deleteIfExists(path);
-			createMappings(project, jarProcessor, path);
+			final Path inputMappings = disableObf ? emptyMappingsPath : extension.getMappingConfiguration().tinyMappings;
+			createMappings(project, jarProcessor, inputMappings, path);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to create source mappings", e);
 		}
@@ -101,13 +138,12 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		return path;
 	}
 
-	private static void createMappings(Project project, MinecraftJarProcessorManager jarProcessor, Path outputMappings) throws IOException {
+	private static void createMappings(Project project, MinecraftJarProcessorManager jarProcessor, Path inputMappings, Path outputMappings) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
-		Path inputMappings = extension.getMappingConfiguration().tinyMappings;
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 
 		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
-			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, MappingsNamespace.INTERMEDIARY.toString()));
+			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, extension.getUseIntermediateMappings().get() ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.OFFICIAL.toString()));
 		}
 
 		GenerateSourcesTask.MappingsProcessor mappingsProcessor = mappings -> {
@@ -127,7 +163,7 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 
 		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {
 			var tiny2Writer = new Tiny2FileWriter(writer, false);
-			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, MappingsNamespace.NAMED.toString()));
+			mappingTree.accept(new MappingSourceNsSwitch(tiny2Writer, extension.disableObfuscation() ? MappingsNamespace.OFFICIAL.toString() : MappingsNamespace.NAMED.toString()));
 		}
 	}
 
@@ -136,6 +172,10 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 	}
 
 	public Path getMappingsFile() {
-		return getOptions().getMappings().getSingleFile().toPath();
+		return getOptions().getMappings().getAsFile().get().toPath();
+	}
+
+	public @Nullable String getProcessorHash() {
+		return getOptions().getProcessorHash().getOrNull();
 	}
 }

@@ -26,7 +26,6 @@ package net.fabricmc.loom.configuration.mods;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,23 +36,19 @@ import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import com.google.gson.JsonObject;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
-import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 
 public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequirements, @Nullable InstallerData installerData, MixinRemapType mixinRemapType, List<String> knownIdyBsms) {
-	private static final String INSTALLER_PATH = "fabric-installer.json";
-
-	public static ArtifactMetadata create(ArtifactRef artifact, String currentLoomVersion) throws IOException {
+	public static ArtifactMetadata create(ArtifactRef artifact, String currentLoomVersion, MixinRemapType defaultMixinRemapType) throws IOException {
 		boolean isFabricMod;
 		RemapRequirements remapRequirements = RemapRequirements.DEFAULT;
 		InstallerData installerData = null;
-		MixinRemapType refmapRemapType = MixinRemapType.MIXIN;
+		MixinRemapType refmapRemapType = defaultMixinRemapType;
 		List<String> knownIndyBsms = new ArrayList<>();
 
 		try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(artifact.path())) {
@@ -90,11 +85,10 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 				}
 			}
 
-			final Path installerPath = fs.getPath(INSTALLER_PATH);
+			final Path installerPath = fs.getPath(InstallerData.INSTALLER_PATH);
 
 			if (isFabricMod && Files.exists(installerPath)) {
-				final JsonObject jsonObject = LoomGradlePlugin.GSON.fromJson(Files.readString(installerPath, StandardCharsets.UTF_8), JsonObject.class);
-				installerData = new InstallerData(artifact.version(), jsonObject);
+				installerData = InstallerData.fromBytes(Files.readAllBytes(installerPath), artifact.version());
 			}
 		}
 

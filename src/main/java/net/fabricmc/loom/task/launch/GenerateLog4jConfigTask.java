@@ -34,9 +34,11 @@ import javax.inject.Inject;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.task.AbstractLoomTask;
 
+@DisableCachingByDefault
 public abstract class GenerateLog4jConfigTask extends AbstractLoomTask {
 	@OutputFile
 	public abstract RegularFileProperty getOutputFile();

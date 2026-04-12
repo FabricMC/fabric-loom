@@ -24,5 +24,12 @@
 
 package net.fabricmc.loom.configuration.providers.mappings.extras.annotations;
 
-public record TypeAnnotationKey(int typeRef, String typePath, String name) {
+import org.jspecify.annotations.Nullable;
+
+import net.fabricmc.tinyremapper.TinyRemapper;
+
+public record TypeAnnotationKey(int typeRef, @Nullable String typePath, String name) {
+	TypeAnnotationKey remap(TinyRemapper remapper) {
+		return new TypeAnnotationKey(typeRef, typePath, remapper.getEnvironment().getRemapper().map(name));
+	}
 }

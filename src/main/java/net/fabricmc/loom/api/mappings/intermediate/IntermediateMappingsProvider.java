@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2022 FabricMC
+ * Copyright (c) 2022-2025 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,12 +45,12 @@ public abstract class IntermediateMappingsProvider implements Named {
 	public abstract Property<Function<String, DownloadBuilder>> getDownloader();
 
 	/**
-	 * Set to true if the minecraft version is pre 1.3.
+	 * Set to true if the minecraft version is at least Beta 1.0 and pre 1.3.
 	 * When true the expected src namespace is intermediary, and the expected dst namespaces are clientOfficial and/or serverOfficial
 	 * When false the expected src namespace is named and the expected dst namespace is intermediary
 	 */
 	@ApiStatus.Experimental
-	public abstract Property<Boolean> getIsLegacyMinecraft();
+	public abstract Property<Boolean> getUseSplitOfficialNamespaces();
 
 	/**
 	 * Generate or download a tinyv2 mapping file with intermediary and named namespaces.

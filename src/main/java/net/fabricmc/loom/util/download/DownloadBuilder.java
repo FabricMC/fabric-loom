@@ -35,12 +35,14 @@ import java.time.Duration;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
+import org.jspecify.annotations.Nullable;
+
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
 	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
-	private String expectedHash = null;
+	private @Nullable String expectedHash = null;
 	private boolean useEtag = true;
 	private boolean forceDownload = false;
 	private boolean offline = false;

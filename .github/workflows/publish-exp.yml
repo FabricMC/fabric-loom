@@ -19,7 +19,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: gradle/actions/wrapper-validation@v4
 
-      # Generate the build number based on tags to allow per branch build numbers, not something github provides by default.
       - name: Generate build number
         id: buildnumber
         uses: FabricMCBot/build-tag-number@7d8df195c4691e1681d458016f75e8bbccdb3375
@@ -27,9 +26,22 @@ jobs:
           token: ${{ secrets.github_token }}
           prefix: "build/exp/${{ github.ref }}"
 
-      - run: ./gradlew build publish -x test --stacktrace
+      - run: ./gradlew build publish exportVersion -x test --stacktrace
         env:
           MAVEN_URL: ${{ secrets.MAVEN_URL }}
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
           EXPERIMENTAL: true
+
+      - name: Read version
+        id: version
+        run: echo "version=$(cat build/version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ steps.version.outputs.version }}" -m "Experimental version ${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -44,7 +44,7 @@ class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 		then:
 		result.task(":remapJar").outcome == SUCCESS
 
-		// Assert directly declared dependencies are present
+		// Assert directly declared dependencies are present in remapped jar
 		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/log4j-core-2.22.0.jar")
 		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/adventure-text-serializer-gson-4.14.0.jar")
 

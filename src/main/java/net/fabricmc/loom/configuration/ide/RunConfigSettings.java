@@ -91,7 +91,6 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 * a convenient way to remove it if wanted.
 	 */
 	public void serverWithGui() {
-		// TODO confirm this still works
 		getProgramArgs().removeIf("nogui"::equals);
 	}
 
@@ -186,8 +185,15 @@ public abstract class RunConfigSettings implements Named, RunConfiguration {
 	 */
 	@Deprecated
 	public String getRunDir() {
-		// TODO, throw if the directory is not relative to the project directory?
-		return null;
+		File runDir = getRunDirectory().getAsFile().get();
+		File projectDir = project.getProjectDir();
+		String relative = projectDir.toURI().relativize(runDir.toURI()).getPath();
+
+		if (relative.startsWith("..")) {
+			throw new IllegalStateException("Run directory '%s' is not relative to the project directory '%s'".formatted(runDir, projectDir));
+		}
+
+		return relative;
 	}
 
 	/**

@@ -64,7 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.prod.TracyCapture;
@@ -118,22 +118,22 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Classpath
 	protected abstract ConfigurableFileCollection getInternalClasspath();
 
-	public AbstractRunTask(Function<Project, RunConfig> configProvider) {
+	public AbstractRunTask(Function<Project, RunConfiguration> configProvider) {
 		super();
 		setGroup(Constants.TaskGroup.FABRIC);
 
-		final Provider<RunConfig> config = getProject().provider(() -> configProvider.apply(getProject()));
+		final Provider<RunConfiguration> config = getProject().provider(() -> configProvider.apply(getProject()));
 
-		getInternalClasspath().from(config.map(runConfig -> SourceSetHelper.getSourceSetByName(runConfig.runConfiguration.getSourceSet().get(), getProject()).getRuntimeClasspath()
+		getInternalClasspath().from(config.map(runConfig -> SourceSetHelper.getSourceSetByName(runConfig.getSourceSet().get(), getProject()).getRuntimeClasspath()
 				.filter(new LibraryFilter(
-						RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.get().runConfiguration),
-						RunConfigUtils.getDisplayName(config.get().runConfiguration, getProject()))
+						RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.get()),
+						RunConfigUtils.getDisplayName(config.get(), getProject()))
 				)));
 
 		getArgumentProviders().add(new CommandLineArgumentProvider() {
 			@Override
 			public Iterable<String> asArguments() {
-				return config.get().runConfiguration.getProgramArguments().get();
+				return config.get().getProgramArguments().get();
 			}
 		});
 		getArgumentProviders().add(new CommandLineArgumentProvider() {
@@ -146,12 +146,12 @@ public abstract class AbstractRunTask extends JavaExec {
 				return List.of();
 			}
 		});
-		getMainClass().set(config.flatMap(runConfig -> runConfig.runConfiguration.getDevLaunchMainClass()));
+		getMainClass().set(config.flatMap(RunConfiguration::getDevLaunchMainClass));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
-		getInternalRunDir().set(config.flatMap(runConfig -> runConfig.runConfiguration.getRunDirectory()));
-		getInternalEnvironmentVars().set(config.flatMap(runConfig -> runConfig.runConfiguration.getEnvironmentVars()));
-		getInternalJvmArgs().set(config.flatMap(runConfig -> runConfig.runConfiguration.getJvmArguments()));
+		getInternalRunDir().set(config.flatMap(RunConfiguration::getRunDirectory));
+		getInternalEnvironmentVars().set(config.flatMap(RunConfiguration::getEnvironmentVars));
+		getInternalJvmArgs().set(config.flatMap(RunConfiguration::getJvmArguments));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
 
@@ -159,7 +159,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		getUseXvfb().convention(
 				getProject().getProviders().environmentVariable("CI")
 						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
-						.zip(config, (enabled, runConfig) -> enabled && runConfig.runConfiguration.getRuntimeEnvironment().get().equals("client"))
+						.zip(config, (enabled, runConfig) -> enabled && runConfig.getRuntimeEnvironment().get().equals("client"))
 						.flatMap(enabled -> enabled ? XVFBExistsValueSource.exists(getProject()) : getProject().getProviders().provider(() -> false))
 						.orElse(false)
 		);

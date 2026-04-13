@@ -105,7 +105,7 @@ public class DefaultRunConfigurationSettings {
 		return RunConfigUtils.toSerialisable(run, project);
 	}
 
-	public static void finialiseValues(RunConfiguration run) {
+	static void finialiseValues(RunConfiguration run) {
 		run.getRuntimeEnvironment().finalizeValue();
 		run.getSystemProperties().finalizeValue();
 		run.getDisplayName().finalizeValue();

@@ -66,7 +66,7 @@ import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.AbstractLoomTask;
@@ -109,12 +109,12 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 				continue;
 			}
 
-			RunConfig config = RunConfig.runConfig(getProject(), settings);
-			String name = RunConfigUtils.getDisplayName(config.runConfiguration, getProject()).replaceAll("[^a-zA-Z0-9$_]", "_");
+			RunConfiguration runConfiguration = DefaultRunConfigurationSettings.finialise(settings, getProject());
+			String name = RunConfigUtils.getDisplayName(runConfiguration, getProject()).replaceAll("[^a-zA-Z0-9$_]", "_");
 
 			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
-			String runConfigXml = fromTemplate(config.runConfiguration, getProject());
-			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.runConfiguration);
+			String runConfigXml = fromTemplate(runConfiguration, getProject());
+			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(getProject(), runConfiguration);
 
 			IntellijRunConfig irc = getProject().getObjects().newInstance(IntellijRunConfig.class);
 			irc.getRunConfigXml().set(runConfigXml);

@@ -53,7 +53,7 @@ import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.Constants;
@@ -88,7 +88,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 				continue;
 			}
 
-			final VsCodeConfiguration configuration = VsCodeConfiguration.fromRunConfig(getProject(), RunConfig.runConfig(getProject(), settings));
+			final VsCodeConfiguration configuration = VsCodeConfiguration.fromRunConfig(getProject(), DefaultRunConfigurationSettings.finialise(settings, getProject()));
 			configurations.add(configuration);
 		}
 
@@ -165,8 +165,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			Map<String, Object> env,
 			String projectName,
 			String runDir) implements Serializable {
-		public static VsCodeConfiguration fromRunConfig(Project project, RunConfig runConfig) {
-			RunConfiguration config = runConfig.runConfiguration;
+		public static VsCodeConfiguration fromRunConfig(Project project, RunConfiguration config) {
 			String cwd = RunConfigUtils.formatRunDir(config, project, File::getAbsolutePath, path -> "${workspaceFolder}/" + path);
 
 			return new VsCodeConfiguration(
@@ -177,9 +176,9 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 					"integratedTerminal",
 					false,
 					config.getDevLaunchMainClass().get(),
-					Arguments.join(runConfig.runConfiguration.getJvmArguments().get()),
-					Arguments.join(runConfig.runConfiguration.getProgramArguments().get()),
-					new HashMap<>(runConfig.runConfiguration.getEnvironmentVars().get()),
+					Arguments.join(config.getJvmArguments().get()),
+					Arguments.join(config.getProgramArguments().get()),
+					new HashMap<>(config.getEnvironmentVars().get()),
 					project.getName(),
 					cwd
 			);

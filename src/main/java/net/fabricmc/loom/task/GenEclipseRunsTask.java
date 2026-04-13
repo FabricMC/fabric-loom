@@ -49,7 +49,7 @@ import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.util.Arguments;
@@ -86,11 +86,11 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 
 			final String name = settings.getName();
 			final File configs = new File(project.getProjectDir(), eclipseModel.getProject().getName() + "_" + name + ".launch");
-			final RunConfig configInst = RunConfig.runConfig(project, settings);
+			final RunConfiguration runConfiguration = DefaultRunConfigurationSettings.finialise(settings, project);
 			final String config;
 
 			try {
-				config = fromTemplate(configInst.runConfiguration, project);
+				config = fromTemplate(runConfiguration, project);
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to generate Eclipse run configuration", e);
 			}

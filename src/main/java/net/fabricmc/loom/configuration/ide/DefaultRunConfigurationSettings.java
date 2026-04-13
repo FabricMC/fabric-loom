@@ -43,7 +43,7 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 public class DefaultRunConfigurationSettings {
 	// Configure the default values before the user can modify them.
 	public static void configureDefaults(RunConfiguration run, Project project) {
-		run.getAppendProjectPathToConfigName().convention(true);
+		run.getAppendProjectPathToDisplayName().convention(true);
 		run.getMainClass().convention(run.getRuntimeEnvironment().map(side -> RunConfigUtils.getMainClass(side, LoomGradleExtension.get(project))));
 		run.getDevLaunchMainClass().convention(Constants.DLI_ENTRYPOINT);
 		run.getSourceSet().convention(run.getRuntimeEnvironment().map(runtimeEnvironment -> MinecraftSourceSets.get(project).getSourceSetForEnv(runtimeEnvironment)));
@@ -116,7 +116,7 @@ public class DefaultRunConfigurationSettings {
 		run.getJvmArguments().finalizeValue();
 		run.getProgramArguments().finalizeValue();
 		run.getEnvironmentVars().finalizeValue();
-		run.getAppendProjectPathToConfigName().finalizeValue();
+		run.getAppendProjectPathToDisplayName().finalizeValue();
 		run.getMainClass().finalizeValue();
 		run.getSourceSet().finalizeValue();
 		run.getRunDirectory().finalizeValue();

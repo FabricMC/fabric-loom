@@ -63,7 +63,7 @@ public abstract class RunConfigSettings implements Named, RunConfiguration, RunC
 
 	// Note: Overridden for backwards compatibility
 	@Override
-	public abstract Property<Boolean> getAppendProjectPathToConfigName();
+	public abstract Property<Boolean> getAppendProjectPathToDisplayName();
 
 	// Note: Overridden for backwards compatibility
 	@Override

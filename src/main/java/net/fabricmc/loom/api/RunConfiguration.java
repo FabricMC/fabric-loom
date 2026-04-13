@@ -44,7 +44,7 @@ public interface RunConfiguration extends Named {
 	 *
 	 * <p>By default this is determined from the base name.
 	 *
-	 * <p>Note: unless the project is the root project (or {@link #getAppendProjectPathToConfigName()} is disabled),
+	 * <p>Note: unless the project is the root project (or {@link #getAppendProjectPathToDisplayName()} is disabled),
 	 * the project path will be appended automatically, e.g. 'Minecraft Client (:some:project)'.
 	 */
 	Property<String> getDisplayName();
@@ -80,7 +80,7 @@ public interface RunConfiguration extends Named {
 	 * <p>Warning: could produce ambiguous run config names if disabled, unless used carefully in conjunction with
 	 * {@link #getDisplayName()}.
 	 */
-	Property<Boolean> getAppendProjectPathToConfigName();
+	Property<Boolean> getAppendProjectPathToDisplayName();
 
 	/**
 	 * The main class of the run configuration.
@@ -126,7 +126,7 @@ public interface RunConfiguration extends Named {
 		getProgramArguments().convention(parent.getProgramArguments());
 		getEnvironmentVars().convention(parent.getEnvironmentVars());
 		getRuntimeEnvironment().convention(parent.getRuntimeEnvironment());
-		getAppendProjectPathToConfigName().convention(parent.getAppendProjectPathToConfigName());
+		getAppendProjectPathToDisplayName().convention(parent.getAppendProjectPathToDisplayName());
 		getMainClass().convention(parent.getMainClass());
 		getSourceSet().convention(parent.getSourceSet());
 		getRunDirectory().convention(parent.getRunDirectory());

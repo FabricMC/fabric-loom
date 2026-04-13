@@ -131,7 +131,7 @@ public class RunConfigUtils {
 	public static String getDisplayName(RunConfiguration run, Project project) {
 		String displayName = run.getDisplayName().get();
 
-		boolean appendProjectPath = run.getAppendProjectPathToConfigName().get();
+		boolean appendProjectPath = run.getAppendProjectPathToDisplayName().get();
 
 		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
 			displayName += " (" + project.getPath() + ")";

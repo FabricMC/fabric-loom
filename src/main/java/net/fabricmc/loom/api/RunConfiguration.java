@@ -32,8 +32,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.util.Platform;
-
 /**
  * Represents a run configuration for Minecraft, these can presented via an IDE run configuration or a Gradle task.
  *
@@ -141,18 +139,14 @@ public interface RunConfiguration extends Named {
 	 * Configure run config with the default client options.
 	 */
 	default void client() {
-		getRuntimeEnvironment().convention("client");
-
-		if (Platform.CURRENT.isRaspberryPi()) {
-			getEnvironmentVars().put("MESA_GL_VERSION_OVERRIDE", "4.3");
-		}
+		getRuntimeEnvironment().set("client");
 	}
 
 	/**
 	 * Configure run config with the default server options.
 	 */
 	default void server() {
+		getRuntimeEnvironment().set("server");
 		getProgramArguments().add("nogui");
-		getRuntimeEnvironment().convention("server");
 	}
 }

@@ -86,9 +86,13 @@ public class DefaultRunConfigurationSettings {
 		run.getJvmArguments().add("-Dfabric.dli.env=" + environment);
 		run.getJvmArguments().add("-Dfabric.dli.main=" + run.getMainClass().get());
 
-		if (environment.equals("client") && context.usesLWJGL3()) {
-			if (Platform.CURRENT.getOperatingSystem().isMacOS()) {
+		if (environment.equals("client")) {
+			if (context.usesLWJGL3() && Platform.CURRENT.getOperatingSystem().isMacOS()) {
 				run.getJvmArguments().add("-XstartOnFirstThread");
+			}
+
+			if (Platform.CURRENT.isRaspberryPi()) {
+				run.getEnvironmentVars().put("MESA_GL_VERSION_OVERRIDE", "4.3");
 			}
 		}
 

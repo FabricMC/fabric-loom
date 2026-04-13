@@ -201,6 +201,18 @@ public abstract class AbstractRunTask extends JavaExec {
 		setWorkingDir(getInternalRunDir());
 		environment(getInternalEnvironmentVars().get());
 
+		Path runDirectory = getInternalRunDir().getAsFile().get().toPath();
+
+		if (!Files.exists(runDirectory)) {
+			try {
+				Files.createDirectories(runDirectory);
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to create run directory " + runDirectory, e);
+			}
+		} else if (!Files.isDirectory(runDirectory)) {
+			LOGGER.warn("Run directory {} is not a directory", runDirectory);
+		}
+
 		// Wrap with Tracy if enabled
 		if (getTracyCapture().isPresent()) {
 			try {

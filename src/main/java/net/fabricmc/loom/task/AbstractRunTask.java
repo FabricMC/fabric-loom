@@ -42,6 +42,7 @@ import javax.inject.Inject;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -50,9 +51,12 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecOperations;
 import org.gradle.work.DisableCachingByDefault;
@@ -76,8 +80,10 @@ public abstract class AbstractRunTask extends JavaExec {
 	@Inject
 	protected abstract ExecOperations getExecOperations();
 
-	@Input
-	protected abstract Property<String> getInternalRunDir();
+	// TODO maybe revert back to a string
+	@InputFiles
+	@PathSensitive(PathSensitivity.NONE)
+	protected abstract DirectoryProperty getInternalRunDir();
 	@Input
 	protected abstract MapProperty<String, Object> getInternalEnvironmentVars();
 	@Input
@@ -127,7 +133,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		getArgumentProviders().add(new CommandLineArgumentProvider() {
 			@Override
 			public Iterable<String> asArguments() {
-				return config.get().programArgs;
+				return config.get().runConfiguration.getProgramArguments().get();
 			}
 		});
 		getArgumentProviders().add(new CommandLineArgumentProvider() {
@@ -143,9 +149,9 @@ public abstract class AbstractRunTask extends JavaExec {
 		getMainClass().set(config.flatMap(runConfig -> runConfig.runConfiguration.getDevLaunchMainClass()));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
-		getInternalRunDir().set(config.map(runConfig -> runConfig.runDir.getAbsolutePath()));
-		getInternalEnvironmentVars().set(config.map(runConfig -> runConfig.environmentVariables));
-		getInternalJvmArgs().set(config.map(runConfig -> runConfig.vmArgs));
+		getInternalRunDir().set(config.flatMap(runConfig -> runConfig.runConfiguration.getRunDirectory()));
+		getInternalEnvironmentVars().set(config.flatMap(runConfig -> runConfig.runConfiguration.getEnvironmentVars()));
+		getInternalJvmArgs().set(config.flatMap(runConfig -> runConfig.runConfiguration.getJvmArguments()));
 		getUseArgFile().set(getProject().provider(this::canUseArgFile));
 		getProjectDir().set(getProject().getProjectDir().getAbsolutePath());
 
@@ -192,7 +198,7 @@ public abstract class AbstractRunTask extends JavaExec {
 			super.setClasspath(getInternalClasspath());
 		}
 
-		setWorkingDir(new File(getInternalRunDir().get()));
+		setWorkingDir(getInternalRunDir());
 		environment(getInternalEnvironmentVars().get());
 
 		// Wrap with Tracy if enabled

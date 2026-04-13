@@ -24,64 +24,18 @@
 
 package net.fabricmc.loom.configuration.ide;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
-import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
-import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
 	public final RunConfiguration runConfiguration;
 
-	private final String configName;
-	public String eclipseProjectName;
-	public String ideaModuleName;
-	private final String mainClass;
-	public String runDirIdeaUrl;
-	public File runDir;
-	public List<String> vmArgs = new ArrayList<>();
-	public List<String> programArgs = new ArrayList<>();
-	public Map<String, Object> environmentVariables;
-	public String projectName;
-	public String folderName;
-
 	public RunConfig(RunConfiguration runConfiguration, Project project) {
 		this.runConfiguration = runConfiguration;
-		configName = RunConfigUtils.getDisplayName(runConfiguration, project);
-		mainClass = runConfiguration.getDevLaunchMainClass().get();
 	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
-		DefaultRunConfigurationSettings.finialise(settings, project);
-		settings = RunConfigUtils.toSerialisable(settings, project);
-
-		SourceSet sourceSet = SourceSetHelper.getSourceSetByName(settings.getSourceSet().get(), project);
-		File runDir = settings.getRunDirectory().get().getAsFile();
-
-		RunConfig runConfig = new RunConfig(settings, project);
-
-		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
-		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
-		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir; // TODO check if the runDir is relative to the project root
-		runConfig.runDir = runDir;
-
-		// Custom parameters
-		runConfig.programArgs.addAll(settings.getProgramArguments().get());
-		runConfig.vmArgs.addAll(settings.getJvmArguments().get());
-		runConfig.environmentVariables = new HashMap<>();
-		runConfig.environmentVariables.putAll(settings.getEnvironmentVars().get());
-		runConfig.projectName = project.getName();
-		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
-
-		return runConfig;
+		return new RunConfig(DefaultRunConfigurationSettings.finialise(settings, project), project);
 	}
 }

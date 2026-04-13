@@ -120,7 +120,7 @@ public class RunConfigUtils {
 
 	// Copy the run configuration to a new instance that is safe to serialize, and finalise all values.
 	// This does not inherit from the legacy RunConfigSettings class.
-	public static RunConfiguration toSerialisable(RunConfiguration runConfig, Project project) {
+	static RunConfiguration toSerialisable(RunConfiguration runConfig, Project project) {
 		RunConfigurationInternal runConfiguration = project.getObjects().newInstance(RunConfigurationInternal.class, runConfig.getName());
 		runConfiguration.inherit(runConfig);
 		runConfiguration.getIsFinalised().set(true);

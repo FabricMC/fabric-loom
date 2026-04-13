@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.task;
 
-import java.io.File;
-
 import javax.inject.Inject;
 
 import org.gradle.api.file.RegularFileProperty;
@@ -70,12 +68,12 @@ public abstract class RenderDocRunTask extends RunGameTask {
 	@Override
 	public void exec() {
 		ExecResult result = getExecOperations().exec(exec -> {
-			exec.workingDir(new File(getProjectDir().get(), getInternalRunDir().get()));
+			exec.workingDir(getInternalRunDir());
 			exec.environment(getInternalEnvironmentVars().get());
 
 			exec.commandLine(getRenderDocExecutable().get().getAsFile());
 			exec.args(getRenderDocArgs().get());
-			exec.args("--working-dir", new File(getProjectDir().get(), getInternalRunDir().get()));
+			exec.args("--working-dir", getInternalRunDir().get().getAsFile().getAbsolutePath());
 			exec.args(getJavaLauncher().get().getExecutablePath());
 			exec.args(getJvmArgs());
 			exec.args("-D%s=true".formatted(Constants.Properties.RENDER_DOC));

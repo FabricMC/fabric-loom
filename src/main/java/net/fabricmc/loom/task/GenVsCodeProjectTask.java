@@ -177,10 +177,10 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 					"integratedTerminal",
 					false,
 					config.getDevLaunchMainClass().get(),
-					Arguments.join(runConfig.vmArgs),
-					Arguments.join(runConfig.programArgs),
-					new HashMap<>(runConfig.environmentVariables),
-					runConfig.projectName,
+					Arguments.join(runConfig.runConfiguration.getJvmArguments().get()),
+					Arguments.join(runConfig.runConfiguration.getProgramArguments().get()),
+					new HashMap<>(runConfig.runConfiguration.getEnvironmentVars().get()),
+					project.getName(),
 					cwd
 			);
 		}

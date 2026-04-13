@@ -66,11 +66,11 @@ public class DefaultRunConfigurationSettings {
 	}
 
 	// Apply any additional configuration after the user has modified the settings, but before the run config is generated.
-	public static void finialise(RunConfiguration run, Project project) {
+	public static RunConfiguration finialise(RunConfiguration run, Project project) {
 		RunConfigurationInternal internalRun = (RunConfigurationInternal) run;
 
 		if (internalRun.getIsFinalised().getOrElse(false)) {
-			return;
+			return RunConfigUtils.toSerialisable(run, project);
 		}
 
 		internalRun.getIsFinalised().set(true);
@@ -101,6 +101,8 @@ public class DefaultRunConfigurationSettings {
 		run.getSystemProperties().get().forEach((key, value) -> run.getJvmArguments().add("-D%s=%s".formatted(key, value)));
 
 		finialiseValues(run);
+
+		return RunConfigUtils.toSerialisable(run, project);
 	}
 
 	public static void finialiseValues(RunConfiguration run) {

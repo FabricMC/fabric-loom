@@ -25,24 +25,17 @@
 package net.fabricmc.loom.configuration.ide;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import groovy.xml.XmlUtil;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
 import net.fabricmc.loom.api.RunConfiguration;
-import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
-import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
@@ -90,36 +83,5 @@ public class RunConfig {
 		runConfig.folderName = settings.getIdeConfigFolder().getOrNull();
 
 		return runConfig;
-	}
-
-	public String fromDummy(String dummy) throws IOException {
-		String dummyConfig;
-
-		try (InputStream input = IdeaSyncTask.class.getClassLoader().getResourceAsStream(dummy)) {
-			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
-		}
-
-		// TODO make relative for the given IDE.
-		String runDir = this.runDir.getAbsolutePath();
-
-		dummyConfig = dummyConfig.replace("%NAME%", configName);
-		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
-		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
-		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
-		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
-		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", Arguments.join(programArgs).replaceAll("\"", "&quot;"));
-		dummyConfig = dummyConfig.replace("%VM_ARGS%", Arguments.join(vmArgs).replaceAll("\"", "&quot;"));
-		dummyConfig = dummyConfig.replace("%IDEA_ENV_VARS%", getEnvVars("<env name=\"%s\" value=\"%s\"/>"));
-		dummyConfig = dummyConfig.replace("%ECLIPSE_ENV_VARS%", getEnvVars("<mapEntry key=\"%s\" value=\"%s\"/>"));
-		dummyConfig = dummyConfig.replace("%IDEA_FOLDER_NAME%", folderName == null ? "" : "folderName=\"" + XmlUtil.escapeXml(folderName) + "\"");
-
-		return dummyConfig;
-	}
-
-	private String getEnvVars(String pattern) {
-		return environmentVariables.entrySet().stream()
-			.map(entry ->
-				pattern.formatted(entry.getKey(), entry.getValue().toString())
-			).collect(Collectors.joining());
 	}
 }

@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -50,6 +51,8 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
+import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
+import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.Constants;
 
 @DisableCachingByDefault
@@ -87,7 +90,7 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 			final String config;
 
 			try {
-				config = configInst.fromDummy("eclipse_run_config_template.xml");
+				config = fromTemplate(configInst.runConfiguration, project);
 			} catch (IOException e) {
 				throw new UncheckedIOException("Failed to generate Eclipse run configuration", e);
 			}
@@ -101,6 +104,28 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 		}
 
 		return runConfigs;
+	}
+
+	private static String fromTemplate(RunConfiguration run, Project project) throws IOException {
+		String dummyConfig;
+
+		try (InputStream input = IdeaSyncTask.class.getClassLoader().getResourceAsStream("eclipse_run_config_template.xml")) {
+			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+		}
+
+		// TODO make relative for the given IDE.
+		String runDir = run.getRunDirectory().getAsFile().get().getAbsolutePath();
+		String eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
+
+		dummyConfig = dummyConfig.replace("%NAME%", RunConfigUtils.getDisplayName(run, project));
+		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", run.getDevLaunchMainClass().get());
+		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
+		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
+		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", Arguments.join(run.getProgramArguments().get()).replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%VM_ARGS%", Arguments.join(run.getJvmArguments().get()).replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%ECLIPSE_ENV_VARS%", RunConfigUtils.formatEnvVars(run, "<mapEntry key=\"%s\" value=\"%s\"/>"));
+
+		return dummyConfig;
 	}
 
 	public interface EclipseRunConfig {

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -137,5 +138,12 @@ public class RunConfigUtils {
 		}
 
 		return displayName;
+	}
+
+	public static String formatEnvVars(RunConfiguration run, String pattern) {
+		return run.getEnvironmentVars().get().entrySet().stream()
+				.map(entry ->
+						pattern.formatted(entry.getKey(), entry.getValue().toString())
+				).collect(Collectors.joining());
 	}
 }

@@ -291,7 +291,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				return;
 			}
 
-			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile(), LOGGER);
+			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile());
 		}
 
 		private void addRefmaps(ServiceFactory serviceFactory) throws IOException {

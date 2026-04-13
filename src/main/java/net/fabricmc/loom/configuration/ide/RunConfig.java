@@ -43,55 +43,43 @@ import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Arguments;
-import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 public class RunConfig {
 	public final RunConfiguration runConfiguration;
 
-	public String configName;
+	private final String configName;
 	public String eclipseProjectName;
 	public String ideaModuleName;
-	public String mainClass;
+	private final String mainClass;
 	public String runDirIdeaUrl;
 	public File runDir;
-	public String environment;
 	public List<String> vmArgs = new ArrayList<>();
 	public List<String> programArgs = new ArrayList<>();
-	public transient SourceSet sourceSet;
 	public Map<String, Object> environmentVariables;
 	public String projectName;
 	public String folderName;
 
-	public RunConfig(RunConfiguration runConfiguration) {
+	public RunConfig(RunConfiguration runConfiguration, Project project) {
 		this.runConfiguration = runConfiguration;
+		configName = RunConfigUtils.getDisplayName(runConfiguration, project);
+		mainClass = runConfiguration.getDevLaunchMainClass().get();
 	}
 
 	public static RunConfig runConfig(Project project, RunConfiguration settings) {
 		DefaultRunConfigurationSettings.finialise(settings, project);
 		settings = RunConfigUtils.toSerialisable(settings, project);
 
-		String configName = settings.getDisplayName().get();
-		String environment = settings.getRuntimeEnvironment().get();
 		SourceSet sourceSet = SourceSetHelper.getSourceSetByName(settings.getSourceSet().get(), project);
 		File runDir = settings.getRunDirectory().get().getAsFile();
 
-		boolean appendProjectPath = settings.getAppendProjectPathToConfigName().get();
-		RunConfig runConfig = new RunConfig(settings);
-		runConfig.configName = configName;
+		RunConfig runConfig = new RunConfig(settings, project);
 
-		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
-			runConfig.configName += " (" + project.getPath() + ")";
-		}
-
-		runConfig.mainClass = settings.getDevLaunchMainClass().get();
 		runConfig.eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 		runConfig.ideaModuleName = IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project));
 		runConfig.runDirIdeaUrl = "file://$PROJECT_DIR$/" + runDir; // TODO check if the runDir is relative to the project root
 		runConfig.runDir = runDir;
-		runConfig.sourceSet = sourceSet;
-		runConfig.environment = environment;
 
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArguments().get());

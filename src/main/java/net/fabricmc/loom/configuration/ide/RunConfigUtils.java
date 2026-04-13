@@ -42,6 +42,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.InstallerData;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public class RunConfigUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RunConfigUtils.class);
@@ -124,5 +125,17 @@ public class RunConfigUtils {
 		runConfiguration.getIsFinalised().set(true);
 		DefaultRunConfigurationSettings.finialiseValues(runConfiguration);
 		return runConfiguration;
+	}
+
+	public static String getDisplayName(RunConfiguration run, Project project) {
+		String displayName = run.getDisplayName().get();
+
+		boolean appendProjectPath = run.getAppendProjectPathToConfigName().get();
+
+		if (appendProjectPath && !GradleUtils.isRootProject(project)) {
+			displayName += " (" + project.getPath() + ")";
+		}
+
+		return displayName;
 	}
 }

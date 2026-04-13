@@ -103,7 +103,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			}
 
 			RunConfig config = RunConfig.runConfig(getProject(), settings);
-			String name = config.configName.replaceAll("[^a-zA-Z0-9$_]", "_");
+			String name = RunConfigUtils.getDisplayName(config.runConfiguration, getProject()).replaceAll("[^a-zA-Z0-9$_]", "_");
 
 			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
 			String runConfigXml = config.fromDummy("idea_run_config_template.xml");

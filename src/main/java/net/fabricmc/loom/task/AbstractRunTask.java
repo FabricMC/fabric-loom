@@ -61,11 +61,13 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.XVFBExistsValueSource;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 @DisableCachingByDefault
 public abstract class AbstractRunTask extends JavaExec {
@@ -116,10 +118,10 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		final Provider<RunConfig> config = getProject().provider(() -> configProvider.apply(getProject()));
 
-		getInternalClasspath().from(config.map(runConfig -> runConfig.sourceSet.getRuntimeClasspath()
+		getInternalClasspath().from(config.map(runConfig -> SourceSetHelper.getSourceSetByName(runConfig.runConfiguration.getSourceSet().get(), getProject()).getRuntimeClasspath()
 				.filter(new LibraryFilter(
 						RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.get().runConfiguration),
-						config.get().configName)
+						RunConfigUtils.getDisplayName(config.get().runConfiguration, getProject()))
 				)));
 
 		getArgumentProviders().add(new CommandLineArgumentProvider() {
@@ -138,7 +140,7 @@ public abstract class AbstractRunTask extends JavaExec {
 				return List.of();
 			}
 		});
-		getMainClass().set(config.map(runConfig -> runConfig.mainClass));
+		getMainClass().set(config.flatMap(runConfig -> runConfig.runConfiguration.getDevLaunchMainClass()));
 		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
 
 		getInternalRunDir().set(config.map(runConfig -> runConfig.runDir.getAbsolutePath()));
@@ -151,7 +153,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		getUseXvfb().convention(
 				getProject().getProviders().environmentVariable("CI")
 						.map(value -> Platform.CURRENT.getOperatingSystem().isLinux())
-						.zip(config, (enabled, runConfig) -> enabled && runConfig.environment.equals("client"))
+						.zip(config, (enabled, runConfig) -> enabled && runConfig.runConfiguration.getRuntimeEnvironment().get().equals("client"))
 						.flatMap(enabled -> enabled ? XVFBExistsValueSource.exists(getProject()) : getProject().getProviders().provider(() -> false))
 						.orElse(false)
 		);

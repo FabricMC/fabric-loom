@@ -135,8 +135,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 			xml = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		}
 
-		// TODO make relative for the given IDE.
-		String runDir = run.getRunDirectory().getAsFile().get().getAbsolutePath();
+		String runDir = RunConfigUtils.formatRunDir(run, project, File::getAbsolutePath, "$PROJECT_DIR$/%s"::formatted);
 		String folderName = run.getIdeConfigFolder().getOrNull();
 		SourceSet sourceSet = SourceSetHelper.getSourceSetByName(run.getSourceSet().get(), project);
 

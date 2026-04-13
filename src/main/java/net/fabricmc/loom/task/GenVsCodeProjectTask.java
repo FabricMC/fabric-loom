@@ -166,7 +166,7 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 			String projectName,
 			String runDir) implements Serializable {
 		public static VsCodeConfiguration fromRunConfig(Project project, RunConfiguration config) {
-			String cwd = RunConfigUtils.formatRunDir(config, project, File::getAbsolutePath, path -> "${workspaceFolder}/" + path);
+			String cwd = RunConfigUtils.formatRunDir(config, project, File::getAbsolutePath, "${workspaceFolder}/%s"::formatted);
 
 			return new VsCodeConfiguration(
 					"java",

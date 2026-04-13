@@ -15,6 +15,6 @@
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="%PROGRAM_ARGS%"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="%ECLIPSE_PROJECT%"/>
     <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="%VM_ARGS%"/>
-    <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:%ECLIPSE_PROJECT%}/%RUN_DIRECTORY%"/>
+    <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="%RUN_DIRECTORY%"/>
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_ATTR_USE_ARGFILE" value="true"/>
 </launchConfiguration>

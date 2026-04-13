@@ -29,28 +29,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import groovy.xml.XmlUtil;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.ModuleVersionIdentifier;
-import org.gradle.api.artifacts.ResolvedArtifact;
-import org.gradle.api.artifacts.ResolvedModuleVersion;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask;
 import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
-import net.fabricmc.loom.configuration.providers.BundleMetadata;
-import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SourceSetReference;
@@ -127,8 +119,8 @@ public class RunConfig {
 		dummyConfig = dummyConfig.replace("%ECLIPSE_PROJECT%", eclipseProjectName);
 		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", ideaModuleName);
 		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", runDir);
-		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", joinArguments(programArgs).replaceAll("\"", "&quot;"));
-		dummyConfig = dummyConfig.replace("%VM_ARGS%", joinArguments(vmArgs).replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", Arguments.join(programArgs).replaceAll("\"", "&quot;"));
+		dummyConfig = dummyConfig.replace("%VM_ARGS%", Arguments.join(vmArgs).replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%IDEA_ENV_VARS%", getEnvVars("<env name=\"%s\" value=\"%s\"/>"));
 		dummyConfig = dummyConfig.replace("%ECLIPSE_ENV_VARS%", getEnvVars("<mapEntry key=\"%s\" value=\"%s\"/>"));
 		dummyConfig = dummyConfig.replace("%IDEA_FOLDER_NAME%", folderName == null ? "" : "folderName=\"" + XmlUtil.escapeXml(folderName) + "\"");
@@ -141,66 +133,5 @@ public class RunConfig {
 			.map(entry ->
 				pattern.formatted(entry.getKey(), entry.getValue().toString())
 			).collect(Collectors.joining());
-	}
-
-	public static String joinArguments(List<String> args) {
-		final var sb = new StringBuilder();
-		boolean first = true;
-
-		for (String arg : args) {
-			if (!first) {
-				sb.append(" ");
-			}
-
-			first = false;
-
-			if (arg.contains(" ")) {
-				sb.append("\"").append(arg).append("\"");
-			} else {
-				sb.append(arg);
-			}
-		}
-
-		return sb.toString();
-	}
-
-	public List<String> getExcludedLibraryPaths(Project project) {
-		if (!environment.equals("server")) {
-			return Collections.emptyList();
-		}
-
-		final BundleMetadata bundleMetadata = LoomGradleExtension.get(project).getMinecraftProvider().getServerBundleMetadata();
-
-		if (bundleMetadata == null) {
-			// Legacy version
-			return Collections.emptyList();
-		}
-
-		final Set<ResolvedArtifact> clientLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_CLIENT_RUNTIME_LIBRARIES);
-		final Set<ResolvedArtifact> serverLibraries = getArtifacts(project, Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES);
-		final List<String> clientOnlyLibraries = new ArrayList<>();
-
-		for (ResolvedArtifact library : clientLibraries) {
-			if (!containsLibrary(serverLibraries, library.getModuleVersion().getId())) {
-				clientOnlyLibraries.add(library.getFile().getAbsolutePath());
-			}
-		}
-
-		return clientOnlyLibraries;
-	}
-
-	private static Set<ResolvedArtifact> getArtifacts(Project project, String configuration) {
-		return project.getConfigurations().getByName(configuration).getHierarchy()
-				.stream()
-				.map(c -> c.getResolvedConfiguration().getResolvedArtifacts())
-				.flatMap(Collection::stream)
-				.collect(Collectors.toSet());
-	}
-
-	private static boolean containsLibrary(Set<ResolvedArtifact> artifacts, ModuleVersionIdentifier identifier) {
-		return artifacts.stream()
-				.map(ResolvedArtifact::getModuleVersion)
-				.map(ResolvedModuleVersion::getId)
-				.anyMatch(test -> test.getGroup().equals(identifier.getGroup()) && test.getName().equals(identifier.getName()));
 	}
 }

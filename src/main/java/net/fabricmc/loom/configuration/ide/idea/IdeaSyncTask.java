@@ -64,6 +64,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
+import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.Constants;
 
@@ -106,7 +107,7 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
 			String runConfigXml = config.fromDummy("idea_run_config_template.xml");
-			final List<String> excludedLibraryPaths = config.getExcludedLibraryPaths(getProject());
+			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.runConfiguration);
 
 			IntellijRunConfig irc = getProject().getObjects().newInstance(IntellijRunConfig.class);
 			irc.getRunConfigXml().set(runConfigXml);

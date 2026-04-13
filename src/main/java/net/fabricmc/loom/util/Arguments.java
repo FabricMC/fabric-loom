@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,21 +22,29 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.unit
+package net.fabricmc.loom.util;
 
-import spock.lang.Specification
+import java.util.List;
 
-import net.fabricmc.loom.util.Arguments
+public class Arguments {
+	public static String join(List<String> args) {
+		final var sb = new StringBuilder();
+		boolean first = true;
 
-class RunConfigUnitTest extends Specification {
-	def "escape arguments"() {
-		when:
-		def args = Arguments.join([
-			"-Dfabric.test=123",
-			"-Dfabric.test=abc 123"
-		])
+		for (String arg : args) {
+			if (!first) {
+				sb.append(" ");
+			}
 
-		then:
-		args == '-Dfabric.test=123 "-Dfabric.test=abc 123"'
+			first = false;
+
+			if (arg.contains(" ")) {
+				sb.append("\"").append(arg).append("\"");
+			} else {
+				sb.append(arg);
+			}
+		}
+
+		return sb.toString();
 	}
 }

@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ide.RunConfig;
+import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
@@ -117,7 +118,7 @@ public abstract class AbstractRunTask extends JavaExec {
 
 		getInternalClasspath().from(config.map(runConfig -> runConfig.sourceSet.getRuntimeClasspath()
 				.filter(new LibraryFilter(
-						config.get().getExcludedLibraryPaths(getProject()),
+						RuntimeLibraries.getExcludedLibraryPaths(getProject(), config.get().runConfiguration),
 						config.get().configName)
 				)));
 

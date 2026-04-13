@@ -55,6 +55,7 @@ import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfig;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
+import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
@@ -175,8 +176,8 @@ public abstract class GenVsCodeProjectTask extends AbstractLoomTask {
 					"integratedTerminal",
 					false,
 					runConfig.mainClass,
-					RunConfig.joinArguments(runConfig.vmArgs),
-					RunConfig.joinArguments(runConfig.programArgs),
+					Arguments.join(runConfig.vmArgs),
+					Arguments.join(runConfig.programArgs),
 					new HashMap<>(runConfig.environmentVariables),
 					runConfig.projectName,
 					cwd

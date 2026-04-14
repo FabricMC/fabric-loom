@@ -66,7 +66,7 @@ class IdeaClasspathModificationsTest extends Specification {
 		dummyConfig = dummyConfig.replace("%NAME%", "Minecraft Client")
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", "net.minecraft.client.Main")
 		dummyConfig = dummyConfig.replace("%IDEA_MODULE%", "main.test")
-		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", ".run")
+		dummyConfig = dummyConfig.replace("%RUN_DIRECTORY%", "\$PROJECT_DIR\$/.run")
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", Arguments.join([]).replaceAll("\"", "&quot;"))
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", Arguments.join([]).replaceAll("\"", "&quot;"))
 		dummyConfig = dummyConfig.replace("%IDEA_FOLDER_NAME%", "")

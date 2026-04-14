@@ -113,7 +113,7 @@ public abstract class GenEclipseRunsTask extends AbstractLoomTask {
 			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 		}
 
-		String runDir = RunConfigUtils.formatRunDir(run, project, File::getAbsolutePath, "${workspace_loc:%ECLIPSE_PROJECT%}/%s"::formatted);
+		String runDir = RunConfigUtils.formatRunDir(run, project, File::getAbsolutePath, "${workspace_loc:%ECLIPSE_PROJECT%}/"::concat);
 		String eclipseProjectName = project.getExtensions().getByType(EclipseModel.class).getProject().getName();
 
 		dummyConfig = dummyConfig.replace("%NAME%", RunConfigUtils.getDisplayName(run, project));

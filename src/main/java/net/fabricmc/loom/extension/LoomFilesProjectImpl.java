@@ -47,12 +47,18 @@ public final class LoomFilesProjectImpl extends LoomFilesBaseImpl {
 	}
 
 	@Override
-	protected File getProjectDir() {
-		return project.getProjectDir();
+	protected File getBuildDir() {
+		return project.getLayout().getBuildDirectory().getAsFile().get();
 	}
 
 	@Override
-	protected File getBuildDir() {
-		return project.getLayout().getBuildDirectory().getAsFile().get();
+	protected File getProjectCacheDir() {
+		var overridden = project.getGradle().getStartParameter().getProjectCacheDir();
+		return overridden == null ? new File(getRootDir(), ".gradle") : overridden;
+	}
+
+	@Override
+	protected String getProjectPath() {
+		return project.getPath();
 	}
 }

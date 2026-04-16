@@ -33,8 +33,9 @@ import net.fabricmc.loom.LoomGradleExtension;
 public abstract class LoomFilesBaseImpl implements LoomFiles {
 	protected abstract File getGradleUserHomeDir();
 	protected abstract File getRootDir();
-	protected abstract File getProjectDir();
 	protected abstract File getBuildDir();
+	protected abstract File getProjectCacheDir();
+	protected abstract String getProjectPath();
 
 	public LoomFilesBaseImpl() { }
 
@@ -51,12 +52,16 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 
 	@Override
 	public File getRootProjectPersistentCache() {
-		return createFile(getRootDir(), ".gradle" + File.separator + "loom-cache");
+		return createFile(getProjectCacheDir(), "loom-cache");
 	}
 
 	@Override
 	public File getProjectPersistentCache() {
-		return createFile(getProjectDir(), ".gradle" + File.separator + "loom-cache");
+		var normalizedPath = getProjectPath().replace(":", File.separator).substring(1); // Replace ":" with file separator and remove leading ":"
+		if (normalizedPath.isEmpty()) {
+			return getRootProjectPersistentCache();
+		}
+		return createFile(getProjectCacheDir(), normalizedPath + File.separator + "loom-cache");
 	}
 
 	@Override

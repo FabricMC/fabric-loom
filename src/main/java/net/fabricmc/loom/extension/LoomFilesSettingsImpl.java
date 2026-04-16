@@ -29,7 +29,7 @@ import java.util.Objects;
 
 import org.gradle.api.initialization.Settings;
 
-public class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
+public final class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
 	private final Settings settings;
 
 	public LoomFilesSettingsImpl(Settings settings) {
@@ -47,8 +47,14 @@ public class LoomFilesSettingsImpl extends LoomFilesBaseImpl {
 	}
 
 	@Override
-	protected File getProjectDir() {
-		throw new IllegalStateException("You can not access project directory from setting stage");
+	protected File getProjectCacheDir() {
+		var overridden = settings.getGradle().getStartParameter().getProjectCacheDir();
+		return overridden == null ? new File(getRootDir(), ".gradle") : overridden;
+	}
+
+	@Override
+	protected String getProjectPath() {
+		throw new IllegalStateException("You can not access project path from setting stage");
 	}
 
 	@Override

@@ -61,7 +61,7 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 		if (normalizedPath.isEmpty()) {
 			return getRootProjectPersistentCache();
 		}
-		return createFile(getProjectCacheDir(), normalizedPath + File.separator + "loom-cache");
+		return createFile(getProjectCacheDir(), "loom-cache" + File.separator + "projects" + File.separator + normalizedPath);
 	}
 
 	@Override

@@ -58,9 +58,11 @@ public abstract class LoomFilesBaseImpl implements LoomFiles {
 	@Override
 	public File getProjectPersistentCache() {
 		var normalizedPath = getProjectPath().replace(":", File.separator).substring(1); // Replace ":" with file separator and remove leading ":"
+
 		if (normalizedPath.isEmpty()) {
 			return getRootProjectPersistentCache();
 		}
+
 		return createFile(getProjectCacheDir(), "loom-cache" + File.separator + "projects" + File.separator + normalizedPath);
 	}
 

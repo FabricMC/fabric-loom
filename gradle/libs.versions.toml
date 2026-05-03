@@ -1,7 +1,7 @@
 [versions]
-kotlin = "2.3.0"
-asm = "9.9"
-gson = "2.10.1"
+kotlin = "2.3.20"
+asm = "9.9.1"
+gson = "2.14.0"
 
 stitch = "0.6.2"
 tiny-remapper = "0.13.0"
@@ -16,8 +16,8 @@ unpick = "3.0.0-beta.13"
 # Plugins
 spotless = "8.0.0"
 test-retry = "1.6.2"
-checkstyle = "12.1.1"
-codenarc = "3.6.0"
+checkstyle = "13.4.1"
+codenarc = "3.7.0"
 
 [libraries]
 # Loom compile libraries

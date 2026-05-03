@@ -68,7 +68,6 @@ class KotlinClassRemapper(
         clazz.constructors.replaceAll(this::remap)
         clazz.nestedClasses.replaceAll(this::remap)
         clazz.sealedSubclasses.replaceAll(this::remap)
-        clazz.contextReceiverTypes.replaceAll(this::remap)
         clazz.localDelegatedProperties.replaceAll(this::remap)
         return clazz
     }

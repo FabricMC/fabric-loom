@@ -1,7 +1,7 @@
 [versions]
 spock = "2.4-groovy-4.0"
 junit = "6.0.3"
-javalin = "7.2.0"
+javalin = "6.7.0"
 mockito = "5.23.0"
 java-debug = "0.53.1"
 mixin = "0.17.2+mixin.0.8.7"

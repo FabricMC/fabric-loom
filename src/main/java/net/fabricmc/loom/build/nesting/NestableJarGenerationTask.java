@@ -94,14 +94,15 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 
 		getJarIds().get().forEach((absolutePath, metadata) -> {
 			fabricModJsons.put(absolutePath, generateModForDependency(metadata));
-
 			String fileName = new File(absolutePath).getName();
+
 			if (fileNames.containsValue(fileName)) {
 				// Name collision, generate a unique file name so that this jar won't be overwritten
 				fileName = metadata.group()
 						.replaceAll("\\.", "_")
 						.toLowerCase(Locale.ENGLISH) + "_" + fileName;
 			}
+
 			fileNames.put(absolutePath, fileName);
 		});
 

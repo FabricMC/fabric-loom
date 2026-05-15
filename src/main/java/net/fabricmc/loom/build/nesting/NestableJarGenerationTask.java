@@ -89,9 +89,20 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 
 	@TaskAction
 	void makeNestableJars() {
-		Map<String, String> fabricModJsons = new HashMap<>();
-		getJarIds().get().forEach((fileName, metadata) -> {
-			fabricModJsons.put(fileName, generateModForDependency(metadata));
+		final Map<String, String> fabricModJsons = new HashMap<>();
+		final Map<String, String> fileNames = new HashMap<>();
+
+		getJarIds().get().forEach((absolutePath, metadata) -> {
+			fabricModJsons.put(absolutePath, generateModForDependency(metadata));
+
+			String fileName = new File(absolutePath).getName();
+			if (fileNames.containsValue(fileName)) {
+				// Name collision, generate a unique file name so that this jar won't be overwritten
+				fileName = metadata.group()
+						.replaceAll("\\.", "_")
+						.toLowerCase(Locale.ENGLISH) + "_" + fileName;
+			}
+			fileNames.put(absolutePath, fileName);
 		});
 
 		try {
@@ -103,9 +114,10 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 		}
 
 		getJars().forEach(file -> {
-			File targetFile = getOutputDirectory().file(file.getName()).get().getAsFile();
+			final String fabricModJson = Objects.requireNonNull(fabricModJsons.get(file.getAbsolutePath()), "Could not generate fabric.mod.json for included dependency "+file.getAbsolutePath());
+			final String fileName = fileNames.get(file.getAbsolutePath());
+			final File targetFile = getOutputDirectory().file(fileName).get().getAsFile();
 			targetFile.delete();
-			String fabricModJson = Objects.requireNonNull(fabricModJsons.get(file.getName()), "Could not generate fabric.mod.json for included dependency "+file.getName());
 			makeNestableJar(file, targetFile, fabricModJson);
 		});
 	}
@@ -164,7 +176,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 				}
 
 				Metadata metadata = new Metadata(group, name, version, classifier);
-				map.put(artifact.getFile().getName(), metadata);
+				map.put(artifact.getFile().getAbsolutePath(), metadata);
 			});
 			return map;
 		}));

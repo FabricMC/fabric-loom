@@ -168,6 +168,14 @@ public class Constants {
 		 * Set to true in all {@link net.fabricmc.loom.task.RenderDocRunTask} can be used to determine at runtime if running with loom's renderdoc setup.
 		 */
 		public static final String RENDER_DOC = "fabric.loom.renderdoc.enabled";
+		/**
+		 * When set to {@code true}, Loom will not create the default {@code client} and {@code server}
+		 * run configurations (and their associated {@code runClient}/{@code runServer} tasks).
+		 *
+		 * <p>This must be a gradle property rather than a DSL property because run config creation
+		 * happens at plugin apply time, before the {@code loom { }} block is evaluated.
+		 */
+		public static final String DISABLE_DEFAULT_RUN_CONFIGS = "fabric.loom.disableDefaultRunConfigs";
 	}
 
 	public static final class Manifest {

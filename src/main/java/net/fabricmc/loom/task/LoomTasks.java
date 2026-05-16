@@ -213,29 +213,32 @@ public abstract class LoomTasks implements Runnable {
 			});
 		});
 
-		extension.getRunConfigs().create("client", RunConfigSettings::client);
-		extension.getRunConfigs().create("server", RunConfigSettings::server);
+		// Skip creating the default client/server run configs entirely when opted out via the gradle
+		// property. This must be checked at apply time so the corresponding tasks are never registered;
+		// once whenObjectAdded fires for a config, its task exists for the lifetime of the build.
+		if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_DEFAULT_RUN_CONFIGS)) {
+			extension.getRunConfigs().create("client", RunConfigSettings::client);
+			extension.getRunConfigs().create("server", RunConfigSettings::server);
 
-		// Remove the client or server run config when not required. Done by name to not remove any possible custom run configs
-		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
-			String taskName;
+			// Remove the client or server run config when not required. Done by name to not remove any possible custom run configs
+			GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
+				String taskName;
 
-			boolean serverOnly = extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY;
-			boolean clientOnly = extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.CLIENT_ONLY;
+				boolean serverOnly = extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.SERVER_ONLY;
+				boolean clientOnly = extension.getMinecraftJarConfiguration().get() == MinecraftJarConfiguration.CLIENT_ONLY;
 
-			if (serverOnly) {
-				// Server only, remove the client run config
-				taskName = "client";
-			} else if (clientOnly) {
-				// Client only, remove the server run config
-				taskName = "server";
-			} else {
-				return;
-			}
+				if (serverOnly) {
+					taskName = "client";
+				} else if (clientOnly) {
+					taskName = "server";
+				} else {
+					return;
+				}
 
-			extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName)
-					|| settings.getName().equals(taskName + "RenderDoc"));
-		});
+				extension.getRunConfigs().removeIf(settings -> settings.getName().equals(taskName)
+						|| settings.getName().equals(taskName + "RenderDoc"));
+			});
+		}
 	}
 
 	private void configureRenderDocTasks() {

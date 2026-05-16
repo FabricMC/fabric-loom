@@ -34,6 +34,7 @@ import spock.util.environment.RestoreSystemProperties
 
 import net.fabricmc.loom.test.LoomTestConstants
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.download.Download
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
@@ -134,6 +135,58 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 
 		then:
 		result.task(":downloadAssets").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "default run configs registered (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
+
+		when:
+		def result = gradle.run(tasks: ["tasks", "--all"])
+
+		then:
+		result.task(":tasks").outcome == SUCCESS
+		(result.output =~ /(?m)^runClient\s/).find()
+		(result.output =~ /(?m)^runServer\s/).find()
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "default run configs disabled via gradle property (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.gradleProperties << "\n${Constants.Properties.DISABLE_DEFAULT_RUN_CONFIGS}=true\n"
+
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                }
+            '''
+
+		when:
+		def result = gradle.run(tasks: ["tasks", "--all"])
+
+		then:
+		result.task(":tasks").outcome == SUCCESS
+		!(result.output =~ /(?m)^runClient\s/).find()
+		!(result.output =~ /(?m)^runServer\s/).find()
 
 		where:
 		version << STANDARD_TEST_VERSIONS

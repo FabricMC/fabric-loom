@@ -46,6 +46,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -322,6 +323,32 @@ public interface LoomGradleExtensionAPI {
 	 * @return A lazily evaluated {@link FileCollection} containing the named minecraft jars.
 	 */
 	FileCollection getNamedMinecraftJars();
+
+	/**
+	 * Registers a per-source-set include pipeline: an {@code <sourceSet>Include}
+	 * bucket configuration (for declaring dependencies) and a
+	 * {@code process<SourceSet>IncludeJars} task that produces nestable jars in
+	 * its output directory.
+	 *
+	 * <p>The pipeline is auto-wired into a jar task following the conventional
+	 * names for the active Loom mode:
+	 * <ul>
+	 *     <li>{@code net.fabricmc.fabric-loom} (no remap): nests into
+	 *         {@code <sourceSet>Jar} ({@link SourceSet#getJarTaskName()}).</li>
+	 *     <li>{@code net.fabricmc.fabric-loom-remap}: nests into
+	 *         {@code <sourceSet>RemapJar} (the main source set uses bare
+	 *         {@code remapJar}).</li>
+	 * </ul>
+	 * The target task may be created before or after this call — wiring is lazy
+	 * via {@code configureEach}.
+	 *
+	 * <p>For the main source set, names match the legacy defaults
+	 * ({@code include}, {@code processIncludeJars}).
+	 *
+	 * @since 1.17
+	 */
+	@ApiStatus.Experimental
+	TaskProvider<NestableJarGenerationTask> createIncludeConfigurations(SourceSet sourceSet);
 
 	/**
 	 * Nest mod jars from a {@link FileCollection} into the specified jar task.

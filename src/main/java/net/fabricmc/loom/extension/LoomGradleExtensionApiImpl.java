@@ -61,6 +61,8 @@ import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.remapping.RemapperExtension;
 import net.fabricmc.loom.api.remapping.RemapperParameters;
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
+import net.fabricmc.loom.configuration.IncludeConfigurations;
 import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
@@ -461,6 +463,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getUncompressNestedJars() {
 		return uncompressNestedJars;
+	}
+
+	@Override
+	public TaskProvider<NestableJarGenerationTask> createIncludeConfigurations(SourceSet sourceSet) {
+		return IncludeConfigurations.setupForSourceSet(getProject(), sourceSet);
 	}
 
 	@Override

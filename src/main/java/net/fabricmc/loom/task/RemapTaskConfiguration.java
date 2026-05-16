@@ -40,7 +40,6 @@ import org.gradle.api.tasks.bundling.AbstractArchiveTask;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -67,15 +66,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 		SyncTaskBuildService.register(getProject());
 
-		Configuration includeConfiguration = getProject().getConfigurations().getByName(Constants.Configurations.INCLUDE_INTERNAL);
-		TaskProvider<NestableJarGenerationTask> processIncludeJarsTask = getTasks().register(Constants.Task.PROCESS_INCLUDE_JARS, NestableJarGenerationTask.class, task -> {
-			task.from(includeConfiguration);
-			task.getOutputDirectory().set(getProject().getLayout().getBuildDirectory().dir(task.getName()));
-			task.getUncompressNestedJars().set(extension.getUncompressNestedJars());
-		});
-
 		if (extension.dontRemapOutputs()) {
-			new NonRemappedJarTaskConfiguration(getProject(), extension, processIncludeJarsTask).configure();
+			new NonRemappedJarTaskConfiguration(getProject(), extension).configure();
 			return;
 		}
 

@@ -42,12 +42,12 @@ class UnobfFabricAPITest extends Specification implements GradleProjectTestTrait
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "36a5116592042c6e81c9a5eb68cc5c96dc194636",
+				commit: "b9cacd723116221d9b9e1ce03f411efb7fe59282",
 				version: PRE_RELEASE_GRADLE,
 				patch: "fabric_api_unobf"
 				)
 
-		def minecraftVersion = "25w45a_unobfuscated"
+		def minecraftVersion = "26.1.2"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 

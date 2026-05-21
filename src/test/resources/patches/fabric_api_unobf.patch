@@ -1,7 +1,15 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
-+++ b/build.gradle	(date 1749475915352)
-@@ -9,7 +9,7 @@
+--- a/build.gradle	(revision b9cacd723116221d9b9e1ce03f411efb7fe59282)
++++ b/build.gradle	(date 1779378775608)
+@@ -2,14 +2,14 @@
+ 	id "java-library"
+ 	id "eclipse"
+ 	id "maven-publish"
+-	id "net.fabricmc.fabric-loom" version "1.15.5" apply false
++	id "net.fabricmc.fabric-loom" apply false
+ 	id "com.diffplug.spotless" version "8.3.0"
+ 	id "me.modmuss50.remotesign" version "0.5.0" apply false
+ 	id "me.modmuss50.mod-publish-plugin" version "1.1.0"
  }
 
  def branchProvider = providers.of(GitBranchValueSource.class) {}
@@ -10,7 +18,7 @@ diff --git a/build.gradle b/build.gradle
  logger.lifecycle("Building Fabric: " + version)
 
  def metaProjects = [
-@@ -33,22 +33,8 @@
+@@ -37,22 +37,8 @@
  import java.net.http.HttpRequest
  import java.net.http.HttpResponse
 

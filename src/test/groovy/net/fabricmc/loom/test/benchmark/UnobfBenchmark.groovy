@@ -28,6 +28,7 @@ import groovy.time.TimeCategory
 import groovy.time.TimeDuration
 
 import net.fabricmc.loom.test.LoomTestConstants
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
@@ -46,13 +47,13 @@ class UnobfBenchmark implements GradleProjectTestTrait {
 				gradleHomeDir: new File(dir, "gradlehome")
 				)
 
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 dependencies {
                     minecraft "com.mojang:minecraft:26.1-snapshot-1"
                     implementation "net.fabricmc.fabric-api:fabric-api:0.140.3+26.1"
-                    implementation "net.fabricmc:fabric-loader:0.18.3"
+                    implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 
 		def timeStart = new Date()
 

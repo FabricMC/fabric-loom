@@ -42,6 +42,7 @@ import spock.lang.Specification
 import spock.lang.Timeout
 
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
@@ -60,7 +61,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 	def "Debug test"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 loom {
                     // Just test with the server, no need to also decompile the client
                     serverOnlyMinecraftJar()
@@ -69,7 +70,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
                 dependencies {
                     minecraft "com.mojang:minecraft:1.20.1"
                     mappings "net.fabricmc:yarn:1.20.1+build.1:v2"
-                    modImplementation 'net.fabricmc:fabric-loader:0.14.21'
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 
                 runServer {
@@ -81,7 +82,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
                        suspend = true
                    }
                }
-            '''
+            """
 		when:
 		// First generate sources
 		def genSources = gradle.run(task: "genSources", args: ["--info"])

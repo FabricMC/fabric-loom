@@ -30,6 +30,7 @@ import java.nio.file.Path
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
@@ -60,7 +61,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
                 dependencies {
                     minecraft "com.mojang:minecraft:${version}"
 
-                    implementation "net.fabricmc:fabric-loader:0.12.12"
+                    implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 			"""
 
@@ -94,7 +95,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
                 dependencies {
                     minecraft "com.mojang:minecraft:${version}"
 
-                    implementation "net.fabricmc:fabric-loader:0.12.12"
+                    implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 			"""
 
@@ -124,7 +125,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						// No names
 					}
 
-                    modImplementation "net.fabricmc:fabric-loader:0.15.7"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 			"""
 		gradle.buildSrc("legacyMergedIntermediary")
@@ -154,7 +155,7 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 						it.mappings file("mappings.tiny")
 					}
 
-					modImplementation "net.fabricmc:fabric-loader:0.15.7"
+					modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
 				}
 			"""
 		def sourceFile = new File(gradle.projectDir, 'src/main/java/Test.java')

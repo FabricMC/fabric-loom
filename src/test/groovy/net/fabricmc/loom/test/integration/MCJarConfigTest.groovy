@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.integration
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
@@ -38,7 +39,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 loom {
                     serverOnlyMinecraftJar()
                 }
@@ -46,9 +47,9 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 
 		when:
 		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
@@ -65,7 +66,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 loom {
                     clientOnlyMinecraftJar()
                 }
@@ -73,9 +74,9 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 
 		when:
 		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
@@ -92,7 +93,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 loom {
                     splitMinecraftJar()
                 }
@@ -100,9 +101,9 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 
 		when:
 		def result = gradle.run(tasks: ["build", "ideaSyncTask"])
@@ -119,7 +120,7 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 loom {
                     splitEnvironmentSourceSets()
                 }
@@ -127,9 +128,9 @@ class MCJarConfigTest extends Specification implements GradleProjectTestTrait {
                 dependencies {
                     minecraft "com.mojang:minecraft:1.18.1"
                     mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.12.12"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 
 		when:
 		def result = gradle.run(tasks: ["build", "ideaSyncTask"])

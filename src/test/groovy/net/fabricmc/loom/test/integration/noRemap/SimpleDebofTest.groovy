@@ -28,6 +28,7 @@ import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
@@ -38,13 +39,13 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 	def "build"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
-					implementation "net.fabricmc:fabric-loader:0.17.3"
+					implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
 					implementation "net.fabricmc.fabric-api:fabric-api:0.138.3+1.21.11_unobfuscated"
                 }
-		'''
+		"""
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
 		@Language("JAVA") String src =  """
@@ -77,16 +78,16 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 	def "split build"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
 				loom {
 					splitEnvironmentSourceSets()
 				}
 
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
-					implementation "net.fabricmc:fabric-loader:0.17.3"
+					implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-		'''
+		"""
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
 		@Language("JAVA") String src =  """
@@ -115,16 +116,16 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 	def "genSources split build"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBaseNoRemap", version: PRE_RELEASE_GRADLE)
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
 				loom {
 					splitEnvironmentSourceSets()
 				}
 
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w45a_unobfuscated'
-					implementation "net.fabricmc:fabric-loader:0.17.3"
+					implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-		'''
+		"""
 
 		when:
 		def result = gradle.run(task: "genSources")

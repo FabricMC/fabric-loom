@@ -31,6 +31,7 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.unit.sandbox.SandboxEntrypoint
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.test.util.ZipTestUtils
@@ -45,7 +46,7 @@ class SandboxTest extends Specification implements GradleProjectTestTrait {
 	def "sandbox (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
-		gradle.buildGradle << '''
+		gradle.buildGradle << """
                 repositories {
 					mavenLocal()
 				}
@@ -53,9 +54,9 @@ class SandboxTest extends Specification implements GradleProjectTestTrait {
                 dependencies {
                     minecraft "com.mojang:minecraft:1.20.4"
                     mappings "net.fabricmc:yarn:1.20.4+build.3:v2"
-                    modImplementation "net.fabricmc:fabric-loader:0.15.10"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
-            '''
+            """
 		new File(gradle.getProjectDir(), "gradle.properties").text = "${Constants.Properties.SANDBOX}=net.fabricmc.loom.test:sandbox:1.0.0"
 
 		def mavenHelper = new LocalMavenHelper("net.fabricmc.loom.test", "sandbox", "1.0.0", null, gradle.getMavenLocalDir().toPath())

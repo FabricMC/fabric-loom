@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.integration
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
@@ -42,7 +43,7 @@ class OfflineModeTest extends Specification implements GradleProjectTestTrait {
             dependencies {
                 minecraft 'com.mojang:minecraft:1.20.4'
                 mappings 'net.fabricmc:yarn:1.20.4+build.3:v2'
-                modImplementation 'net.fabricmc:fabric-loader:0.15.6'
+                modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 modImplementation 'net.fabricmc.fabric-api:fabric-api:0.95.4+1.20.4'
             }
 

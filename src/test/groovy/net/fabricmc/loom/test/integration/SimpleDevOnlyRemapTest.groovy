@@ -30,6 +30,7 @@ import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
@@ -49,7 +50,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
 					mappings 'net.fabricmc:yarn:25w46a+build.2:v2'
-					modImplementation "net.fabricmc:fabric-loader:0.18.0"
+					modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 		"""
 		gradle.buildSrc("devOnlyRemapIntermediary")
@@ -100,7 +101,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 				dependencies {
 					minecraft 'com.mojang:minecraft:25w46a_unobfuscated'
 					mappings 'net.fabricmc:yarn:25w46a+build.2:v2'
-					modImplementation "net.fabricmc:fabric-loader:0.18.0"
+					modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 		"""
 		gradle.buildSrc("devOnlyRemapIntermediary")
@@ -144,7 +145,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 					mappings loom.layered {
 					    it.mappings file("${mappings}")
 					}
-					modImplementation "net.fabricmc:fabric-loader:0.18.0"
+					modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
                 }
 
                 loom {

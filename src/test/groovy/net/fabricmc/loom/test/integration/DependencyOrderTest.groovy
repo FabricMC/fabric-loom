@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.integration
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
@@ -46,7 +47,7 @@ class DependencyOrderTest extends Specification implements GradleProjectTestTrai
                 minecraft 'com.mojang:minecraft:1.19.3'
                 mappings 'net.fabricmc:yarn:1.19.3+build.5:v2'
                 modApi 'net.fabricmc.fabric-api:fabric-api:0.73.0+1.19.3'
-                modImplementation 'net.fabricmc:fabric-loader:0.14.13'
+                modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
             }
             """.stripIndent()
 		when:

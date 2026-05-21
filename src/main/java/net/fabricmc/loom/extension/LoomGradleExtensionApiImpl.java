@@ -33,6 +33,7 @@ import java.util.Set;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -609,6 +610,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		public void nestJars(TaskProvider<? extends Jar> jarTask, Configuration configuration) {
+			throw new RuntimeException("Yeah... something is really wrong");
+		}
+
+		@Override
+		public void nestJars(TaskProvider<? extends Jar> jarTask, NamedDomainObjectProvider<? extends Configuration> configuration) {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

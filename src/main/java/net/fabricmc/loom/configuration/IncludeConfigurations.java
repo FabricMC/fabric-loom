@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
@@ -45,7 +46,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.task.NestJarsAction;
 import net.fabricmc.loom.task.RemapJarTask;
-import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Strings;
 
 /**
@@ -60,11 +60,16 @@ public final class IncludeConfigurations {
 		nestJars(project, jarTask, project.provider(() -> configuration), taskName);
 	}
 
+	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, NamedDomainObjectProvider<? extends Configuration> configuration) {
+		final String taskName = getUniqueTaskName(project, getProcessIncludeJarsTaskName(jarTask.getName(), configuration.getName()));
+		nestJars(project, jarTask, configuration, taskName);
+	}
+
 	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, Configuration configuration, String taskName) {
 		nestJars(project, jarTask, project.provider(() -> configuration), taskName);
 	}
 
-	private static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, Provider<Configuration> configuration, String taskName) {
+	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, Provider<? extends Configuration> configuration, String taskName) {
 		final TaskProvider<NestableJarGenerationTask> processTask = createProcessTask(project, configuration, taskName);
 		final FileCollection outputJars = getOutputJars(project, processTask);
 
@@ -80,7 +85,7 @@ public final class IncludeConfigurations {
 		});
 	}
 
-	private static TaskProvider<NestableJarGenerationTask> createProcessTask(Project project, Provider<Configuration> configuration, String taskName) {
+	private static TaskProvider<NestableJarGenerationTask> createProcessTask(Project project, Provider<? extends Configuration> configuration, String taskName) {
 		final Configuration internalConfiguration = createInternalConfiguration(project, configuration);
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
@@ -91,7 +96,7 @@ public final class IncludeConfigurations {
 		});
 	}
 
-	private static Configuration createInternalConfiguration(Project project, Provider<Configuration> include) {
+	private static Configuration createInternalConfiguration(Project project, Provider<? extends Configuration> include) {
 		final Configuration internal = project.getConfigurations().detachedConfiguration();
 		internal.setCanBeConsumed(false);
 		internal.setCanBeResolved(true);
@@ -100,7 +105,7 @@ public final class IncludeConfigurations {
 		return internal;
 	}
 
-	private static void addNonTransitiveDependencies(Project project, Configuration target, Provider<Configuration> source) {
+	private static void addNonTransitiveDependencies(Project project, Configuration target, Provider<? extends Configuration> source) {
 		target.getDependencies().addAllLater(project.provider(() -> {
 			List<Dependency> dependencies = new ArrayList<>();
 
@@ -142,5 +147,19 @@ public final class IncludeConfigurations {
 
 	private static String getProcessIncludeJarsTaskName(String jarTaskName, String configurationName) {
 		return "process" + Strings.capitalize(jarTaskName) + Strings.capitalize(configurationName) + "Jars";
+	}
+
+	private static String getUniqueTaskName(Project project, String taskName) {
+		if (!project.getTasks().getNames().contains(taskName)) {
+			return taskName;
+		}
+
+		int suffix = 2;
+
+		while (project.getTasks().getNames().contains(taskName + suffix)) {
+			suffix++;
+		}
+
+		return taskName + suffix;
 	}
 }

@@ -34,6 +34,7 @@ import java.util.Objects;
 
 import javax.inject.Inject;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.configuration.BuildFeatures;
@@ -373,6 +374,11 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 
 	@Override
 	public void nestJars(TaskProvider<? extends Jar> jarTask, Configuration configuration) {
+		IncludeConfigurations.nestJars(project, jarTask, configuration);
+	}
+
+	@Override
+	public void nestJars(TaskProvider<? extends Jar> jarTask, NamedDomainObjectProvider<? extends Configuration> configuration) {
 		IncludeConfigurations.nestJars(project, jarTask, configuration);
 	}
 }

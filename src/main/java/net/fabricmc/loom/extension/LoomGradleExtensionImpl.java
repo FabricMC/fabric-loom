@@ -35,6 +35,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.configuration.BuildFeatures;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -49,6 +50,7 @@ import net.fabricmc.loom.LoomNoRemapGradlePlugin;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.InstallerData;
+import net.fabricmc.loom.configuration.IncludeConfigurations;
 import net.fabricmc.loom.configuration.LoomDependencyManager;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
@@ -367,5 +369,10 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 				NestJarsAction.addToTask(task, jars);
 			}
 		});
+	}
+
+	@Override
+	public void nestJars(TaskProvider<? extends Jar> jarTask, Configuration configuration) {
+		IncludeConfigurations.nestJars(project, jarTask, configuration);
 	}
 }

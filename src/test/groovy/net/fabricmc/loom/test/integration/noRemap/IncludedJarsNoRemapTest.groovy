@@ -71,4 +71,37 @@ class IncludedJarsNoRemapTest extends Specification implements GradleProjectTest
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "include jars api for a non-remapped jar (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "includedJarsNoRemap", version: version)
+		gradle.buildGradle << '''
+				configurations {
+					customInclude
+				}
+
+				dependencies {
+					customInclude 'org.apache.logging.log4j:log4j-core:2.22.0'
+				}
+
+				def customJar = tasks.register('customJar', Jar) {
+					archiveClassifier = 'custom'
+					from sourceSets.main.output
+				}
+
+				loom.nestJars(customJar, configurations.customInclude)
+				'''
+
+		when:
+		def result = gradle.run(tasks: ["customJar"])
+
+		then:
+		result.task(":customJar").outcome == SUCCESS
+		gradle.hasOutputZipEntry("includedJars-custom.jar", "META-INF/jars/log4j-core-2.22.0.jar")
+		!gradle.hasOutputZipEntry("includedJars-custom.jar", "META-INF/jars/log4j-api-2.22.0.jar")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

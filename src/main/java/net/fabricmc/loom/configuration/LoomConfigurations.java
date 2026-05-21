@@ -82,12 +82,7 @@ public abstract class LoomConfigurations implements Runnable {
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
 
-		// Register the default include pipeline for the main source set. If the user doesn't add
-		// any `include` dependencies, the pipeline is a no-op.
-		IncludeConfigurations.setupForSourceSet(
-				getProject(),
-				SourceSetHelper.getMainSourceSet(getProject())
-		);
+		register(Constants.Configurations.INCLUDE, Role.NONE);
 
 		if (!extension.disableObfuscation()) {
 			registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);

@@ -110,9 +110,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getTargetNamespace().set(extension.getProductionNamespace());
 
-		// Nested jar wiring is handled by IncludeConfigurations, which lazily matches
-		// the conventional remap task name for the sourceset (e.g. remapJar / clientRemapJar).
-
 		getUseMixinAP().set(extension.getMixin().getUseLegacyMixinAp());
 
 		// Make outputs reproducible by default

@@ -55,4 +55,33 @@ class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "custom include configuration for remapped jar (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "includedJars", version: version)
+		gradle.buildGradle << '''
+				configurations {
+					customInclude
+				}
+
+				dependencies {
+					customInclude 'org.apache.commons:commons-lang3:3.14.0'
+				}
+
+				loom {
+					nestJars(tasks.named('remapJar'), configurations.customInclude)
+				}
+				'''
+
+		when:
+		def result = gradle.run(tasks: ["remapJar"])
+
+		then:
+		result.task(":remapJar").outcome == SUCCESS
+		gradle.hasOutputZipEntry("includedJars.jar", "META-INF/jars/commons-lang3-3.14.0.jar")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

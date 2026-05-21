@@ -25,116 +25,45 @@
 package net.fabricmc.loom.test.unit
 
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.jvm.tasks.Jar
 import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
 
 import net.fabricmc.loom.LoomGradleExtension
 import net.fabricmc.loom.configuration.IncludeConfigurations
-import net.fabricmc.loom.test.util.GradleTestUtil
-import net.fabricmc.loom.util.gradle.SourceSetHelper
 
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.when
 
 class IncludeConfigurationsTest extends Specification {
-	private Project createProject(boolean dontRemap = true) {
+	private Project createProject() {
 		def project = ProjectBuilder.builder().build()
 		project.plugins.apply("java-library")
 
-		// Use a real Property here so it can be passed to Property.set(Provider) inside the
-		// task wiring — Mockito-mocked Properties don't implement ProviderInternal.
 		def uncompress = project.objects.property(Boolean.class).convention(false)
 		def extension = mock(LoomGradleExtension.class)
 		when(extension.getUncompressNestedJars()).thenReturn(uncompress)
-		when(extension.dontRemapOutputs()).thenReturn(dontRemap)
 		project.extensions.add(LoomGradleExtension.class, "loom", extension)
 
 		return project
 	}
 
-	def "naming helpers — main source set uses bare names"() {
-		given:
-		def main = GradleTestUtil.mockSourceSet("main")
-
-		expect:
-		IncludeConfigurations.getIncludeConfigurationName(main) == "include"
-		IncludeConfigurations.getIncludeInternalConfigurationName(main) == "includeInternal"
-		IncludeConfigurations.getProcessIncludeJarsTaskName(main) == "processIncludeJars"
-		IncludeConfigurations.getRemapJarTaskName(main) == "remapJar"
-	}
-
-	def "naming helpers — non-main source set is prefixed"() {
-		given:
-		def client = GradleTestUtil.mockSourceSet("client")
-
-		expect:
-		IncludeConfigurations.getIncludeConfigurationName(client) == "clientInclude"
-		IncludeConfigurations.getIncludeInternalConfigurationName(client) == "clientIncludeInternal"
-		IncludeConfigurations.getProcessIncludeJarsTaskName(client) == "processClientIncludeJars"
-		IncludeConfigurations.getRemapJarTaskName(client) == "clientRemapJar"
-	}
-
-	def "setupForSourceSet registers main configurations and task"() {
+	def "nestJars attaches a custom configuration to a jar task"() {
 		given:
 		def project = createProject()
-		def main = SourceSetHelper.getMainSourceSet(project)
+		def customInclude = project.configurations.create("customInclude") {
+			canBeConsumed = false
+			canBeResolved = false
+		}
 
 		when:
-		IncludeConfigurations.setupForSourceSet(project, main)
+		IncludeConfigurations.nestJars(project, project.tasks.named("jar", Jar.class), customInclude)
 
 		then:
-		project.configurations.findByName("include") != null
-		project.configurations.findByName("includeInternal") != null
-		project.tasks.findByName("processIncludeJars") != null
-	}
+		def processTask = project.tasks.findByName("processJarCustomIncludeJars")
+		processTask != null
 
-	def "setupForSourceSet registers per-source-set configurations and task"() {
-		given:
-		def project = createProject()
-		def client = project.extensions.getByType(JavaPluginExtension.class).sourceSets.create("client")
-
-		when:
-		IncludeConfigurations.setupForSourceSet(project, client)
-
-		then:
-		project.configurations.findByName("clientInclude") != null
-		project.configurations.findByName("clientIncludeInternal") != null
-		project.tasks.findByName("processClientIncludeJars") != null
-	}
-
-	def "setupForSourceSet does not leak per-source-set configs into the main namespace"() {
-		given:
-		def project = createProject()
-		def client = project.extensions.getByType(JavaPluginExtension.class).sourceSets.create("client")
-
-		when:
-		IncludeConfigurations.setupForSourceSet(project, client)
-
-		then:
-		project.configurations.findByName("include") == null
-		project.configurations.findByName("includeInternal") == null
-		project.tasks.findByName("processIncludeJars") == null
-	}
-
-	def "include dependencies are non-transitive when resolved through internal"() {
-		given:
-		def project = createProject()
-		def main = SourceSetHelper.getMainSourceSet(project)
-		IncludeConfigurations.setupForSourceSet(project, main)
-
-		project.repositories.mavenCentral()
-		project.dependencies.add("include", "org.apache.logging.log4j:log4j-core:2.22.0")
-
-		when:
-		def internal = project.configurations.getByName("includeInternal")
-		def resolved = internal.incoming.dependencies
-
-		then:
-		// log4j-core is the only declared dependency; transitives (e.g. log4j-api) are stripped
-		// by the include → includeInternal copy.
-		resolved.size() == 1
-		resolved.first().name == "log4j-core"
-		!(resolved.first() as org.gradle.api.artifacts.ModuleDependency).isTransitive()
+		def jar = project.tasks.named("jar", Jar.class).get()
+		jar.taskDependencies.getDependencies(jar).contains(processTask)
 	}
 }

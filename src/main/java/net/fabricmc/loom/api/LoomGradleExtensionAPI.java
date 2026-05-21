@@ -30,6 +30,7 @@ import java.util.List;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.NamedDomainObjectList;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
@@ -46,7 +47,6 @@ import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
 import net.fabricmc.loom.api.manifest.VersionsManifestsAPI;
-import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
 import net.fabricmc.loom.api.mappings.layered.spec.LayeredMappingSpecBuilder;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
@@ -325,32 +325,6 @@ public interface LoomGradleExtensionAPI {
 	FileCollection getNamedMinecraftJars();
 
 	/**
-	 * Registers a per-source-set include pipeline: an {@code <sourceSet>Include}
-	 * bucket configuration (for declaring dependencies) and a
-	 * {@code process<SourceSet>IncludeJars} task that produces nestable jars in
-	 * its output directory.
-	 *
-	 * <p>The pipeline is auto-wired into a jar task following the conventional
-	 * names for the active Loom mode:
-	 * <ul>
-	 *     <li>{@code net.fabricmc.fabric-loom} (no remap): nests into
-	 *         {@code <sourceSet>Jar} ({@link SourceSet#getJarTaskName()}).</li>
-	 *     <li>{@code net.fabricmc.fabric-loom-remap}: nests into
-	 *         {@code <sourceSet>RemapJar} (the main source set uses bare
-	 *         {@code remapJar}).</li>
-	 * </ul>
-	 * The target task may be created before or after this call — wiring is lazy
-	 * via {@code configureEach}.
-	 *
-	 * <p>For the main source set, names match the legacy defaults
-	 * ({@code include}, {@code processIncludeJars}).
-	 *
-	 * @since 1.17
-	 */
-	@ApiStatus.Experimental
-	TaskProvider<NestableJarGenerationTask> createIncludeConfigurations(SourceSet sourceSet);
-
-	/**
 	 * Nest mod jars from a {@link FileCollection} into the specified jar task.
 	 * This is useful for including locally built mod jars or jars that don't come from Maven.
 	 *
@@ -371,4 +345,25 @@ public interface LoomGradleExtensionAPI {
 	 */
 	@ApiStatus.Experimental
 	void nestJars(TaskProvider<? extends Jar> jarTask, FileCollection jars);
+
+	/**
+	 * Includes dependencies from a configuration in the specified jar task.
+	 *
+	 * <p>This is the task-bound equivalent of the default {@code include} configuration.
+	 * Dependencies are converted to nestable jars before they are nested into the jar task.
+	 *
+	 * <p>Example usage:
+	 * {@snippet lang=groovy :
+	 * loom {
+	 * 	   nestJars(tasks.jar, configurations.myInclude)
+	 * 	   nestJars(tasks.named('remapJar'), configurations.myRemapInclude)
+	 * }
+	 * }
+	 *
+	 * @param jarTask the jar task to include dependencies in
+	 * @param configuration the configuration containing dependencies to include
+	 * @since 1.17
+	 */
+	@ApiStatus.Experimental
+	void nestJars(TaskProvider<? extends Jar> jarTask, Configuration configuration);
 }

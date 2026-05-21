@@ -36,9 +36,11 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.IncludeConfigurations;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
@@ -59,8 +61,6 @@ public class NonRemappedJarTaskConfiguration {
 		final Provider<JarManifestService> manifestServiceProvider = JarManifestService.get(project);
 
 		project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).configure(task -> {
-			// Nested jars are wired into this task by IncludeConfigurations based on the active mode.
-
 			task.doLast(new ManifestModificationAction(
 					manifestServiceProvider,
 					"official",
@@ -70,6 +70,13 @@ public class NonRemappedJarTaskConfiguration {
 
 			task.usesService(manifestServiceProvider);
 		});
+
+		IncludeConfigurations.nestJars(
+				project,
+				project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class),
+				project.getConfigurations().getByName(Constants.Configurations.INCLUDE),
+				Constants.Task.PROCESS_INCLUDE_JARS
+		);
 
 		extension.getUnmappedModCollection().from(project.getTasks().named(JavaPlugin.JAR_TASK_NAME));
 	}

@@ -70,7 +70,7 @@ class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 				}
 
 				loom {
-					nestJars(tasks.named('remapJar'), configurations.customInclude)
+					nestJars(tasks.named('remapJar'), configurations.named('customInclude'))
 				}
 				'''
 

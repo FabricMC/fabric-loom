@@ -56,12 +56,12 @@ public final class IncludeConfigurations {
 	}
 
 	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, Configuration configuration) {
-		final String taskName = getProcessIncludeJarsTaskName(jarTask.getName(), configuration.getName());
+		String taskName = getUniqueTaskName(project, getProcessIncludeJarsTaskName(jarTask.getName(), configuration.getName()));
 		nestJars(project, jarTask, project.provider(() -> configuration), taskName);
 	}
 
 	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, NamedDomainObjectProvider<? extends Configuration> configuration) {
-		final String taskName = getUniqueTaskName(project, getProcessIncludeJarsTaskName(jarTask.getName(), configuration.getName()));
+		String taskName = getUniqueTaskName(project, getProcessIncludeJarsTaskName(jarTask.getName(), configuration.getName()));
 		nestJars(project, jarTask, configuration, taskName);
 	}
 
@@ -70,8 +70,8 @@ public final class IncludeConfigurations {
 	}
 
 	public static void nestJars(Project project, TaskProvider<? extends Jar> jarTask, Provider<? extends Configuration> configuration, String taskName) {
-		final TaskProvider<NestableJarGenerationTask> processTask = createProcessTask(project, configuration, taskName);
-		final FileCollection outputJars = getOutputJars(project, processTask);
+		TaskProvider<NestableJarGenerationTask> processTask = createProcessTask(project, configuration, taskName);
+		FileCollection outputJars = getOutputJars(project, processTask);
 
 		jarTask.configure(task -> {
 			task.dependsOn(processTask);
@@ -86,8 +86,8 @@ public final class IncludeConfigurations {
 	}
 
 	private static TaskProvider<NestableJarGenerationTask> createProcessTask(Project project, Provider<? extends Configuration> configuration, String taskName) {
-		final Configuration internalConfiguration = createInternalConfiguration(project, configuration);
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		Configuration internalConfiguration = createInternalConfiguration(project, configuration);
+		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		return project.getTasks().register(taskName, NestableJarGenerationTask.class, task -> {
 			task.from(internalConfiguration);
@@ -97,9 +97,8 @@ public final class IncludeConfigurations {
 	}
 
 	private static Configuration createInternalConfiguration(Project project, Provider<? extends Configuration> include) {
-		final Configuration internal = project.getConfigurations().detachedConfiguration();
-		internal.setCanBeConsumed(false);
-		internal.setCanBeResolved(true);
+		Configuration internal = project.getConfigurations().detachedConfiguration();
+		LoomConfigurations.Role.RESOLVABLE.apply(internal);
 		addNonTransitiveDependencies(project, internal, include);
 		configureAttributes(project, internal);
 		return internal;

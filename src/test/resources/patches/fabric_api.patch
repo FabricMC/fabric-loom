@@ -1,7 +1,32 @@
+diff --git a/gradle/validate-annotations.gradle b/gradle/validate-annotations.gradle
+--- a/gradle/validate-annotations.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
++++ b/gradle/validate-annotations.gradle	(date 1779437055038)
+@@ -13,7 +13,7 @@
+
+ tasks.check.dependsOn "validateAnnotations"
+
+-class ValidateAnnotations extends SourceTask {
++abstract class ValidateAnnotations extends SourceTask {
+ 	private static final def API_STATUS_INTERNAL = ~/@ApiStatus\.Internal/
+ 	private static final def ENVIRONMENT = ~/@Environment/
+
+Index: build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
 diff --git a/build.gradle b/build.gradle
 --- a/build.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
-+++ b/build.gradle	(date 1749475915352)
-@@ -9,7 +9,7 @@
++++ b/build.gradle	(date 1779436972051)
+@@ -2,14 +2,14 @@
+ 	id "java-library"
+ 	id "eclipse"
+ 	id "maven-publish"
+-	id "fabric-loom" version "1.10.1" apply false
++	id "fabric-loom" apply false
+ 	id "com.diffplug.spotless" version "7.0.2"
+ 	id "me.modmuss50.remotesign" version "0.5.0" apply false
+ 	id "me.modmuss50.mod-publish-plugin" version "0.8.4"
  }
 
  def branchProvider = providers.of(GitBranchValueSource.class) {}
@@ -35,6 +60,39 @@ diff --git a/build.gradle b/build.gradle
  }
 
  def moduleDependencies(project, List<String> depNames) {
+@@ -530,15 +516,15 @@
+ 		// Make all modules depend on the gametest api (and thus res loader) to try and promote its usage.
+ 		if (project.name != "fabric-gametest-api-v1") {
+ 			testmodImplementation project(path: ':fabric-gametest-api-v1', configuration: 'namedElements')
+-			testmodClientImplementation project(":fabric-gametest-api-v1").sourceSets.client.output
++			testmodClientImplementation this.project(":fabric-gametest-api-v1").sourceSets.client.output
+ 			testmodImplementation project(path: ':fabric-resource-loader-v0', configuration: 'namedElements')
+-			testmodClientImplementation project(":fabric-resource-loader-v0").sourceSets.client.output
++			testmodClientImplementation this.project(":fabric-resource-loader-v0").sourceSets.client.output
+ 		}
+
+ 		// Make all testmods run with registry-sync-v0 as it is required to register new objects.
+ 		if (project.name != "fabric-registry-sync-v0") {
+ 			testmodRuntimeOnly project(path: ':fabric-registry-sync-v0', configuration: 'namedElements')
+-			testmodClientImplementation project(":fabric-registry-sync-v0").sourceSets.client.output
++			testmodClientImplementation this.project(":fabric-registry-sync-v0").sourceSets.client.output
+ 		}
+ 	}
+
+@@ -694,10 +680,10 @@
+ 			}
+
+ 			api project(path: "${it.path}", configuration: "namedElements")
+-			clientImplementation project("${it.path}:").sourceSets.client.output
++			clientImplementation this.project("${it.path}:").sourceSets.client.output
+
+-			testmodImplementation project("${it.path}:").sourceSets.testmod.output
+-			testmodClientImplementation project("${it.path}:").sourceSets.testmodClient.output
++			testmodImplementation this.project("${it.path}:").sourceSets.testmod.output
++			testmodClientImplementation this.project("${it.path}:").sourceSets.testmodClient.output
+ 		}
+ 	}
+ }
 @@ -771,7 +757,7 @@
  tasks.register('checkVersion') {
  	doFirst {
@@ -44,20 +102,3 @@ diff --git a/build.gradle b/build.gradle
  		def versions = metadata.versioning.versions.version*.text();
  		if (versions.contains(version)) {
  			throw new RuntimeException("${version} has already been released!")
-Index: gradle/validate-annotations.gradle
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
-diff --git a/gradle/validate-annotations.gradle b/gradle/validate-annotations.gradle
---- a/gradle/validate-annotations.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
-+++ b/gradle/validate-annotations.gradle	(date 1749476043862)
-@@ -13,7 +13,7 @@
-
- tasks.check.dependsOn "validateAnnotations"
-
--class ValidateAnnotations extends SourceTask {
-+abstract class ValidateAnnotations extends SourceTask {
- 	private static final def API_STATUS_INTERNAL = ~/@ApiStatus\.Internal/
- 	private static final def ENVIRONMENT = ~/@Environment/
-

@@ -1,15 +1,15 @@
 diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision b9cacd723116221d9b9e1ce03f411efb7fe59282)
-+++ b/build.gradle	(date 1779378775608)
+--- a/build.gradle	(revision dfa883a2e9348fc4a877252be6dbafc264f19006)
++++ b/build.gradle	(date 1779491895630)
 @@ -2,14 +2,14 @@
  	id "java-library"
  	id "eclipse"
  	id "maven-publish"
--	id "net.fabricmc.fabric-loom" version "1.15.5" apply false
+-	id "net.fabricmc.fabric-loom" version "1.16.2" apply false
 +	id "net.fabricmc.fabric-loom" apply false
- 	id "com.diffplug.spotless" version "8.3.0"
+ 	id "com.diffplug.spotless" version "8.5.1"
  	id "me.modmuss50.remotesign" version "0.5.0" apply false
- 	id "me.modmuss50.mod-publish-plugin" version "1.1.0"
+ 	id "me.modmuss50.mod-publish-plugin" version "2.0.0-beta.1"
  }
 
  def branchProvider = providers.of(GitBranchValueSource.class) {}

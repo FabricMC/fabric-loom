@@ -10,6 +10,23 @@ diff --git a/gradle/validate-annotations.gradle b/gradle/validate-annotations.gr
  	private static final def API_STATUS_INTERNAL = ~/@ApiStatus\.Internal/
  	private static final def ENVIRONMENT = ~/@Environment/
 
+Index: gradle.properties
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/gradle.properties b/gradle.properties
+--- a/gradle.properties	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
++++ b/gradle.properties	(date 1779491776054)
+@@ -4,7 +4,7 @@
+ version=0.126.0
+ minecraft_version=1.21.6-pre3
+ yarn_version=+build.1
+-loader_version=0.16.13
++loader_version=0.19.2
+ installer_version=1.0.1
+
+ prerelease=true
 Index: build.gradle
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
@@ -17,7 +34,7 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 ===================================================================
 diff --git a/build.gradle b/build.gradle
 --- a/build.gradle	(revision f84dc5662589fd56ac4b36a4b94920a15b1da29d)
-+++ b/build.gradle	(date 1779436972051)
++++ b/build.gradle	(date 1779491776048)
 @@ -2,14 +2,14 @@
  	id "java-library"
  	id "eclipse"
@@ -60,7 +77,15 @@ diff --git a/build.gradle b/build.gradle
  }
 
  def moduleDependencies(project, List<String> depNames) {
-@@ -530,15 +516,15 @@
+@@ -355,7 +341,6 @@
+
+ // Apply auxiliary buildscripts to submodules
+ // This must be done after all plugins are applied to subprojects
+-apply from: "gradle/module-validation.gradle"
+ apply from: "gradle/module-versioning.gradle"
+
+ loom {
+@@ -530,15 +515,15 @@
  		// Make all modules depend on the gametest api (and thus res loader) to try and promote its usage.
  		if (project.name != "fabric-gametest-api-v1") {
  			testmodImplementation project(path: ':fabric-gametest-api-v1', configuration: 'namedElements')
@@ -79,7 +104,7 @@ diff --git a/build.gradle b/build.gradle
  		}
  	}
 
-@@ -694,10 +680,10 @@
+@@ -694,10 +679,10 @@
  			}
 
  			api project(path: "${it.path}", configuration: "namedElements")
@@ -93,7 +118,7 @@ diff --git a/build.gradle b/build.gradle
  		}
  	}
  }
-@@ -771,7 +757,7 @@
+@@ -771,7 +756,7 @@
  tasks.register('checkVersion') {
  	doFirst {
  		def xml = new URL("https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml").text

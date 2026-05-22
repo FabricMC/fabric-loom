@@ -90,7 +90,7 @@ class IncludedJarsNoRemapTest extends Specification implements GradleProjectTest
 					from sourceSets.main.output
 				}
 
-				loom.nestJars(customJar, configurations.customInclude)
+				loom.nestJars(customJar, configurations.named('customInclude'))
 				'''
 
 		when:

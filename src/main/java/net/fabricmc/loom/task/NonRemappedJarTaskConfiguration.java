@@ -74,7 +74,7 @@ public class NonRemappedJarTaskConfiguration {
 		IncludeConfigurations.nestJars(
 				project,
 				project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class),
-				project.getConfigurations().getByName(Constants.Configurations.INCLUDE),
+				project.getConfigurations().named(Constants.Configurations.INCLUDE),
 				Constants.Task.PROCESS_INCLUDE_JARS
 		);
 

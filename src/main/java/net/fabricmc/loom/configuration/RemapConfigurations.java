@@ -30,12 +30,12 @@ import java.util.function.Function;
 
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectList;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -106,9 +106,9 @@ public final class RemapConfigurations {
 	 * @param settings the remap configuration settings
 	 * @param runtime  if {@code true}, returns the runtime configuration;
 	 *                 if {@code false}, returns the compile-time one
-	 * @return the collector configuration
+	 * @return the collector configuration provider
 	 */
-	public static Provider<Configuration> getOrRegisterCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime) {
+	public static NamedDomainObjectProvider<? extends Configuration> getOrRegisterCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime) {
 		return getOrRegisterCollectorConfiguration(project, settings.getSourceSet().get(), runtime);
 	}
 
@@ -120,12 +120,12 @@ public final class RemapConfigurations {
 	 * @param sourceSet the source set to apply the collector config to, should generally match {@link RemapConfigurationSettings#getSourceSet()}
 	 * @param runtime   if {@code true}, returns the runtime configuration;
 	 *                  if {@code false}, returns the compile-time one
-	 * @return the collector configuration
+	 * @return the collector configuration provider
 	 */
 	// Note: this method is generally called on demand, so these configurations
 	// won't exist at buildscript evaluation time. There's no need for them anyway
 	// since they're internals.
-	public static Provider<Configuration> getOrRegisterCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
+	public static NamedDomainObjectProvider<? extends Configuration> getOrRegisterCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
 		final String configurationName = "mod"
 				+ (runtime ? "Runtime" : "Compile")
 				+ "Classpath"
@@ -134,7 +134,7 @@ public final class RemapConfigurations {
 		final ConfigurationContainer configurations = project.getConfigurations();
 
 		if (configurations.findByName(configurationName) == null) {
-			Provider<Configuration> configuration = configurations.register(configurationName, config -> {
+			NamedDomainObjectProvider<? extends Configuration> configuration = configurations.register(configurationName, config -> {
 				// Don't get transitive deps of already remapped mods
 				config.setTransitive(false);
 
@@ -170,7 +170,7 @@ public final class RemapConfigurations {
 	}
 
 	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
-		final Provider<Configuration> configuration = project.getConfigurations().register(settings.getName(), config -> config.setTransitive(true));
+		final NamedDomainObjectProvider<Configuration> configuration = project.getConfigurations().register(settings.getName(), config -> config.setTransitive(true));
 
 		if (settings.getOnCompileClasspath().get()) {
 			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
@@ -195,7 +195,7 @@ public final class RemapConfigurations {
 		};
 	}
 
-	private static void extendsFrom(String name, Provider<Configuration> configuration, Project project) {
+	private static void extendsFrom(String name, NamedDomainObjectProvider<? extends Configuration> configuration, Project project) {
 		project.getConfigurations().named(name).configure(namedConfiguration -> {
 			namedConfiguration.extendsFrom(configuration);
 		});

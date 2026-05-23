@@ -41,18 +41,18 @@ import net.fabricmc.loom.configuration.mods.JarSplitter;
 
 // Single jar in, 2 out.
 public final class SplitModDependency extends ModDependency {
-	private final Configuration targetCommonConfig;
-	private final Configuration targetClientConfig;
+	private final Provider<? extends Configuration> targetCommonConfig;
+	private final Provider<? extends Configuration> targetClientConfig;
 	private final JarSplitter.Target target;
 	@Nullable
 	private final LocalMavenHelper commonMaven;
 	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Provider<Configuration> targetCommonConfig, Provider<Configuration> targetClientConfig, JarSplitter.Target target, Project project) {
+	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Provider<? extends Configuration> targetCommonConfig, Provider<? extends Configuration> targetClientConfig, JarSplitter.Target target, Project project) {
 		super(artifact, metadata, options);
-		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig.get());
-		this.targetClientConfig = Objects.requireNonNull(targetClientConfig.get());
+		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig);
+		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
 		this.target = Objects.requireNonNull(target);
 		this.commonMaven = target.common() ? createMavenHelper(project, "common") : null;
 		this.clientMaven = target.client() ? createMavenHelper(project, "client") : null;
@@ -106,11 +106,11 @@ public final class SplitModDependency extends ModDependency {
 	@Override
 	public void applyToProject(Project project) {
 		if (target.common()) {
-			project.getDependencies().add(targetCommonConfig.getName(), getCommonMaven().getNotation());
+			project.getDependencies().add(targetCommonConfig.get().getName(), getCommonMaven().getNotation());
 		}
 
 		if (target.client()) {
-			project.getDependencies().add(targetClientConfig.getName(), getClientMaven().getNotation());
+			project.getDependencies().add(targetClientConfig.get().getName(), getClientMaven().getNotation());
 		}
 
 		if (target == JarSplitter.Target.SPLIT) {

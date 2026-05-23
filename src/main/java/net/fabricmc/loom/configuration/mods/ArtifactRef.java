@@ -29,13 +29,13 @@ import static net.fabricmc.loom.configuration.mods.ModConfigurationRemapper.repl
 
 import java.nio.file.Path;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
-import org.gradle.api.provider.Provider;
 import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.util.Checksum;
@@ -53,7 +53,7 @@ public interface ArtifactRef {
 
 	@Nullable String classifier();
 
-	void applyToConfiguration(Project project, Provider<Configuration> configuration);
+	void applyToConfiguration(Project project, NamedDomainObjectProvider<? extends Configuration> configuration);
 
 	record ResolvedArtifactRef(ResolvedArtifact artifact, @Nullable Path sources) implements ArtifactRef {
 		@Override
@@ -78,7 +78,7 @@ public interface ArtifactRef {
 		}
 
 		@Override
-		public void applyToConfiguration(Project project, Provider<Configuration> configuration) {
+		public void applyToConfiguration(Project project, NamedDomainObjectProvider<? extends Configuration> configuration) {
 			final DependencyHandler dependencies = project.getDependencies();
 
 			Dependency dep = dependencies.create(artifact.getModuleVersion() + (artifact.getClassifier() == null ? "" : ':' + artifact.getClassifier())); // the owning module of the artifact
@@ -87,7 +87,7 @@ public interface ArtifactRef {
 				moduleDependency.setTransitive(false);
 			}
 
-			dependencies.add(configuration.get().getName(), dep);
+			dependencies.add(configuration.getName(), dep);
 		}
 	}
 
@@ -103,10 +103,10 @@ public interface ArtifactRef {
 		}
 
 		@Override
-		public void applyToConfiguration(Project project, Provider<Configuration> configuration) {
+		public void applyToConfiguration(Project project, NamedDomainObjectProvider<? extends Configuration> configuration) {
 			final DependencyHandler dependencies = project.getDependencies();
 
-			dependencies.add(configuration.get().getName(), project.files(path.toFile()));
+			dependencies.add(configuration.getName(), project.files(path.toFile()));
 		}
 	}
 }

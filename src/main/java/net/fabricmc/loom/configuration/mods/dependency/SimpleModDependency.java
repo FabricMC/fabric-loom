@@ -38,12 +38,12 @@ import net.fabricmc.loom.configuration.mods.ArtifactRef;
 
 // Single jar in and out
 public final class SimpleModDependency extends ModDependency {
-	private final Configuration targetConfig;
+	private final Provider<? extends Configuration> targetConfig;
 	private final LocalMavenHelper maven;
 
-	public SimpleModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Provider<Configuration> targetConfig, Project project) {
+	public SimpleModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Provider<? extends Configuration> targetConfig, Project project) {
 		super(artifact, metadata, options);
-		this.targetConfig = Objects.requireNonNull(targetConfig.get());
+		this.targetConfig = Objects.requireNonNull(targetConfig);
 		this.maven = createMavenHelper(project, null);
 	}
 
@@ -59,6 +59,6 @@ public final class SimpleModDependency extends ModDependency {
 
 	@Override
 	public void applyToProject(Project project) {
-		project.getDependencies().add(targetConfig.getName(), maven.getNotation());
+		project.getDependencies().add(targetConfig.get().getName(), maven.getNotation());
 	}
 }

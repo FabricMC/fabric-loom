@@ -64,8 +64,19 @@ class GradleTestUtil {
 	}
 
 	static Project mockProject() {
+		return mockProject("test")
+	}
+
+	static Project mockProject(String name) {
 		def extension = mockLoomGradleExtension()
-		def realProject = ProjectBuilder.builder().build()
+		def realProject = ProjectBuilder.builder().withName(name).build()
+		realProject.extensions.add("loom", extension)
+		return realProject
+	}
+
+	static Project mockProject(String name, Project parent) {
+		def extension = mockLoomGradleExtension()
+		def realProject = ProjectBuilder.builder().withName(name).withParent(parent).build()
 		realProject.extensions.add("loom", extension)
 		return realProject
 	}

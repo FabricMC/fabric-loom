@@ -26,13 +26,50 @@ package net.fabricmc.loom.test.unit
 
 import java.nio.charset.StandardCharsets
 
+import org.gradle.api.Project
+import org.gradle.api.plugins.JavaPlugin
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.ide.RunConfigurationInternal
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
+import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.util.Arguments
 
-class IdeaClasspathModificationsTest extends Specification {
+class IdeaSyncTaskTest extends Specification {
+	def "get run configs only includes generated root configs"() {
+		given:
+		def project = mockJavaProject("root")
+		def generatedRun = mockRunConfig(project, "client", "Minecraft Client", true)
+		def skippedRun = mockRunConfig(project, "server", "Minecraft Server", false)
+
+		when:
+		def configs = IdeaSyncTask.getRunConfigs(project, [generatedRun, skippedRun])
+
+		then:
+		configs.size() == 1
+		configs[0].launchFile.get().asFile == new File(project.rootDir, ".idea/runConfigurations/Minecraft_Client.xml")
+		configs[0].excludedLibraryPaths.get().empty
+		configs[0].runConfigXml.get() == expectedRunConfigXml("Minecraft Client", "root.main", "\$PROJECT_DIR\$/run")
+		project.file("run").directory
+		!project.file("server-run").exists()
+	}
+
+	def "get run configs appends subproject path to launch file name"() {
+		given:
+		def rootProject = mockJavaProject("root")
+		def project = mockJavaProject("sub", rootProject)
+		def run = mockRunConfig(project, "client", "Minecraft Client", true)
+
+		when:
+		def configs = IdeaSyncTask.getRunConfigs(project, [run])
+
+		then:
+		configs.size() == 1
+		configs[0].launchFile.get().asFile == new File(rootProject.rootDir, ".idea/runConfigurations/Minecraft_Client___sub__sub.xml")
+		configs[0].runConfigXml.get() == expectedRunConfigXml("Minecraft Client (:sub)", "root.sub.main", "\$PROJECT_DIR\$/sub/run")
+		project.file("run").directory
+	}
 
 	def "configure exclusions"() {
 		when:
@@ -72,6 +109,50 @@ class IdeaClasspathModificationsTest extends Specification {
 		dummyConfig = dummyConfig.replace("%IDEA_FOLDER_NAME%", "")
 
 		return dummyConfig
+	}
+
+	private static Project mockJavaProject(String name, Project parent = null) {
+		def project = parent == null ? GradleTestUtil.mockProject(name) : GradleTestUtil.mockProject(name, parent)
+		project.pluginManager.apply(JavaPlugin)
+		return project
+	}
+
+	private static RunConfigurationInternal mockRunConfig(Project project, String name, String displayName, boolean generateRunConfig) {
+		def run = project.objects.newInstance(RunConfigurationInternal.class, name)
+		run.isFinalised.set(true)
+		run.displayName.set(displayName)
+		run.jvmArguments.set([])
+		run.programArguments.set([])
+		run.environmentVars.set([:])
+		run.runtimeEnvironment.set("client")
+		run.appendProjectPathToDisplayName.set(true)
+		run.sourceSet.set("main")
+		run.runDirectory.set(project.file(name == "server" ? "server-run" : "run"))
+		run.generateRunConfig.set(generateRunConfig)
+		run.ideConfigFolder.set((String) null)
+		run.devLaunchMainClass.set("net.minecraft.client.Main")
+		return run
+	}
+
+	private static String expectedRunConfigXml(String displayName, String moduleName, String runDirectory) {
+		return """\
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="${displayName}" type="Application" factoryName="Application" >
+    <option name="MAIN_CLASS_NAME" value="net.minecraft.client.Main" />
+    <module name="${moduleName}" />
+    <option name="PROGRAM_PARAMETERS" value="" />
+    <option name="VM_PARAMETERS" value="" />
+    <option name="WORKING_DIRECTORY" value="${runDirectory}/" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+    <envs>
+      
+    </envs>
+    <shortenClasspath name="ARGS_FILE" />
+  </configuration>
+</component>
+"""
 	}
 
 	@Language("XML")

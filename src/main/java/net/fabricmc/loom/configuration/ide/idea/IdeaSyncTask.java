@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -64,7 +65,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
@@ -95,28 +95,31 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		}
 	}
 
-	// See: https://github.com/FabricMC/fabric-loom/pull/206#issuecomment-986054254 for the reason why XML's are still used to provide the run configs
 	private List<IntellijRunConfig> getRunConfigs() throws IOException {
-		IsolatedProject rootProject = getProject().getIsolated().getRootProject();
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		String projectPath = getProject().getPath().equals(rootProject.getPath()) ? "" : getProject().getPath().replace(':', '_');
+		return getRunConfigs(getProject(), getExtension().getRunConfigs());
+	}
+
+	@VisibleForTesting
+	public static List<IntellijRunConfig> getRunConfigs(Project project, Collection<? extends RunConfiguration> runs) throws IOException {
+		IsolatedProject rootProject = project.getIsolated().getRootProject();
+		String projectPath = project.getPath().equals(rootProject.getPath()) ? "" : project.getPath().replace(':', '_');
 		File runConfigsDir = new File(rootProject.getProjectDirectory().file(".idea").getAsFile(), "runConfigurations");
 
 		List<IntellijRunConfig> configs = new ArrayList<>();
 
-		for (RunConfiguration settings : extension.getRunConfigs()) {
+		for (RunConfiguration settings : runs) {
 			if (!settings.getGenerateRunConfig().get()) {
 				continue;
 			}
 
-			RunConfiguration runConfiguration = DefaultRunConfigurationSettings.finialise(settings, getProject());
-			String name = RunConfigUtils.getDisplayName(runConfiguration, getProject()).replaceAll("[^a-zA-Z0-9$_]", "_");
+			RunConfiguration runConfiguration = DefaultRunConfigurationSettings.finialise(settings, project);
+			String name = RunConfigUtils.getDisplayName(runConfiguration, project).replaceAll("[^a-zA-Z0-9$_]", "_");
 
 			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
-			String runConfigXml = fromTemplate(runConfiguration, getProject());
-			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(getProject(), runConfiguration);
+			String runConfigXml = fromTemplate(runConfiguration, project);
+			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(project, runConfiguration);
 
-			IntellijRunConfig irc = getProject().getObjects().newInstance(IntellijRunConfig.class);
+			IntellijRunConfig irc = project.getObjects().newInstance(IntellijRunConfig.class);
 			irc.getRunConfigXml().set(runConfigXml);
 			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
 			irc.getLaunchFile().set(runConfigFile);

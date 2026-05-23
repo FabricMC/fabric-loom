@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
+import org.jetbrains.annotations.VisibleForTesting
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
@@ -107,6 +108,9 @@ class KotlinMetadataRemappingClassVisitor(
             }
         }
     }
+
+    @VisibleForTesting
+    fun getRuntimeKotlinVersion(): String = KotlinVersion.CURRENT.toString()
 
     private fun remapPropertyReferenceSignature(signature: String): String? {
         val descriptorStart = signature.indexOf('(')

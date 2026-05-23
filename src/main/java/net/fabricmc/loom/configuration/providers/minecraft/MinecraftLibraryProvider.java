@@ -113,7 +113,7 @@ public class MinecraftLibraryProvider {
 
 		// After Minecraft 1.19-pre1 the natives should be on the runtime classpath.
 		if (!minecraftProvider.getVersionInfo().hasNativesToExtract()) {
-			project.getConfigurations().named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, configuration -> configuration.extendsFrom(project.getConfigurations().getByName(Constants.Configurations.MINECRAFT_NATIVES)));
+			project.getConfigurations().named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, configuration -> configuration.extendsFrom(project.getConfigurations().named(Constants.Configurations.MINECRAFT_NATIVES)));
 		}
 	}
 

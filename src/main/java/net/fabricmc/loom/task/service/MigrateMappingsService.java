@@ -73,7 +73,7 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 		final Provider<String> to = project.provider(() -> "named");
 
 		ConfigurableFileCollection classpath = project.getObjects().fileCollection();
-		classpath.from(project.getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		classpath.from(project.getConfigurations().named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		// Question: why are both of these needed?
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.NAMED));

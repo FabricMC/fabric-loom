@@ -124,7 +124,7 @@ public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet
 		final ConfigurationContainer configurations = project.getConfigurations();
 
 		configurations.named(name, configuration -> {
-			configuration.extendsFrom(configurations.getByName(extendsFrom));
+			configuration.extendsFrom(configurations.named(extendsFrom));
 		});
 	}
 

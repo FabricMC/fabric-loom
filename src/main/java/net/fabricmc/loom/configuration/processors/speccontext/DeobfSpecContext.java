@@ -134,11 +134,9 @@ public record DeobfSpecContext(List<FabricModJson> modDependencies,
 		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
 		for (File artifact : projectView.getFullClasspath().getFiles()) {
-			futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {
-				return getMod(artifact.toPath())
-						.map(List::of)
-						.orElseGet(List::of);
-			}));
+			futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> getMod(artifact.toPath())
+					.map(List::of)
+					.orElseGet(List::of)));
 		}
 
 		if (!projectView.disableProjectDependantMods()) {

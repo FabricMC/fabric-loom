@@ -141,8 +141,8 @@ public abstract class AnnotationProcessorInvoker<T extends Task> {
 				project.getLogger().info("Adding mixin to classpath of AP config: " + processorConfig.getName());
 				// Pass named MC classpath to mixin AP classpath
 				processorConfig.extendsFrom(
-						configs.getByName(Constants.Configurations.LOADER_DEPENDENCIES),
-						configs.getByName(Constants.Configurations.MAPPINGS_FINAL)
+						configs.named(Constants.Configurations.LOADER_DEPENDENCIES),
+						configs.named(Constants.Configurations.MAPPINGS_FINAL)
 				);
 
 				// Add Mixin and mixin extensions (fabric-mixin-compile-extensions pulls mixin itself too)

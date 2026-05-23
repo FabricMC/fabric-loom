@@ -50,7 +50,7 @@ public abstract class RemapSourcesJarTask extends AbstractRemapJarTask {
 	@Inject
 	public RemapSourcesJarTask() {
 		super();
-		getClasspath().from(getProject().getConfigurations().getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getClasspath().from(getProject().getConfigurations().named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getJarType().set("sources");
 
 		getSourcesRemapperServiceOptions().set(SourceRemapperService.createOptions(this));

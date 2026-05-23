@@ -46,6 +46,7 @@ import com.google.gson.JsonObject;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.attributes.Usage;
+import org.gradle.api.provider.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,10 +79,10 @@ public class ModProcessor {
 	private static final Pattern COPY_CONFIGURATION_PATTERN = Pattern.compile("^(.+)Copy[0-9]*$");
 
 	private final Project project;
-	private final Configuration sourceConfiguration;
+	private final Provider<Configuration> sourceConfiguration;
 	private final ServiceFactory serviceFactory;
 
-	public ModProcessor(Project project, Configuration sourceConfiguration, ServiceFactory serviceFactory) {
+	public ModProcessor(Project project, Provider<Configuration> sourceConfiguration, ServiceFactory serviceFactory) {
 		this.project = project;
 		this.sourceConfiguration = sourceConfiguration;
 		this.serviceFactory = serviceFactory;
@@ -99,8 +100,8 @@ public class ModProcessor {
 	// Creates a human-readable descriptive string for the configuration.
 	// This consists primarily of the name with any copy suffixes stripped
 	// (they're not informative), and the usage attribute if present.
-	private String describeConfiguration(Configuration configuration) {
-		String description = configuration.getName();
+	private String describeConfiguration(Provider<Configuration> configuration) {
+		String description = configuration.get().getName();
 		final Matcher copyMatcher = COPY_CONFIGURATION_PATTERN.matcher(description);
 
 		// If we find a copy suffix, remove it.
@@ -114,7 +115,7 @@ public class ModProcessor {
 		}
 
 		// Add the usage if present, e.g. "modImplementation (java-api)"
-		final Usage usage = configuration.getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
+		final Usage usage = configuration.get().getAttributes().getAttribute(Usage.USAGE_ATTRIBUTE);
 
 		if (usage != null) {
 			description += " (" + usage.getName() + ")";

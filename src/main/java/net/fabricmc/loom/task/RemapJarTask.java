@@ -104,7 +104,7 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		super();
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final ConfigurationContainer configurations = getProject().getConfigurations();
-		getClasspath().from(configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		getClasspath().from(configurations.named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		getAddNestedDependencies().convention(true).finalizeValueOnRead();
 		getOptimizeFabricModJson().convention(false).finalizeValueOnRead();
 

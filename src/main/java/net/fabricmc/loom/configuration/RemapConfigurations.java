@@ -35,6 +35,7 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.VisibleForTesting;
 
@@ -85,7 +86,7 @@ public final class RemapConfigurations {
 
 		// Apply the client target names to the main configurations
 		for (ConfigurationOption option : getValidOptions(mainSourceSet)) {
-			configurations.getByName(option.name(mainSourceSet), settings -> {
+			configurations.named(option.name(mainSourceSet), settings -> {
 				String name = option.targetName(clientSourceSet);
 
 				if (name == null) {
@@ -107,8 +108,8 @@ public final class RemapConfigurations {
 	 *                 if {@code false}, returns the compile-time one
 	 * @return the collector configuration
 	 */
-	public static Configuration getOrCreateCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime) {
-		return getOrCreateCollectorConfiguration(project, settings.getSourceSet().get(), runtime);
+	public static Provider<Configuration> getOrRegisterCollectorConfiguration(Project project, RemapConfigurationSettings settings, boolean runtime) {
+		return getOrRegisterCollectorConfiguration(project, settings.getSourceSet().get(), runtime);
 	}
 
 	/**
@@ -124,26 +125,25 @@ public final class RemapConfigurations {
 	// Note: this method is generally called on demand, so these configurations
 	// won't exist at buildscript evaluation time. There's no need for them anyway
 	// since they're internals.
-	public static Configuration getOrCreateCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
+	public static Provider<Configuration> getOrRegisterCollectorConfiguration(Project project, SourceSet sourceSet, boolean runtime) {
 		final String configurationName = "mod"
 				+ (runtime ? "Runtime" : "Compile")
 				+ "Classpath"
 				+ Strings.capitalize(sourceSet.getName())
 				+ "Mapped";
 		final ConfigurationContainer configurations = project.getConfigurations();
-		Configuration configuration = configurations.findByName(configurationName);
 
-		if (configuration == null) {
-			configuration = configurations.create(configurationName);
+		if (configurations.findByName(configurationName) == null) {
+			Provider<Configuration> configuration = configurations.register(configurationName, config -> {
+				// Don't get transitive deps of already remapped mods
+				config.setTransitive(false);
 
-			// Don't get transitive deps of already remapped mods
-			configuration.setTransitive(false);
-
-			// Set the usage attribute to fetch the correct artifacts.
-			// Note: Even though most deps are resolved via copies of mod* configurations,
-			// non-remapped mods that get added straight to these collectors will need the attribute.
-			final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
-			configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				// Set the usage attribute to fetch the correct artifacts.
+				// Note: Even though most deps are resolved via copies of mod* configurations,
+				// non-remapped mods that get added straight to these collectors will need the attribute.
+				final Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+				config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+			});
 
 			// The main classpath also applies to the test source set like with normal dependencies.
 			final boolean isMainSourceSet = sourceSet.getName().equals("main");
@@ -162,16 +162,15 @@ public final class RemapConfigurations {
 					extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, configuration, project);
 				}
 			}
-		}
 
-		return configuration;
+			return configuration;
+		} else {
+			return configurations.named(configurationName);
+		}
 	}
 
 	public static void applyToProject(Project project, RemapConfigurationSettings settings) {
-		// No point bothering to make it lazily, gradle realises configurations right away.
-		// <https://github.com/gradle/gradle/blob/v7.4.2/subprojects/plugins/src/main/java/org/gradle/api/plugins/BasePlugin.java#L104>
-		final Configuration configuration = project.getConfigurations().create(settings.getName());
-		configuration.setTransitive(true);
+		final Provider<Configuration> configuration = project.getConfigurations().register(settings.getName(), config -> config.setTransitive(true));
 
 		if (settings.getOnCompileClasspath().get()) {
 			extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH, configuration, project);
@@ -196,7 +195,7 @@ public final class RemapConfigurations {
 		};
 	}
 
-	private static void extendsFrom(String name, Configuration configuration, Project project) {
+	private static void extendsFrom(String name, Provider<Configuration> configuration, Project project) {
 		project.getConfigurations().named(name).configure(namedConfiguration -> {
 			namedConfiguration.extendsFrom(configuration);
 		});

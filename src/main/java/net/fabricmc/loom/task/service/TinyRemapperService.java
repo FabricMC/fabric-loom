@@ -141,19 +141,19 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			ConfigurableFileCollection files = project.files(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
 
 			if (classpathLibraries == ClasspathLibraries.INCLUDE) {
-				files = files.from(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+				files = files.from(configurations.named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 			}
 
 			return files;
 		}
 
 		if (classpathLibraries == ClasspathLibraries.INCLUDE) {
-			return configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+			return project.files(configurations.named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
 		}
 
-		return configurations.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME)
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
-				.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
+		return project.files(configurations.named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+				.minus(project.files(configurations.named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES)))
+				.minus(project.files(configurations.named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES)));
 	}
 
 	public enum ClasspathLibraries {

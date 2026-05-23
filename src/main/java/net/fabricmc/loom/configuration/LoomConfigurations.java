@@ -60,8 +60,8 @@ public abstract class LoomConfigurations implements Runnable {
 		var minecraftServerCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_COMPILE_LIBRARIES, Role.RESOLVABLE);
 		var minecraftCompile = registerNonTransitive(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES, Role.RESOLVABLE);
 		minecraftCompile.configure(configuration -> {
-			configuration.extendsFrom(minecraftClientCompile.get());
-			configuration.extendsFrom(minecraftServerCompile.get());
+			configuration.extendsFrom(minecraftClientCompile);
+			configuration.extendsFrom(minecraftServerCompile);
 		});
 
 		// Set up the minecraft runtime configurations, this extends from the compile configurations.
@@ -69,12 +69,12 @@ public abstract class LoomConfigurations implements Runnable {
 		var minecraftServerRuntime = registerNonTransitive(Constants.Configurations.MINECRAFT_SERVER_RUNTIME_LIBRARIES, Role.RESOLVABLE);
 
 		// Runtime extends from compile
-		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile.get()));
-		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile.get()));
+		minecraftClientRuntime.configure(configuration -> configuration.extendsFrom(minecraftClientCompile));
+		minecraftServerRuntime.configure(configuration -> configuration.extendsFrom(minecraftServerCompile));
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES, Role.RESOLVABLE).configure(minecraftRuntime -> {
-			minecraftRuntime.extendsFrom(minecraftClientRuntime.get());
-			minecraftRuntime.extendsFrom(minecraftServerRuntime.get());
+			minecraftRuntime.extendsFrom(minecraftClientRuntime);
+			minecraftRuntime.extendsFrom(minecraftServerRuntime);
 		});
 
 		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Role.RESOLVABLE);
@@ -88,7 +88,7 @@ public abstract class LoomConfigurations implements Runnable {
 			registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
 
 			register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {
-				configuration.extendsFrom(getConfigurations().getByName(JavaPlugin.API_CONFIGURATION_NAME));
+				configuration.extendsFrom(getConfigurations().named(JavaPlugin.API_CONFIGURATION_NAME));
 			});
 
 			extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
@@ -132,7 +132,7 @@ public abstract class LoomConfigurations implements Runnable {
 	}
 
 	public void extendsFrom(String a, String b) {
-		getConfigurations().getByName(a, configuration -> configuration.extendsFrom(getConfigurations().getByName(b)));
+		getConfigurations().named(a, configuration -> configuration.extendsFrom(getConfigurations().named(b)));
 	}
 
 	public enum Role {

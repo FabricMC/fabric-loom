@@ -30,6 +30,7 @@ import java.util.Objects;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.provider.Provider;
 import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -48,10 +49,10 @@ public final class SplitModDependency extends ModDependency {
 	@Nullable
 	private final LocalMavenHelper clientMaven;
 
-	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Configuration targetCommonConfig, Configuration targetClientConfig, JarSplitter.Target target, Project project) {
+	public SplitModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options, Provider<Configuration> targetCommonConfig, Provider<Configuration> targetClientConfig, JarSplitter.Target target, Project project) {
 		super(artifact, metadata, options);
-		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig);
-		this.targetClientConfig = Objects.requireNonNull(targetClientConfig);
+		this.targetCommonConfig = Objects.requireNonNull(targetCommonConfig.get());
+		this.targetClientConfig = Objects.requireNonNull(targetClientConfig.get());
 		this.target = Objects.requireNonNull(target);
 		this.commonMaven = target.common() ? createMavenHelper(project, "common") : null;
 		this.clientMaven = target.client() ? createMavenHelper(project, "client") : null;

@@ -10,6 +10,7 @@
 !/.gitattributes
 !/.gitignore
 !/.editorconfig
+!/AGENTS.md
 !/build.gradle
 !/gradle.properties
 !/gradlew

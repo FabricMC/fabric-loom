@@ -62,8 +62,14 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest extends Specification {
 		def d2Out = d2(remappedWriter.toString())
 
 		then:
-		println(d2In)
-		println(d2Out)
+		d2In.containsAll([
+			'Lnet/minecraft/util/math/BlockPos;',
+			'Lnet/minecraft/util/math/ChunkPos;'
+		])
+		d2Out.containsAll([
+			'Lnet/minecraft/class_2338;',
+			'Lnet/minecraft/class_1923;'
+		])
 	}
 
 	def "extensionTest"() {
@@ -86,8 +92,31 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest extends Specification {
 		def d2Out = d2(remappedWriter.toString())
 
 		then:
-		println(d2In)
-		println(d2Out)
+		d2In.contains('Lnet/minecraft/entity/Entity;')
+		d2Out.contains('Lnet/minecraft/class_1297;')
+	}
+
+	def "property reference getter signatures are remapped"() {
+		given:
+		def classReader = new ClassReader(getTestClassBytes('net/fabricmc/loom/test/kotlin/PropertyReferenceFixtureKt$reflectedProperty$1'))
+		def tinyRemapper = TinyRemapper.newRemapper()
+				.withMappings(propertyReferenceMappings())
+				.build()
+
+		def inputWriter = new StringWriter()
+		classReader.accept(stringWriterVisitor(inputWriter), 0)
+
+		def remappedWriter = new StringWriter()
+		classReader.accept(new KotlinMetadataRemappingClassVisitor(tinyRemapper.environment.remapper, stringWriterVisitor(remappedWriter)), 0)
+
+		when:
+		def inputBytecode = inputWriter.toString()
+		def remappedBytecode = remappedWriter.toString()
+
+		then:
+		inputBytecode.contains('LDC "getPropertyName()Lnet/fabricmc/loom/test/kotlin/SourceType;"')
+		remappedBytecode.contains('LDC "getPropertyName()Lmapped/RemappedType;"')
+		!remappedBytecode.contains('LDC "getPropertyName()Lnet/fabricmc/loom/test/kotlin/SourceType;"')
 	}
 
 	private byte[] getClassBytes(String name) {
@@ -104,10 +133,24 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest extends Specification {
 		return new TraceClassVisitor(null, new TextifierImpl(), new PrintWriter(writer))
 	}
 
+	private IMappingProvider propertyReferenceMappings() {
+		return { acceptor ->
+			acceptor.acceptClass('net/fabricmc/loom/test/kotlin/PropertyReferenceHolder', 'mapped/RemappedHolder')
+			acceptor.acceptClass('net/fabricmc/loom/test/kotlin/SourceType', 'mapped/RemappedType')
+		} as IMappingProvider
+	}
+
+	private byte[] getTestClassBytes(String internalName) {
+		def resource = "${internalName}.class"
+		def stream = this.class.classLoader.getResourceAsStream(resource)
+		assert stream != null: "Missing test class resource: ${resource}"
+		return stream.bytes
+	}
+
 	private List<String> d2(String bytecode) {
 		def d2Regex = ~/d2=\{(.*)}/
 		def match = d2Regex.matcher(bytecode)
-		return match.find() ? match.group(1).split(",") : []
+		return match.find() ? match.group(1).split(",").collect { it.trim().replace('"', '') } : []
 	}
 
 	private static class TextifierImpl extends Textifier {

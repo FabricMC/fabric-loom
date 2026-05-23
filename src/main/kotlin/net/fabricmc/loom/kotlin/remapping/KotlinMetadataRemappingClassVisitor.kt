@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.kotlin.remapping
 
-import org.jetbrains.annotations.VisibleForTesting
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 import org.objectweb.asm.commons.Remapper
@@ -37,9 +37,19 @@ class KotlinMetadataRemappingClassVisitor(
 ) : ClassVisitor(Opcodes.ASM9, next) {
     companion object {
         val ANNOTATION_DESCRIPTOR: String = Type.getDescriptor(Metadata::class.java)
+        private val KOTLIN_PROPERTY_REFERENCE_IMPLS =
+            setOf(
+                "kotlin/jvm/internal/PropertyReference0Impl",
+                "kotlin/jvm/internal/PropertyReference1Impl",
+                "kotlin/jvm/internal/PropertyReference2Impl",
+                "kotlin/jvm/internal/MutablePropertyReference0Impl",
+                "kotlin/jvm/internal/MutablePropertyReference1Impl",
+                "kotlin/jvm/internal/MutablePropertyReference2Impl",
+            )
     }
 
     var className: String? = null
+    private var propertyReferenceImpl = false
 
     override fun visit(
         version: Int,
@@ -50,6 +60,7 @@ class KotlinMetadataRemappingClassVisitor(
         interfaces: Array<out String>?,
     ) {
         this.className = name
+        this.propertyReferenceImpl = superName in KOTLIN_PROPERTY_REFERENCE_IMPLS
         super.visit(version, access, name, signature, superName, interfaces)
     }
 
@@ -70,6 +81,47 @@ class KotlinMetadataRemappingClassVisitor(
         return result
     }
 
-    @VisibleForTesting
-    fun getRuntimeKotlinVersion(): String = KotlinVersion.CURRENT.toString()
+    override fun visitMethod(
+        access: Int,
+        name: String?,
+        descriptor: String?,
+        signature: String?,
+        exceptions: Array<out String>?,
+    ): MethodVisitor {
+        val next = super.visitMethod(access, name, descriptor, signature, exceptions)
+
+        if (!propertyReferenceImpl || name != "<init>") {
+            return next
+        }
+
+        return object : MethodVisitor(api, next) {
+            override fun visitLdcInsn(value: Any?) {
+                if (value is String) {
+                    remapPropertyReferenceSignature(value)?.let {
+                        super.visitLdcInsn(it)
+                        return
+                    }
+                }
+
+                super.visitLdcInsn(value)
+            }
+        }
+    }
+
+    private fun remapPropertyReferenceSignature(signature: String): String? {
+        val descriptorStart = signature.indexOf('(')
+
+        if (descriptorStart <= 0) {
+            return null
+        }
+
+        val methodDescriptor = signature.substring(descriptorStart)
+
+        return try {
+            Type.getMethodType(methodDescriptor)
+            signature.substring(0, descriptorStart) + remapper.mapMethodDesc(methodDescriptor)
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+    }
 }

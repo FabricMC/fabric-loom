@@ -26,12 +26,12 @@ package net.fabricmc.loom.configuration.ide.idea;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,7 +45,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import groovy.xml.XmlUtil;
 import org.gradle.api.Project;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.project.IsolatedProject;
@@ -54,12 +53,9 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -70,15 +66,10 @@ import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
 import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.util.Arguments;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
-import net.fabricmc.loom.util.gradle.SourceSetReference;
 
 @DisableCachingByDefault
 public abstract class IdeaSyncTask extends AbstractLoomTask {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IdeaSyncTask.class);
-
 	@Nested
 	protected abstract ListProperty<IntellijRunConfig> getIdeaRunConfigs();
 
@@ -114,14 +105,14 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 			RunConfiguration runConfiguration = DefaultRunConfigurationSettings.finialise(settings, project);
 			String name = RunConfigUtils.getDisplayName(runConfiguration, project).replaceAll("[^a-zA-Z0-9$_]", "_");
+			IntellijRunConfigWriter writer = createWriter(runConfiguration, project);
 
 			File runConfigFile = new File(runConfigsDir, name + projectPath + ".xml");
-			String runConfigXml = fromTemplate(runConfiguration, project);
-			final List<String> excludedLibraryPaths = RuntimeLibraries.getExcludedLibraryPaths(project, runConfiguration);
+			String runConfigXml = writer.render();
 
 			IntellijRunConfig irc = project.getObjects().newInstance(IntellijRunConfig.class);
 			irc.getRunConfigXml().set(runConfigXml);
-			irc.getExcludedLibraryPaths().set(excludedLibraryPaths);
+			irc.getRunConfigType().set(writer.getType());
 			irc.getLaunchFile().set(runConfigFile);
 			configs.add(irc);
 
@@ -131,27 +122,12 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		return configs;
 	}
 
-	private static String fromTemplate(RunConfiguration run, Project project) throws IOException {
-		String xml;
-
-		try (InputStream input = IdeaSyncTask.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml")) {
-			xml = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+	private static IntellijRunConfigWriter createWriter(RunConfiguration run, Project project) {
+		if (run.getPreferGradleTask().get()) {
+			return new GradleTaskIntellijRunConfigWriter(run, project);
 		}
 
-		String runDir = RunConfigUtils.formatRunDir(run, project, File::getAbsolutePath, "$PROJECT_DIR$/%s"::formatted);
-		String folderName = run.getIdeConfigFolder().getOrNull();
-		SourceSet sourceSet = SourceSetHelper.getSourceSetByName(run.getSourceSet().get(), project);
-
-		xml = xml.replace("%NAME%", RunConfigUtils.getDisplayName(run, project));
-		xml = xml.replace("%MAIN_CLASS%", run.getDevLaunchMainClass().get());
-		xml = xml.replace("%IDEA_MODULE%", IdeaUtils.getIdeaModuleName(new SourceSetReference(sourceSet, project)));
-		xml = xml.replace("%RUN_DIRECTORY%", runDir);
-		xml = xml.replace("%PROGRAM_ARGS%", Arguments.join(run.getProgramArguments().get()).replace("\"", "&quot;"));
-		xml = xml.replace("%VM_ARGS%", Arguments.join(run.getJvmArguments().get()).replace("\"", "&quot;"));
-		xml = xml.replace("%IDEA_ENV_VARS%", RunConfigUtils.formatEnvVars(run, "<env name=\"%s\" value=\"%s\"/>"));
-		xml = xml.replace("%IDEA_FOLDER_NAME%", folderName == null ? "" : "folderName=\"" + XmlUtil.escapeXml(folderName) + "\"");
-
-		return xml;
+		return new ApplicationIntellijRunConfigWriter(run, project, RuntimeLibraries.getExcludedLibraryPaths(project, run));
 	}
 
 	public interface IntellijRunConfig {
@@ -159,41 +135,63 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 		Property<String> getRunConfigXml();
 
 		@Input
-		ListProperty<String> getExcludedLibraryPaths();
+		Property<String> getRunConfigType();
 
 		@OutputFile
 		RegularFileProperty getLaunchFile();
 
 		default void writeLaunchFile() throws IOException {
 			Path launchFile = getLaunchFile().get().getAsFile().toPath();
+			final String expectedXml = getRunConfigXml().get();
 
 			if (Files.notExists(launchFile)) {
 				Files.createDirectories(launchFile.getParent());
-				Files.writeString(launchFile, getRunConfigXml().get(), StandardCharsets.UTF_8);
-			}
+				Files.writeString(launchFile, expectedXml, StandardCharsets.UTF_8);
+			} else {
+				final String existingXml = Files.readString(launchFile, StandardCharsets.UTF_8);
 
-			try {
-				setClasspathModifications(launchFile, getExcludedLibraryPaths().get());
-			} catch (Exception e) {
-				LOGGER.error("Failed to modify run configuration xml", e);
+				if (shouldOverwrite(existingXml)) {
+					backupLaunchFile(launchFile);
+					Files.writeString(launchFile, expectedXml, StandardCharsets.UTF_8);
+				} else if (IntellijRunConfigWriter.APPLICATION_TYPE.equals(getRunConfigType().get())) {
+					try {
+						Files.writeString(launchFile, setClasspathModificationsInXml(existingXml, expectedXml), StandardCharsets.UTF_8);
+					} catch (Exception e) {
+						throw new IOException("Failed to update IntelliJ classpath modifications", e);
+					}
+				}
 			}
+		}
+
+		private void backupLaunchFile(Path launchFile) throws IOException {
+			final Path backupDir = launchFile.getParent().resolve("backups");
+			Files.createDirectories(backupDir);
+			final Path backupFile = resolveBackupPath(backupDir, launchFile.getFileName().toString());
+			Files.copy(launchFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
+		}
+
+		private boolean shouldOverwrite(String existingXml) {
+			return !getRunConfigType().get().equals(IntellijRunConfigWriter.getType(existingXml));
 		}
 	}
 
-	private static void setClasspathModifications(Path runConfig, List<String> exclusions) throws IOException {
-		final String inputXml = Files.readString(runConfig, StandardCharsets.UTF_8);
-		final String outputXml;
+	private static Path resolveBackupPath(Path backupDir, String fileName) {
+		Path backupPath = backupDir.resolve(fileName + ".backup");
 
-		try {
-			outputXml = setClasspathModificationsInXml(inputXml, exclusions);
-		} catch (Exception e) {
-			LOGGER.error("Failed to modify idea xml", e);
-
-			return;
+		if (Files.notExists(backupPath)) {
+			return backupPath;
 		}
 
-		if (!inputXml.equals(outputXml)) {
-			Files.writeString(runConfig, outputXml, StandardCharsets.UTF_8);
+		int index = 1;
+
+		while (true) {
+			backupPath = backupDir.resolve(fileName + "." + index + ".backup");
+
+			if (Files.notExists(backupPath)) {
+				return backupPath;
+			}
+
+			index++;
 		}
 	}
 
@@ -234,6 +232,52 @@ public abstract class IdeaSyncTask extends AbstractLoomTask {
 
 		final DOMSource source = new DOMSource(document);
 
+		final StringWriter writer = new StringWriter();
+		transformer.transform(source, new StreamResult(writer));
+
+		return writer.toString().replace("\r", "");
+	}
+
+	@VisibleForTesting
+	public static String setClasspathModificationsInXml(String input, String source) throws Exception {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+		final Document inputDocument = documentBuilder.parse(new InputSource(new StringReader(input)));
+		final Document sourceDocument = documentBuilder.parse(new InputSource(new StringReader(source)));
+
+		final Element inputConfiguration = getConfigurationElement(inputDocument);
+		final Element sourceConfiguration = getConfigurationElement(sourceDocument);
+		final NodeList sourceClasspathModificationsList = sourceConfiguration.getElementsByTagName("classpathModifications");
+
+		removeClasspathModifications(inputConfiguration);
+
+		if (sourceClasspathModificationsList.getLength() > 0) {
+			inputConfiguration.appendChild(inputDocument.importNode(sourceClasspathModificationsList.item(0), true));
+		}
+
+		return documentToString(inputDocument);
+	}
+
+	private static Element getConfigurationElement(Document document) {
+		final NodeList nodeList = document.getDocumentElement().getElementsByTagName("configuration");
+		assert nodeList.getLength() == 1;
+		return (Element) nodeList.item(0);
+	}
+
+	private static void removeClasspathModifications(Element configuration) {
+		final NodeList classpathModificationsList = configuration.getElementsByTagName("classpathModifications");
+
+		for (int i = classpathModificationsList.getLength() - 1; i >= 0; i--) {
+			configuration.removeChild(classpathModificationsList.item(i));
+		}
+	}
+
+	private static String documentToString(Document document) throws Exception {
+		final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		final Transformer transformer = transformerFactory.newTransformer();
+		transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+
+		final DOMSource source = new DOMSource(document);
 		final StringWriter writer = new StringWriter();
 		transformer.transform(source, new StreamResult(writer));
 

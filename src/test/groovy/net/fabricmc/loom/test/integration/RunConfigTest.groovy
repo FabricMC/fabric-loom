@@ -112,6 +112,39 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
+	@RestoreSystemProperties
+	@Unroll
+	def "idea auto configuration with gradle task run configs (gradle #version)"() {
+		setup:
+		System.setProperty("idea.sync.active", "true")
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		new File(gradle.projectDir, ".idea").mkdirs()
+
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+                }
+
+                loom {
+                    runs.configureEach {
+                        preferGradleTask = true
+                    }
+                }
+            """
+
+		when:
+		def result = gradle.run(tasks: [])
+
+		then:
+		result.task(":ideaSyncTask").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
 	// Test that the download assets task doesnt depend on a client run existing.
 	@Unroll
 	def "cleared runs (gradle #version)"() {

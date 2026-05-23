@@ -105,6 +105,17 @@ public interface RunConfiguration extends Named {
 	Property<Boolean> getGenerateRunConfig();
 
 	/**
+	 * When true generated IDE run configurations will prefer to invoke the matching Gradle run task instead of
+	 * launching the game directly, when that IDE supports such a mode.
+	 *
+	 * <p>For example, the {@code client} run configuration will run {@code :runClient}.
+	 *
+	 * <p>Changing this mode may cause an existing generated run configuration to be replaced so the IDE switches to the
+	 * correct run configuration type.
+	 */
+	Property<Boolean> getPreferGradleTask();
+
+	/**
 	 * Group this run config under the given folder.
 	 *
 	 * <p>This is currently only supported on IntelliJ IDEA.
@@ -131,6 +142,7 @@ public interface RunConfiguration extends Named {
 		getSourceSet().convention(parent.getSourceSet());
 		getRunDirectory().convention(parent.getRunDirectory());
 		getGenerateRunConfig().convention(parent.getGenerateRunConfig());
+		getPreferGradleTask().convention(parent.getPreferGradleTask());
 		getIdeConfigFolder().convention(parent.getIdeConfigFolder());
 		getDevLaunchMainClass().convention(parent.getDevLaunchMainClass());
 	}

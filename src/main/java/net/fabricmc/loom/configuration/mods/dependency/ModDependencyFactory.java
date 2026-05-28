@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
 
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.provider.Provider;
 import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -42,7 +42,7 @@ import net.fabricmc.loom.util.AttributeHelper;
 public class ModDependencyFactory {
 	private static final String TARGET_ATTRIBUTE_KEY = "loom-target";
 
-	public static ModDependency create(ArtifactRef artifact, ArtifactMetadata metadata, Provider<? extends Configuration> targetConfig, @Nullable Provider<? extends Configuration> targetClientConfig, ModDependencyOptions options, Project project) {
+	public static ModDependency create(ArtifactRef artifact, ArtifactMetadata metadata, NamedDomainObjectProvider<? extends Configuration> targetConfig, @Nullable NamedDomainObjectProvider<? extends Configuration> targetClientConfig, ModDependencyOptions options, Project project) {
 		if (targetClientConfig != null && LoomGradleExtension.get(project).getSplitModDependencies().get()) {
 			final Optional<JarSplitter.Target> cachedTarget = readTarget(artifact);
 			JarSplitter.Target target;

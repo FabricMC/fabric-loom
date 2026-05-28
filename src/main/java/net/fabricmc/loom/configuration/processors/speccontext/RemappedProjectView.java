@@ -31,8 +31,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.gradle.api.NamedDomainObjectList;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvableConfiguration;
 import org.gradle.api.attributes.Usage;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -59,10 +60,11 @@ public interface RemappedProjectView extends ProjectView {
 			final Usage usage = project.getObjects().named(Usage.class, artifactUsage.getGradleUsage());
 
 			return settings -> {
-				final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
-				configuration.setCanBeConsumed(false);
-				configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-				return configuration.resolve().stream().map(File::toPath);
+				final NamedDomainObjectProvider<ResolvableConfiguration> configuration = project.getConfigurations().resolvable(settings.getSourceConfiguration().getName() + "Copy", config -> {
+					config.extendsFrom(settings.getSourceConfiguration());
+					config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				});
+				return configuration.get().resolve().stream().map(File::toPath);
 			};
 		}
 

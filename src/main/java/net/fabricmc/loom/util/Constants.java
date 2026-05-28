@@ -52,6 +52,8 @@ public class Constants {
 		public static final String INCLUDE = "include";
 		public static final String INCLUDE_INTERNAL = "includeInternal";
 		public static final String MINECRAFT = "minecraft";
+		public static final String MINECRAFT_VERSION_RESOLVE = "minecraftVersionResolve";
+		public static final String MINECRAFT_VERSION_NORMALIZER = "minecraftVersionNormalizerClasspath";
 
 		public static final String MINECRAFT_COMPILE_LIBRARIES = "minecraftLibraries";
 		public static final String MINECRAFT_RUNTIME_LIBRARIES = "minecraftRuntimeLibraries";

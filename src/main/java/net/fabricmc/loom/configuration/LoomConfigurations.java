@@ -91,7 +91,21 @@ public abstract class LoomConfigurations implements Runnable {
 		registerNonTransitive(Constants.Configurations.MINECRAFT_NATIVES, Role.RESOLVABLE);
 		registerNonTransitive(Constants.Configurations.LOADER_DEPENDENCIES, Role.RESOLVABLE);
 
-		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
+		var minecraft = registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
+		registerNonTransitive(Constants.Configurations.MINECRAFT_VERSION_RESOLVE, Role.RESOLVABLE).configure(configuration -> {
+			configuration.extendsFrom(minecraft.get());
+		});
+		registerNonTransitive(Constants.Configurations.MINECRAFT_VERSION_NORMALIZER, Role.RESOLVABLE).configure(configuration -> {
+			configuration.defaultDependencies(dependencies -> dependencies.add(getDependencies().create(LoomVersions.FABRIC_LOADER.mavenNotation())));
+		});
+
+		getDependencies().getComponents().all(details -> {
+			if (details.getId().getGroup().equals("net.minecraft") && details.getId().getName().equals("minecraft")) {
+				// Normalized snapshots include a pre-release separator. Marking them as integration
+				// lets Gradle's latest.release selector ignore snapshots.
+				details.setStatus(details.getId().getVersion().contains("-") ? "integration" : "release");
+			}
+		});
 
 		Provider<Configuration> include = register(Constants.Configurations.INCLUDE, Role.NONE);
 		register(Constants.Configurations.INCLUDE_INTERNAL, Role.RESOLVABLE).configure(configuration -> {

@@ -95,6 +95,16 @@ public interface GameTestSettings {
 	Property<String> getUsername();
 
 	/**
+	 * Contains a boolean property indicating whether the created game test run configs inherit the default
+	 * client and server run configs.
+	 *
+	 * <p>This only works when {@link #getEnableGameTests()} or {@link #getEnableClientGameTests()} is enabled.
+	 *
+	 * <p>Default: true
+	 */
+	Property<Boolean> getInheritRunConfigs();
+
+	/**
 	 * Sets {@link #getModId()} property based on the {@code id} field defined in the provided file.
 	 */
 	default void modId(File fabricModJsonFile) {

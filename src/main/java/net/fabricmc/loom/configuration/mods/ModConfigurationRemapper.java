@@ -56,6 +56,7 @@ import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.JvmLibrary;
 import org.gradle.language.base.artifact.SourcesArtifact;
@@ -91,9 +92,9 @@ public class ModConfigurationRemapper {
 		final DependencyHandler dependencies = project.getDependencies();
 		// The configurations where the source and remapped artifacts go.
 		// key: source, value: target
-		final Map<NamedDomainObjectProvider<? extends Configuration>, NamedDomainObjectProvider<? extends Configuration>> configsToRemap = new LinkedHashMap<>();
+		final Map<Provider<? extends Configuration>, NamedDomainObjectProvider<? extends Configuration>> configsToRemap = new LinkedHashMap<>();
 		// Client remapped dep collectors for split source sets. Same keys and values.
-		final Map<NamedDomainObjectProvider<? extends Configuration>, NamedDomainObjectProvider<? extends Configuration>> clientConfigsToRemap = new HashMap<>();
+		final Map<Provider<? extends Configuration>, NamedDomainObjectProvider<? extends Configuration>> clientConfigsToRemap = new HashMap<>();
 
 		/*
 		 * Hack fix/improvement for https://github.com/FabricMC/fabric-loom/issues/1012
@@ -116,11 +117,11 @@ public class ModConfigurationRemapper {
 
 				final NamedDomainObjectProvider<? extends Configuration> target = RemapConfigurations.getOrRegisterCollectorConfiguration(project, entry, runtime);
 				// We copy the source with the desired usage type to get only the runtime or api jars, not both.
-				final String name = entry.getSourceConfiguration().getName() + "Copy";
-				final NamedDomainObjectProvider<? extends Configuration> sourceCopy = project.getConfigurations().resolvable(name, config -> {
-					config.extendsFrom(entry.getSourceConfiguration());
+				Provider<? extends Configuration> sourceCopy = entry.getSourceConfiguration().map(source -> {
+					Configuration copy = source.copyRecursive();
 					Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
-					config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+					copy.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+					return copy;
 				});
 				configsToRemap.put(sourceCopy, target);
 
@@ -157,7 +158,7 @@ public class ModConfigurationRemapper {
 		// Go through all the configs to find artifacts to remap and
 		// the installer data. The installer data has to be added before
 		// any mods are remapped since remapping needs the dependencies provided by that data.
-		final Map<NamedDomainObjectProvider<? extends Configuration>, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
+		final Map<Provider<? extends Configuration>, List<ModDependency>> dependenciesBySourceConfig = new HashMap<>();
 		AsyncCache<ArtifactMetadata> metaCache = new AsyncCache<>();
 		configsToRemap.forEach((sourceConfig, remappedConfig) -> {
 			/*
@@ -252,7 +253,7 @@ public class ModConfigurationRemapper {
 		return AsyncCache.joinMap(futures);
 	}
 
-	private static void createConstraints(ArtifactRef artifact, NamedDomainObjectProvider<? extends Configuration> targetConfig, NamedDomainObjectProvider<? extends Configuration> sourceConfig, DependencyHandler dependencies) {
+	private static void createConstraints(ArtifactRef artifact, NamedDomainObjectProvider<? extends Configuration> targetConfig, Provider<? extends Configuration> sourceConfig, DependencyHandler dependencies) {
 		if (true) {
 			// Disabled due to the gradle module metadata causing issues. Try the MavenProject test to reproduce issue.
 			return;
@@ -265,7 +266,7 @@ public class ModConfigurationRemapper {
 			targetConfig.get().getDependencyConstraints().add(dependencies.getConstraints().create(dependencyCoordinate, constraint -> {
 				constraint.because("configuration (%s) already contains the remapped module from configuration (%s)".formatted(
 						targetConfig.getName(),
-						sourceConfig.getName()
+						sourceConfig.get().getName()
 				));
 
 				constraint.version(MutableVersionConstraint::rejectAll);
@@ -273,7 +274,7 @@ public class ModConfigurationRemapper {
 		}
 	}
 
-	private static List<ArtifactRef> resolveArtifacts(Project project, NamedDomainObjectProvider<? extends Configuration> configuration) {
+	private static List<ArtifactRef> resolveArtifacts(Project project, Provider<? extends Configuration> configuration) {
 		final List<ArtifactRef> artifacts = new ArrayList<>();
 
 		final Set<ResolvedArtifact> resolvedArtifacts = configuration.get().getResolvedConfiguration().getResolvedArtifacts();

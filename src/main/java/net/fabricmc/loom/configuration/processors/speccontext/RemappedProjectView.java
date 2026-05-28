@@ -59,11 +59,10 @@ public interface RemappedProjectView extends ProjectView {
 			final Usage usage = project.getObjects().named(Usage.class, artifactUsage.getGradleUsage());
 
 			return settings -> {
-				final Configuration detached = project.getConfigurations().detachedConfiguration();
-				detached.extendsFrom(settings.getSourceConfiguration());
-				detached.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-				detached.setCanBeConsumed(false);
-				return detached.resolve().stream().map(File::toPath);
+				final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
+				configuration.setCanBeConsumed(false);
+				configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				return configuration.resolve().stream().map(File::toPath);
 			};
 		}
 

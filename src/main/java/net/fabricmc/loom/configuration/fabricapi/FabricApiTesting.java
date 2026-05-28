@@ -100,7 +100,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 				} else {
 					run.server();
 				}
-				
+
 				run.property("fabric-api.gametest");
 				run.runDir("build/run/gameTest");
 				configureBase.accept(run);

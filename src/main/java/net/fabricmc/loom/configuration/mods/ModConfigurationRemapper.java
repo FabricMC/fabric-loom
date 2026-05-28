@@ -117,16 +117,11 @@ public class ModConfigurationRemapper {
 				final NamedDomainObjectProvider<? extends Configuration> target = RemapConfigurations.getOrRegisterCollectorConfiguration(project, entry, runtime);
 				// We copy the source with the desired usage type to get only the runtime or api jars, not both.
 				final String name = entry.getSourceConfiguration().getName() + "Copy";
-				NamedDomainObjectProvider<? extends Configuration> sourceCopy;
-				if (project.getConfigurations().findByName(name) != null) {
-					sourceCopy = project.getConfigurations().named(name);
-				} else {
-					sourceCopy = project.getConfigurations().resolvable(name, config -> {
-						config.extendsFrom(entry.getSourceConfiguration());
-						Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
-						config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-					});
-				}
+				final NamedDomainObjectProvider<? extends Configuration> sourceCopy = project.getConfigurations().resolvable(name, config -> {
+					config.extendsFrom(entry.getSourceConfiguration());
+					Usage usage = project.getObjects().named(Usage.class, runtime ? Usage.JAVA_RUNTIME : Usage.JAVA_API);
+					config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
+				});
 				configsToRemap.put(sourceCopy, target);
 
 				// If our remap configuration entry targets the client source set as well,

@@ -109,7 +109,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 			RunConfigSettings clientGameTest = extension.getRunConfigs().create("clientGameTest", run -> {
 				run.inherit(extension.getRunConfigs().getByName("client"));
-				run.getSystemProperties().put("fabric-api.client.gametest", "");
+				run.getSystemProperties().put("fabric.client.gametest", "");
 
 				if (resourcesDir != null) {
 					run.getSystemProperties().put("fabric.client.gametest.testModResourcesPath", resourcesDir.getAbsolutePath());

@@ -102,8 +102,13 @@ public class DefaultRunConfigurationSettings {
 			run.getJvmArguments().add("--enable-native-access=ALL-UNNAMED");
 		}
 
-		// TODO maybe pass these all via DLI
-		run.getSystemProperties().get().forEach((key, value) -> run.getJvmArguments().add("-D%s=%s".formatted(key, value)));
+		run.getSystemProperties().get().forEach((key, value) -> {
+			if (value.isBlank()) {
+				run.getJvmArguments().add("-D%s".formatted(key));
+			} else {
+				run.getJvmArguments().add("-D%s=%s".formatted(key, value));
+			}
+		});
 
 		finialiseValues(run);
 

@@ -44,7 +44,8 @@ class UnobfFabricAPITest extends Specification implements GradleProjectTestTrait
 				repo: "https://github.com/FabricMC/fabric.git",
 				commit: "0b561df1c2bdda94c7277d7c4f7e0ce5e448ce17",
 				version: PRE_RELEASE_GRADLE,
-				patch: "fabric_api_unobf"
+				patch: "fabric_api_unobf",
+				warningMode: "all"
 				)
 
 		def minecraftVersion = "26.2-snapshot-8"
@@ -77,7 +78,7 @@ class UnobfFabricAPITest extends Specification implements GradleProjectTestTrait
 			"runDatagen",
 			"-x",
 			"runGametest"
-		], configurationCache: false, warningMode: "all") // Note: checkstyle does not appear to like being ran in a test runner
+		], configurationCache: false) // Note: checkstyle does not appear to like being ran in a test runner
 		gradle.printOutputFiles()
 
 		def serverResult = server.run()

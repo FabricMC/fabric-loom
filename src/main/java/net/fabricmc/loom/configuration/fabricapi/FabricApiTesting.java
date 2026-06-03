@@ -75,6 +75,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		settings.getEula().convention(false);
 		settings.getClearRunDirectory().convention(true);
 		settings.getUsername().convention("Player0");
+		settings.getInheritRunConfigs().convention(true);
 
 		action.execute(settings);
 
@@ -94,7 +95,12 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 
 		if (settings.getEnableGameTests().get()) {
 			RunConfiguration gameTest = extension.getRunConfigs().create("gameTest", run -> {
-				run.inherit(extension.getRunConfigs().getByName("server"));
+				if (settings.getInheritRunConfigs().get()) {
+					run.inherit(extension.getRunConfigs().getByName("server"));
+				} else {
+					run.server();
+				}
+
 				run.property("fabric-api.gametest");
 				run.runDir("build/run/gameTest");
 				configureBase.accept(run);
@@ -108,7 +114,12 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 			final File resourcesDir = testSourceSet.getResources().getSrcDirs().stream().findFirst().orElse(null);
 
 			RunConfigSettings clientGameTest = extension.getRunConfigs().create("clientGameTest", run -> {
-				run.inherit(extension.getRunConfigs().getByName("client"));
+				if (settings.getInheritRunConfigs().get()) {
+					run.inherit(extension.getRunConfigs().getByName("client"));
+				} else {
+					run.client();
+				}
+
 				run.property("fabric.client.gametest");
 
 				if (resourcesDir != null) {

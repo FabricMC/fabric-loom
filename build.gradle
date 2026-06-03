@@ -283,6 +283,7 @@ tasks.withType(Test).configureEach {
 
 
 import org.gradle.api.tasks.testing.logging.TestLogEvent
+import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.util.GradleVersion
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -299,6 +300,8 @@ publishing {
 
 				from components.java
 			}
+
+			def markerDependencyVersion = project.version.toString()
 
 			gradlePlugin.plugins.forEach { plugin ->
 				// Manually crate the plugin marker for snapshot versions
@@ -318,7 +321,7 @@ publishing {
 						Node artifactId = dependency.appendChild(document.createElement('artifactId'))
 						artifactId.setTextContent('fabric-loom')
 						Node version = dependency.appendChild(document.createElement('version'))
-						version.setTextContent(project.version)
+						version.setTextContent(markerDependencyVersion)
 					})
 				}
 			}
@@ -335,6 +338,11 @@ publishing {
 			}
 		}
 	}
+}
+
+// The publish tasks appear to write to the same files, so we need to ensure they don't run in parallel.
+tasks.withType(PublishToMavenLocal).configureEach { publishTask ->
+	mustRunAfter(tasks.withType(PublishToMavenLocal).matching { it.name < publishTask.name })
 }
 
 // A task to output a json file with a list of all the test to run

@@ -76,6 +76,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }
+
             is KotlinClassMetadata.SyntheticClass -> {
                 var klambda = metadata.kmLambda
 
@@ -88,6 +89,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
                     accept(next)
                 }
             }
+
             is KotlinClassMetadata.FileFacade -> {
                 var kpackage = metadata.kmPackage
                 kpackage = KotlinClassRemapper(remapper).remap(kpackage)
@@ -95,6 +97,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }
+
             is KotlinClassMetadata.MultiFileClassPart -> {
                 var kpackage = metadata.kmPackage
                 kpackage = KotlinClassRemapper(remapper).remap(kpackage)
@@ -109,6 +112,7 @@ class KotlinClassMetadataRemappingAnnotationVisitor(
                 writeClassHeader(remapped)
                 validateKotlinClassHeader(remapped, header)
             }
+
             is KotlinClassMetadata.MultiFileClassFacade, is KotlinClassMetadata.Unknown -> {
                 // do nothing
                 accept(next)

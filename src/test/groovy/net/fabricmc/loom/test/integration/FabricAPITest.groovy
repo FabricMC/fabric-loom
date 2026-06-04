@@ -46,7 +46,8 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				repo: "https://github.com/FabricMC/fabric.git",
 				commit: "f84dc5662589fd56ac4b36a4b94920a15b1da29d",
 				version: version,
-				patch: "fabric_api"
+				patch: "fabric_api",
+				warningMode: "all"
 				)
 
 		// Disable the mixin ap if needed. Fabric API is a large enough test project to see if something breaks.

@@ -81,6 +81,12 @@ class GradleTestUtil {
 		return realProject
 	}
 
+	static Project realProject(File projectDir) {
+		return ProjectBuilder.builder()
+				.withProjectDir(projectDir)
+				.build()
+	}
+
 	static LoomGradleExtension mockLoomGradleExtension() {
 		def mock = mock(LoomGradleExtension.class)
 		def loomFiles = mockLoomFiles()

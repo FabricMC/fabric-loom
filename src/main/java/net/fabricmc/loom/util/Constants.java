@@ -51,6 +51,8 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
 		public static final String MINECRAFT = "minecraft";
+		public static final String MINECRAFT_VERSION_RESOLVE = "minecraftVersionResolve";
+		public static final String MINECRAFT_VERSION_NORMALIZER = "minecraftVersionNormalizerClasspath";
 
 		public static final String MINECRAFT_COMPILE_LIBRARIES = "minecraftLibraries";
 		public static final String MINECRAFT_RUNTIME_LIBRARIES = "minecraftRuntimeLibraries";

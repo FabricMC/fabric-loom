@@ -10,6 +10,7 @@ fabric-log4j-util = "1.0.2"
 jetbrains-annotations = "26.0.2"
 native-support = "1.0.1"
 fabric-installer = "1.0.3"
+fabric-loader = "0.19.2"
 
 # Dev tools
 renderdoc = "1.37"
@@ -27,6 +28,7 @@ fabric-log4j-util = { module = "net.fabricmc:fabric-log4j-util", version.ref = "
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 native-support = { module = "net.fabricmc:fabric-loom-native-support", version.ref = "native-support" }
 fabric-installer = { module = "net.fabricmc:fabric-installer", version.ref = "fabric-installer" }
+fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
 
 # Dev tools
 renderdoc = { module = "org.renderdoc:renderdoc", version.ref = "renderdoc" } # Not a maven dependency

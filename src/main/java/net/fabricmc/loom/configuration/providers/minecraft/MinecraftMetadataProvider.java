@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.provider.Property;
 import org.jspecify.annotations.Nullable;
 
@@ -56,7 +57,7 @@ public final class MinecraftMetadataProvider {
 	}
 
 	public static MinecraftMetadataProvider create(ConfigContext configContext) {
-		final String minecraftVersion = resolveMinecraftVersion(configContext.project());
+		final String minecraftVersion = resolveMinecraftVersion(configContext);
 
 		return new MinecraftMetadataProvider(
 				MinecraftMetadataProvider.Options.create(
@@ -67,9 +68,16 @@ public final class MinecraftMetadataProvider {
 		);
 	}
 
-	private static String resolveMinecraftVersion(Project project) {
+	private static String resolveMinecraftVersion(ConfigContext configContext) {
+		final Project project = configContext.project();
 		final DependencyInfo dependency = DependencyInfo.create(project, Constants.Configurations.MINECRAFT);
-		return dependency.getDependency().getVersion();
+		final Dependency minecraftDependency = dependency.getDependency();
+
+		if (GradleMinecraftVersionResolver.isGradleResolvedMinecraft(minecraftDependency)) {
+			return GradleMinecraftVersionResolver.resolve(project, minecraftDependency, configContext.extension()::download);
+		}
+
+		return minecraftDependency.getVersion();
 	}
 
 	public String getMinecraftVersion() {

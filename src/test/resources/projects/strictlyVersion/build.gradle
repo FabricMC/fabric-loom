@@ -1,0 +1,18 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+}
+
+
+dependencies {
+	minecraft("com.mojang:minecraft") {
+		version {
+			prefer "26.1.2"
+			strictly "[26.1.2,26.2)"
+		}
+	}
+	implementation "net.fabricmc:fabric-loader:0.19.2"
+}
+
+base {
+	archivesName = "fabric-example-mod"
+}

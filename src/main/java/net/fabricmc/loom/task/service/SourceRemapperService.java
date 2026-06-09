@@ -36,7 +36,6 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
-import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
@@ -136,22 +135,20 @@ public final class SourceRemapperService extends Service<SourceRemapperService.O
 		return mercury;
 	}
 
-	public static Provider<Integer> getJavaCompileRelease(Project project) {
-		ProviderFactory providers = project.getProviders();
-		Provider<Integer> result = providers.provider(() -> -1);
+    public static Provider<Integer> getJavaCompileRelease(Project project) {
+        Provider<Integer> result =
+            project.provider(() ->
+                project.getTasks().withType(JavaCompile.class).stream()
+                    .map(t -> t.getOptions().getRelease().orElse(-1))
+                    .max(Integer::compare)
+                    .orElse(-1)
+            );
 
-		for (JavaCompile task : project.getTasks().withType(JavaCompile.class)) {
-			result = result.zip(
-					task.getOptions().getRelease().orElse(-1),
-					Math::max
-			);
-		}
-
-		return result.map(i ->
-				// Unable to find the release used to compile with, default to the current version
-				i < 0
-					? Integer.parseInt(JavaVersion.current().getMajorVersion())
-					: i
-		);
+        return result.map(i ->
+			// Unable to find the release used to compile with, default to the current version			  
+            i < 0
+                ? Integer.parseInt(JavaVersion.current().getMajorVersion())
+                : i
+        );
 	}
 }

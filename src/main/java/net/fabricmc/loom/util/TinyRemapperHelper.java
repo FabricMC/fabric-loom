@@ -68,6 +68,7 @@ public final class TinyRemapperHelper {
 		MemoryMappingTree mappingTree = extension.getMappingConfiguration().getMappingsService(project, serviceFactory).getMappingTree();
 
 		int intermediaryNsId = mappingTree.getNamespaceId(MappingsNamespace.INTERMEDIARY.toString());
+		int fromNsId = mappingTree.getNamespaceId(fromM);
 
 		TinyRemapper.Builder builder = TinyRemapper.newRemapper(TinyRemapperLoggerAdapter.INSTANCE)
 				.withMappings(create(mappingTree, fromM, toM, true))
@@ -79,11 +80,7 @@ public final class TinyRemapperHelper {
 				.withKnownIndyBsm(extension.getKnownIndyBsms().get())
 				.extraPreApplyVisitor((cls, next) -> {
 					if (fixRecords && !cls.isRecord() && "java/lang/Record".equals(cls.getSuperName())) {
-						if (!mappingTree.getSrcNamespace().equals(fromM)) {
-							throw new IllegalStateException("Mappings src namespace must match remap src namespace, expected " + fromM + " but got " + mappingTree.getSrcNamespace());
-						}
-
-						return new RecordComponentFixVisitor(next, mappingTree, intermediaryNsId);
+						return new RecordComponentFixVisitor(next, mappingTree, fromNsId, intermediaryNsId);
 					}
 
 					return next;

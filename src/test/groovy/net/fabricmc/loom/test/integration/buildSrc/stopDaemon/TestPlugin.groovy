@@ -159,6 +159,11 @@ class TestPlugin implements Plugin<Project> {
 			dispatchConnection.dispatchAndFlush(new Success("Ok"))
 			response = receive(1, TimeUnit.MINUTES)
 
+			if (response == null) {
+				println("Client closed connection without finished message")
+				return
+			}
+
 			if (!(response instanceof Finished)) {
 				throw new IllegalStateException("Expected Finished, got ${response}")
 			}

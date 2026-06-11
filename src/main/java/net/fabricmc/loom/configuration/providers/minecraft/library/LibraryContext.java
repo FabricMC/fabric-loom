@@ -61,7 +61,7 @@ public final class LibraryContext {
 		return versionMeta.libraries().stream().filter(library -> library.name().startsWith("org.lwjgl:lwjgl:")).anyMatch(library -> {
 			final String[] split = library.name().split(":");
 
-			if (split.length != 3) {
+			if (split.length < 3) {
 				return false;
 			}
 

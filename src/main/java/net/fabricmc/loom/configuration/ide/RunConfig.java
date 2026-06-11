@@ -149,7 +149,7 @@ public class RunConfig {
 
 		// Custom parameters
 		runConfig.programArgs.addAll(settings.getProgramArgs());
-		runConfig.vmArgs.addAll(settings.getVmArgs());
+		runConfig.vmArgs.addAll(settings.getVmArgs().stream().map(Object::toString).toList());
 		runConfig.vmArgs.add("-Dfabric.dli.main=" + mainClass);
 		runConfig.environmentVariables = new HashMap<>();
 		runConfig.environmentVariables.putAll(settings.getEnvironmentVariables());

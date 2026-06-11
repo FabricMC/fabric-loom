@@ -37,7 +37,10 @@ class JarWalkerTest extends Specification {
 		given:
 		def jar = ZipTestUtils.createZipFromBytes([
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$1"] as String[]),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+				"net/fabricmc/other/Test\$Inner",
+				"net/fabricmc/other/Test\$1"
+			] as String[]),
 			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 			"net/fabricmc/other/Test\$NotInner.class": newClass("net/fabricmc/other/Test\$NotInner"),
@@ -84,14 +87,26 @@ class JarWalkerTest extends Specification {
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
 		]
 		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$1"] as String[]),
-			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", ["net/fabricmc/other/Test\$Inner\$2"] as String[]),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+				"net/fabricmc/other/Test\$Inner",
+				"net/fabricmc/other/Test\$Inner\$2",
+				"net/fabricmc/other/Test\$1"
+			] as String[]),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", [
+				"net/fabricmc/other/Test\$Inner\$2"
+			] as String[]),
 			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
 		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$1"] as String[]),
-			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", ["net/fabricmc/other/Test\$Inner\$2"] as String[]),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+				"net/fabricmc/other/Test\$Inner",
+				"net/fabricmc/other/Test\$Inner\$2",
+				"net/fabricmc/other/Test\$1"
+			] as String[]),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", [
+				"net/fabricmc/other/Test\$Inner\$2"
+			] as String[]),
 			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
@@ -134,7 +149,10 @@ class JarWalkerTest extends Specification {
 	def "inner classes"() {
 		given:
 		def jarEntries = [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$1"] as String[]),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+				"net/fabricmc/other/Test\$Inner",
+				"net/fabricmc/other/Test\$1"
+			] as String[]),
 			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "net/fabricmc/other/Super"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test", null, ["java/lang/Runnable"] as String[]),
 		]

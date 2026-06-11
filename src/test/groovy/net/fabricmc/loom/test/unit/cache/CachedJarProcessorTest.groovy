@@ -44,16 +44,22 @@ import net.fabricmc.loom.util.ZipUtils
 class CachedJarProcessorTest extends Specification {
 	static Map<String, byte[]> jarEntries = [
 		"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
-		"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
+		"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+			"net/fabricmc/other/Test\$Inner",
+			"net/fabricmc/other/Test\$1"
+		] as String[]),
 		"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
 		"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
+		"net/fabricmc/other/Test\$Dangling.class": newInnerClass("net/fabricmc/other/Test\$Dangling", "net/fabricmc/other/Test"),
 	]
 
 	static String ExampleHash = "abc123/db5c3a2d04e0c6ea03aef0d217517aa0233f9b8198753d3c96574fe5825a13c4"
-	static String TestHash = "abc123/b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330"
+	static String TestHash = "abc123/62db36eda67a8bdb19626126176aa0fccc64a509ac808db166e9795caac5a784"
+	static String TestDanglingHash = "abc123/6659d90f0ac7ee783c8b44e51c08d4388477ef3fa998f1d6d4fc95f4adf628ca"
 
 	static CachedData ExampleCachedData = new CachedData("net/fabricmc/Example", "Example sources", lineNumber("net/fabricmc/Example"))
 	static CachedData TestCachedData = new CachedData("net/fabricmc/other/Test", "Test sources", lineNumber("net/fabricmc/other/Test"))
+	static CachedData TestDanglingCachedData = new CachedData("net/fabricmc/other/Test\$Dangling", "Test\$Dangling sources", lineNumber("net/fabricmc/other/Test\$Dangling"))
 
 	@TempDir
 	Path testPath
@@ -70,10 +76,10 @@ class CachedJarProcessorTest extends Specification {
 
 		then:
 		workRequest.lineNumbers() == null
-		workJob.outputNameMap().size() == 2
+		workJob.outputNameMap().size() == 3
 
-		// Expect two calls looking for the existing entry in the cache
-		2 * cache.getEntry(_) >> null
+		// Expect 3 calls looking for the existing entry in the cache
+		3 * cache.getEntry(_) >> null
 
 		0 * _ // Strict mock
 	}
@@ -93,14 +99,14 @@ class CachedJarProcessorTest extends Specification {
 		lineMap.size() == 1
 		lineMap.get("net/fabricmc/Example") == ExampleCachedData.lineNumbers()
 
-		workJob.outputNameMap().size() == 1
+		workJob.outputNameMap().size() == 2
 		ZipUtils.unpackNullable(workJob.existingSources(), "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(workJob.existingClasses(), "net/fabricmc/Example.class") == newClass("net/fabricmc/Example")
 
 		// Provide one cached entry
-		// And then one call not finding the entry in the cache
+		// And then 2 calls not finding the entry in the cache
 		1 * cache.getEntry(ExampleHash) >> ExampleCachedData
-		1 * cache.getEntry(_) >> null
+		2 * cache.getEntry(_) >> null
 
 		0 * _ // Strict mock
 	}
@@ -117,18 +123,21 @@ class CachedJarProcessorTest extends Specification {
 		def lineMap = workRequest.lineNumbers().lineMap()
 
 		then:
-		lineMap.size() == 2
+		lineMap.size() == 3
 		lineMap.get("net/fabricmc/Example") == ExampleCachedData.lineNumbers()
 		lineMap.get("net/fabricmc/other/Test") == TestCachedData.lineNumbers()
+		lineMap.get("net/fabricmc/other/Test\$Dangling") == TestDanglingCachedData.lineNumbers()
 
 		workJob.completed() != null
 		ZipUtils.unpackNullable(workJob.completed(), "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(workJob.completed(), "net/fabricmc/other/Test.java") == "Test sources".bytes
+		ZipUtils.unpackNullable(workJob.completed(), "net/fabricmc/other/Test\$Dangling.java") == "Test\$Dangling sources".bytes
 
 		// Provide one cached entry
-		// And then two calls not finding the entry in the cache
+		// And then 3 calls not finding the entry in the cache
 		1 * cache.getEntry(ExampleHash) >> ExampleCachedData
 		1 * cache.getEntry(TestHash) >> TestCachedData
+		1 * cache.getEntry(TestDanglingHash) >> TestDanglingCachedData
 
 		0 * _ // Strict mock
 	}
@@ -146,29 +155,34 @@ class CachedJarProcessorTest extends Specification {
 		// Do the work, such as decompiling.
 		ZipUtils.add(workJob.output(), "net/fabricmc/Example.java", "Example sources")
 		ZipUtils.add(workJob.output(), "net/fabricmc/other/Test.java", "Test sources")
+		ZipUtils.add(workJob.output(), "net/fabricmc/other/Test\$Dangling.java", "Test\$Dangling sources")
 
 		def outputJar = Files.createTempFile("loom-test-output", ".jar")
 		Files.delete(outputJar)
 
 		ClassLineNumbers lineNumbers = lineNumbers([
 			"net/fabricmc/Example",
-			"net/fabricmc/other/Test"
+			"net/fabricmc/other/Test",
+			"net/fabricmc/other/Test\$Dangling"
 		])
 		processor.completeJob(outputJar, workJob, lineNumbers)
 
 		then:
-		workJob.outputNameMap().size() == 2
+		workJob.outputNameMap().size() == 3
 
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test.java") == "Test sources".bytes
+		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test\$Dangling.java") == "Test\$Dangling sources".bytes
 
 		// Expect two calls looking for the existingSources entry in the cache
 		1 * cache.getEntry(ExampleHash) >> null
 		1 * cache.getEntry(TestHash) >> null
+		1 * cache.getEntry(TestDanglingHash) >> null
 
 		// Expect the new work to be put into the cache
 		1 * cache.putEntry(ExampleHash, ExampleCachedData)
 		1 * cache.putEntry(TestHash, TestCachedData)
+		1 * cache.putEntry(TestDanglingHash, TestDanglingCachedData)
 
 		0 * _ // Strict mock
 	}
@@ -191,7 +205,8 @@ class CachedJarProcessorTest extends Specification {
 
 		ClassLineNumbers lineNumbers = lineNumbers([
 			"net/fabricmc/Example",
-			"net/fabricmc/other/Test"
+			"net/fabricmc/other/Test",
+			"net/fabricmc/other/Test\$Dangling"
 		])
 		processor.completeJob(outputJar, workJob, lineNumbers)
 
@@ -200,10 +215,12 @@ class CachedJarProcessorTest extends Specification {
 
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test.java") == "Test sources".bytes
+		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test\$Dangling.java") == "Test\$Dangling sources".bytes
 
 		// The cache already contains sources for example, but not for test
 		1 * cache.getEntry(ExampleHash) >> ExampleCachedData
 		1 * cache.getEntry(TestHash) >> null
+		1 * cache.getEntry(TestDanglingHash) >> TestDanglingCachedData
 
 		// Expect the new work to be put into the cache
 		1 * cache.putEntry(TestHash, TestCachedData)
@@ -226,17 +243,20 @@ class CachedJarProcessorTest extends Specification {
 
 		ClassLineNumbers lineNumbers = lineNumbers([
 			"net/fabricmc/Example",
-			"net/fabricmc/other/Test"
+			"net/fabricmc/other/Test",
+			"net/fabricmc/other/Test\$Dangling"
 		])
 		processor.completeJob(outputJar, workJob, lineNumbers)
 
 		then:
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/Example.java") == "Example sources".bytes
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test.java") == "Test sources".bytes
+		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test\$Dangling.java") == "Test\$Dangling sources".bytes
 
 		// The cache already contains sources for example, but not for test
 		1 * cache.getEntry(ExampleHash) >> ExampleCachedData
 		1 * cache.getEntry(TestHash) >> TestCachedData
+		1 * cache.getEntry(TestDanglingHash) >> TestDanglingCachedData
 
 		0 * _ // Strict mock
 	}
@@ -246,7 +266,10 @@ class CachedJarProcessorTest extends Specification {
 		def jar1 = ZipTestUtils.createZipFromBytes(
 				[
 					"net/fabricmc/Example.class": newClass("net/fabricmc/Example"),
-					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
+					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+						"net/fabricmc/other/Test\$Inner",
+						"net/fabricmc/other/Test\$1"
+					] as String[]),
 					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
 					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
@@ -255,7 +278,10 @@ class CachedJarProcessorTest extends Specification {
 		def jar2 = ZipTestUtils.createZipFromBytes(
 				[
 					"net/fabricmc/Example.class": newClass("net/fabricmc/Example", ["java/lang/Runnable"] as String[]),
-					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", ),
+					"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
+						"net/fabricmc/other/Test\$Inner",
+						"net/fabricmc/other/Test\$1"
+					] as String[]),
 					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
 					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
@@ -298,9 +324,14 @@ class CachedJarProcessorTest extends Specification {
 		return new ClassLineNumbers.Entry(name, 0, 0, [:])
 	}
 
-	private static byte[] newClass(String name, String[] interfaces = null, String superName = "java/lang/Object") {
+	private static byte[] newClass(String name, String[] interfaces = null, String[] innerNames = null, String superName = "java/lang/Object") {
 		def writer = new ClassWriter(0)
 		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		if (innerNames != null) {
+			for (String innerName : innerNames) {
+				writer.visitInnerClass(innerName, null, null, 0)
+			}
+		}
 		return writer.toByteArray()
 	}
 

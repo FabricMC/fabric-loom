@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -45,6 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gradle.api.JavaVersion;
@@ -73,6 +75,8 @@ public final class JarWalker {
 		List<String> outerClasses = new ArrayList<>();
 		Map<String, List<String>> innerClasses = new HashMap<>();
 
+		Map<String, Set<String>> innerClassesFromOuterCache = new HashMap<>();
+
 		// Iterate over all the classes in the jar, and store them into the sorted list.
 		try (Stream<Path> walk = Files.walk(fs.getRoot())) {
 			Iterator<Path> iterator = walk.iterator();
@@ -90,7 +94,7 @@ public final class JarWalker {
 					continue;
 				}
 
-				String outerClass = findOuterClass(fs, fileName);
+				String outerClass = findOuterClass(fs, fileName, innerClassesFromOuterCache);
 
 				if (outerClass == null) {
 					outerClasses.add(fileName);
@@ -131,7 +135,7 @@ public final class JarWalker {
 	/**
 	 * Check if the given class file denotes and inner class and find the corresponding outer class name.
 	 */
-	private static String findOuterClass(FileSystemUtil.Delegate fs, String classFile) throws IOException {
+	private static String findOuterClass(FileSystemUtil.Delegate fs, String classFile, Map<String, Set<String>> innerClassesFromOuterCache) throws IOException {
 		// this check can speed things up quite a bit, even if it does not follow the JVM spec
 		if (classFile.indexOf('$') < 0) {
 			return null;
@@ -148,14 +152,24 @@ public final class JarWalker {
 				if (innerClass.name.equals(classNode.name)) {
 					// only regular inner classes have the outer class in the inner class attribute
 					if (innerClass.outerName != null) {
-						return innerClass.outerName;
+						String candidate = innerClass.outerName;
+						Set<String> fromOuterClass = innerClassesFromOuterCache.computeIfAbsent(candidate, className -> enumerateInnerClasses(fs, className));
+
+						if (fromOuterClass.contains(classNode.name)) {
+							return candidate;
+						}
 					}
 
 					// local and anonymous classes have the outer class in the enclosing method attribute
 					// we check for both attributes because both should be present for decompilers to
 					// recognize a class as an inner class
 					if (classNode.outerClass != null) {
-						return classNode.outerClass;
+						String candidate = classNode.outerClass;
+						Set<String> fromOuterClass = innerClassesFromOuterCache.computeIfAbsent(candidate, className -> enumerateInnerClasses(fs, className));
+
+						if (fromOuterClass.contains(classNode.name)) {
+							return candidate;
+						}
 					}
 
 					// there are some Minecraft versions with one attribute stripped but not the other
@@ -165,6 +179,21 @@ public final class JarWalker {
 		}
 
 		return null;
+	}
+
+	private static Set<String> enumerateInnerClasses(FileSystemUtil.Delegate fs, String className) {
+		try (InputStream is = Files.newInputStream(fs.getPath(className + ".class"))) {
+			final ClassReader reader = new ClassReader(is);
+			final ClassNode classNode = new ClassNode();
+
+			reader.accept(classNode, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
+			return classNode.innerClasses.stream()
+					.map(innerClassNode -> innerClassNode.name)
+					.collect(Collectors.toSet());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private static CompletableFuture<ClassEntry> getClassEntry(String outerClass, List<String> innerClasses, FileSystemUtil.Delegate fs, Executor executor) {

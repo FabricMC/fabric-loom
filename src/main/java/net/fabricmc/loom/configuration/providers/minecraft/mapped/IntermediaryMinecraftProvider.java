@@ -58,8 +58,9 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 	}
 
 	@Override
-	protected void createBackupJars(List<MinecraftJar> minecraftJars) {
+	protected boolean requiresBackupJars() {
 		// No backup jars should be created for intermediary providers, as we never decompile the intermediary jars.
+		return false;
 	}
 
 	public static final class MergedImpl extends IntermediaryMinecraftProvider<MergedMinecraftProvider> implements Merged {

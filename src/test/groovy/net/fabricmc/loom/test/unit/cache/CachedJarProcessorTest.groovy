@@ -174,7 +174,7 @@ class CachedJarProcessorTest extends Specification {
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test.java") == "Test sources".bytes
 		ZipUtils.unpackNullable(outputJar, "net/fabricmc/other/Test\$Dangling.java") == "Test\$Dangling sources".bytes
 
-		// Expect two calls looking for the existingSources entry in the cache
+		// Expect 3 calls looking for the existingSources entry in the cache
 		1 * cache.getEntry(ExampleHash) >> null
 		1 * cache.getEntry(TestHash) >> null
 		1 * cache.getEntry(TestDanglingHash) >> null

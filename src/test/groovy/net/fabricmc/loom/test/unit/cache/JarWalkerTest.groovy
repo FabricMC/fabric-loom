@@ -37,29 +37,34 @@ class JarWalkerTest extends Specification {
 		given:
 		def jar = ZipTestUtils.createZipFromBytes([
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$1"] as String[]),
 			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 			"net/fabricmc/other/Test\$NotInner.class": newClass("net/fabricmc/other/Test\$NotInner"),
+			"net/fabricmc/other/Test\$Dangling.class": newClass("net/fabricmc/other/Test\$Dangling", "net/fabricmc/other/Test"),
 		])
 		when:
 		def entries = JarWalker.findClasses(jar)
 		then:
-		entries.size() == 3
+		entries.size() == 4
 
 		entries[0].name() == "net/fabricmc/Test.class"
 		entries[0].sourcesFileName() == "net/fabricmc/Test.java"
 		entries[0].innerClasses().size() == 0
 
-		entries[1].name() == "net/fabricmc/other/Test\$NotInner.class"
-		entries[1].sourcesFileName() == "net/fabricmc/other/Test\$NotInner.java"
+		entries[1].name() == "net/fabricmc/other/Test\$Dangling.class"
+		entries[1].sourcesFileName() == "net/fabricmc/other/Test\$Dangling.java"
 		entries[1].innerClasses().size() == 0
 
-		entries[2].name() == "net/fabricmc/other/Test.class"
-		entries[2].sourcesFileName() == "net/fabricmc/other/Test.java"
-		entries[2].innerClasses().size() == 2
-		entries[2].innerClasses()[0] == "net/fabricmc/other/Test\$1.class"
-		entries[2].innerClasses()[1] == "net/fabricmc/other/Test\$Inner.class"
+		entries[2].name() == "net/fabricmc/other/Test\$NotInner.class"
+		entries[2].sourcesFileName() == "net/fabricmc/other/Test\$NotInner.java"
+		entries[2].innerClasses().size() == 0
+
+		entries[3].name() == "net/fabricmc/other/Test.class"
+		entries[3].sourcesFileName() == "net/fabricmc/other/Test.java"
+		entries[3].innerClasses().size() == 2
+		entries[3].innerClasses()[0] == "net/fabricmc/other/Test\$1.class"
+		entries[3].innerClasses()[1] == "net/fabricmc/other/Test\$Inner.class"
 	}
 
 	def "Hash Classes"() {
@@ -78,15 +83,15 @@ class JarWalkerTest extends Specification {
 		"b055df8d9503b60050f6d0db387c84c47fedb4d9ed82c4f8174b4e465a9c479b" | [
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
 		]
-		"b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330" | [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$1"] as String[]),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", ["net/fabricmc/other/Test\$Inner\$2"] as String[]),
 			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
-		"b49f74dc50847f8fefc0c6f850326bbe39ace0b381b827fe1a1f1ed1dea81330" | [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
-			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner"),
+		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$1"] as String[]),
+			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "java/lang/Object", ["net/fabricmc/other/Test\$Inner\$2"] as String[]),
 			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
@@ -129,7 +134,7 @@ class JarWalkerTest extends Specification {
 	def "inner classes"() {
 		given:
 		def jarEntries = [
-			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test"),
+			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], ["net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test\$1"] as String[]),
 			"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", null, "net/fabricmc/other/Super"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test", null, ["java/lang/Runnable"] as String[]),
 		]
@@ -151,18 +156,28 @@ class JarWalkerTest extends Specification {
 		]
 	}
 
-	private static byte[] newClass(String name, String[] interfaces = null, String superName = "java/lang/Object") {
+	private static byte[] newClass(String name, String[] interfaces = null, String[] innerNames = null, String superName = "java/lang/Object") {
 		def writer = new ClassWriter(0)
 		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
+		if (innerNames != null) {
+			for (String innerName : innerNames) {
+				writer.visitInnerClass(innerName, null, null, 0)
+			}
+		}
 		return writer.toByteArray()
 	}
 
-	private static byte[] newInnerClass(String name, String outerClass, String innerName = null, String[] interfaces = null, String superName = "java/lang/Object") {
+	private static byte[] newInnerClass(String name, String outerClass, String innerName = null, String[] interfaces = null, String superName = "java/lang/Object", String[] innerNames = null) {
 		def writer = new ClassWriter(0)
 		writer.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, name, null, superName, interfaces)
 		writer.visitInnerClass(name, outerClass, innerName, 0)
 		if (innerName == null) {
 			writer.visitOuterClass(outerClass, null, null)
+		}
+		if (innerNames != null) {
+			for (String innerName1 : innerNames) {
+				writer.visitInnerClass(innerName1, null, null, 0)
+			}
 		}
 		return writer.toByteArray()
 	}

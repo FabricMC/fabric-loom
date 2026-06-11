@@ -147,7 +147,7 @@ public abstract class AbstractRunTask extends JavaExec {
 			}
 		});
 		getMainClass().set(config.flatMap(RunConfiguration::getDevLaunchMainClass));
-		getJvmArguments().addAll(getProject().provider(this::getGameJvmArgs));
+		getJvmArgumentProviders().add(this::getGameJvmArgs);
 
 		getInternalRunDir().set(config.flatMap(RunConfiguration::getRunDirectory));
 		getInternalEnvironmentVars().set(config.flatMap(RunConfiguration::getEnvironmentVars));
@@ -246,6 +246,11 @@ public abstract class AbstractRunTask extends JavaExec {
 		commandLine.add("--auto-servernum");
 		commandLine.add(javaExec);
 		commandLine.addAll(getJvmArguments().get());
+
+		for (CommandLineArgumentProvider provider : getJvmArgumentProviders()) {
+			provider.asArguments().forEach(commandLine::add);
+		}
+
 		commandLine.add(getMainClass().get());
 		commandLine.addAll(getArgs());
 

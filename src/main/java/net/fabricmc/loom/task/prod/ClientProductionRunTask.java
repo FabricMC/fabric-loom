@@ -30,10 +30,14 @@ import java.io.IOException;
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
+import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
@@ -43,9 +47,18 @@ import org.gradle.work.DisableCachingByDefault;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.ConfigContextImpl;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
+import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.task.DownloadAssetsTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.XVFBExistsValueSource;
+import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 /**
  * A task that runs the Minecraft client in a similar way to a production launcher. You must manually register a task of this type to use it.
@@ -62,6 +75,14 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 	 */
 	@Input
 	public abstract Property<Boolean> getUseXVFB();
+
+	/**
+	 * The version of Minecraft to use.
+	 *
+	 * <p>Defaults to the version of Minecraft that the project is using.
+	 */
+	@Input
+	public abstract Property<String> getMinecraftVersion();
 
 	@Nested
 	@Optional
@@ -86,6 +107,9 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 	@PathSensitive(PathSensitivity.ABSOLUTE)
 	protected abstract DirectoryProperty getAssetsDir();
 
+	@Internal
+	protected abstract Property<MinecraftProvider> getMinecraftProvider();
+
 	@Inject
 	public ClientProductionRunTask() {
 		getUseXVFB().convention(getProject().getProviders().environmentVariable("CI")
@@ -93,27 +117,75 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 				.orElse(false)
 		);
 
-		getAssetsIndex().set(getExtension().getMinecraftVersion()
-				.map(minecraftVersion -> getExtension()
-						.getMinecraftProvider()
-						.getVersionInfo()
-						.assetIndex()
-						.fabricId(minecraftVersion)
-				)
-		);
+		getMinecraftVersion().convention(getExtension().getMinecraftVersion());
+		getMinecraftVersion().finalizeValueOnRead();
+
+		getMinecraftProvider().set(getMinecraftVersion().map(version -> version.equals(getExtension().getMinecraftVersion().get()) ? getExtension().getMinecraftProvider() : createVersionProvider(version)));
+		getMinecraftProvider().finalizeValueOnRead();
+
+		getClasspath().from(getMinecraftVersion().map(version -> {
+			if (version.equals(getExtension().getMinecraftVersion().get())) {
+				return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES);
+			}
+
+			final Dependency[] libraries = MinecraftLibraryHelper.getLibrariesForPlatform(getMinecraftProvider().get().getVersionInfo(), Platform.CURRENT)
+					.stream()
+					.filter(library -> library.target() == Library.Target.COMPILE || library.target() == Library.Target.RUNTIME || library.target() == Library.Target.NATIVES)
+					.map(Library::mavenNotation)
+					.map(notation -> getProject().getDependencies().create(notation))
+					.peek(dep -> {
+						if (dep instanceof ModuleDependency moduleDep) {
+							moduleDep.setTransitive(false);
+						}
+					})
+					.toArray(Dependency[]::new);
+			final Configuration librariesConfiguration = getProject().getConfigurations().detachedConfiguration(libraries);
+			librariesConfiguration.setTransitive(false);
+
+			return new Configuration[] {
+					librariesConfiguration,
+					getProject().getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
+			};
+		}));
+
+		dependsOn(getMinecraftVersion().map(version -> {
+			if (version.equals(getExtension().getMinecraftVersion().get())) {
+				return getProject().getTasks().named("downloadAssets");
+			}
+
+			return getProject().getTasks().register(
+					"download" + getName() + "Assets",
+					DownloadAssetsTask.class,
+					task -> {
+						task.setDescription("Downloads required game assets for Minecraft.");
+						task.configureForVersion(getMinecraftProvider().get().getVersionInfo());
+					}
+			);
+		}));
+
+		getAssetsIndex().set(getMinecraftProvider().map(minecraftProvider -> minecraftProvider.getVersionInfo().assetIndex().fabricId(getMinecraftVersion().get())));
 		getAssetsDir().set(new File(getExtension().getFiles().getUserCache(), "assets"));
 		getMainClass().convention("net.fabricmc.loader.impl.launch.knot.KnotClient");
 
-		getClasspath().from(getExtension().getMinecraftProvider().getMinecraftClientJar());
+		getClasspath().from(getMinecraftProvider().map(MinecraftProvider::getMinecraftClientJar));
 		getClasspath().from(detachedConfigurationProvider("net.fabricmc:fabric-loader:%s", getProjectLoaderVersion()));
 
 		if (getExtension().getProductionNamespaceEnum().get() == MappingsNamespace.INTERMEDIARY) {
-			getClasspath().from(detachedConfigurationProvider("net.fabricmc:intermediary:%s", getExtension().getMinecraftVersion()));
+			getClasspath().from(detachedConfigurationProvider("net.fabricmc:intermediary:%s", getMinecraftVersion()));
 		}
+	}
 
-		getClasspath().from(getProject().getConfigurations().named(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES));
+	private MinecraftProvider createVersionProvider(final String minecraftVersion) {
+		try (var serviceFactory = new ScopedServiceFactory()) {
+			final ConfigContext configContext = new ConfigContextImpl(getProject(), serviceFactory, getExtension());
+			final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext, minecraftVersion);
+			final MinecraftProvider minecraftProvider = MinecraftJarConfiguration.CLIENT_ONLY.createMinecraftProvider(metadataProvider, configContext);
 
-		dependsOn("downloadAssets");
+			minecraftProvider.provideJars();
+			return minecraftProvider;
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to provide Minecraft " + minecraftVersion + " jar", e);
+		}
 	}
 
 	@Override

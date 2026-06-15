@@ -80,14 +80,21 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 
 	@Inject
 	public DownloadAssetsTask() {
-		final MinecraftVersionMeta versionInfo = getExtension().getMinecraftProvider().getVersionInfo();
+		configureForVersion(getExtension().getMinecraftProvider().getVersionInfo());
+
+		getDownloadThreads().convention(Math.min(Runtime.getRuntime().availableProcessors(), 10));
+
+		getResourcesBaseUrl().set(MirrorUtil.getResourcesBase(getProject()));
+		getResourcesBaseUrl().finalizeValue();
+	}
+
+	public void configureForVersion(MinecraftVersionMeta versionInfo) {
 		final File assetsDir = new File(getExtension().getFiles().getUserCache(), "assets");
 
 		getAssetsDirectory().set(assetsDir);
 		getAssetsHash().set(versionInfo.assetIndex().sha1());
-		getDownloadThreads().convention(Math.min(Runtime.getRuntime().availableProcessors(), 10));
 		getMinecraftVersion().set(versionInfo.id());
-		getMinecraftVersion().finalizeValue();
+		getMinecraftVersion().finalizeValueOnRead();
 
 		if (versionInfo.assets().equals("legacy")) {
 			getLegacyResourcesDirectory().set(new File(assetsDir, "/legacy/" + versionInfo.id()));
@@ -98,12 +105,9 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 			getLegacyResourcesDirectory().set(new File(runDir, "resources"));
 		}
 
-		getResourcesBaseUrl().set(MirrorUtil.getResourcesBase(getProject()));
-		getResourcesBaseUrl().finalizeValue();
+		getAssetsIndexJson().set(LoomGradlePlugin.GSON.toJson(versionInfo.assetIndex()));
 
-		getAssetsIndexJson().set(LoomGradlePlugin.GSON.toJson(getExtension().getMinecraftProvider().getVersionInfo().assetIndex()));
-
-		getAssetsHash().finalizeValue();
+		getAssetsHash().finalizeValueOnRead();
 		getAssetsDirectory().finalizeValueOnRead();
 		getLegacyResourcesDirectory().finalizeValueOnRead();
 	}

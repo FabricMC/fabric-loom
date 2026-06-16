@@ -34,10 +34,10 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
@@ -51,9 +51,9 @@ import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.ConfigContextImpl;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library;
 import net.fabricmc.loom.configuration.providers.minecraft.library.MinecraftLibraryHelper;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.task.DownloadAssetsTask;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
@@ -107,9 +107,6 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 	@PathSensitive(PathSensitivity.ABSOLUTE)
 	protected abstract DirectoryProperty getAssetsDir();
 
-	@Internal
-	protected abstract Property<MinecraftProvider> getMinecraftProvider();
-
 	@Inject
 	public ClientProductionRunTask() {
 		getUseXVFB().convention(getProject().getProviders().environmentVariable("CI")
@@ -120,15 +117,14 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 		getMinecraftVersion().convention(getExtension().getMinecraftVersion());
 		getMinecraftVersion().finalizeValueOnRead();
 
-		getMinecraftProvider().set(getMinecraftVersion().map(version -> version.equals(getExtension().getMinecraftVersion().get()) ? getExtension().getMinecraftProvider() : createVersionProvider(version)));
-		getMinecraftProvider().finalizeValueOnRead();
+		final Provider<MinecraftProvider> minecraftProvider = getProject().provider(() -> getMinecraftVersion().get().equals(getExtension().getMinecraftVersion().get()) ? getExtension().getMinecraftProvider() : createVersionProvider(getMinecraftVersion().get()));
 
-		getClasspath().from(getMinecraftVersion().map(version -> {
-			if (version.equals(getExtension().getMinecraftVersion().get())) {
+		getClasspath().from(minecraftProvider.map(provider -> {
+			if (provider.getVersionInfo().id().equals(getExtension().getMinecraftVersion().get())) {
 				return getProject().getConfigurations().getByName(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES);
 			}
 
-			final Dependency[] libraries = MinecraftLibraryHelper.getLibrariesForPlatform(getMinecraftProvider().get().getVersionInfo(), Platform.CURRENT)
+			final Dependency[] libraries = MinecraftLibraryHelper.getLibrariesForPlatform(provider.getVersionInfo(), Platform.CURRENT)
 					.stream()
 					.filter(library -> library.target() == Library.Target.COMPILE || library.target() == Library.Target.RUNTIME || library.target() == Library.Target.NATIVES)
 					.map(Library::mavenNotation)
@@ -141,15 +137,13 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 					.toArray(Dependency[]::new);
 			final Configuration librariesConfiguration = getProject().getConfigurations().detachedConfiguration(libraries);
 			librariesConfiguration.setTransitive(false);
+			librariesConfiguration.getDependencies().addAll(getProject().getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES).getAllDependencies());
 
-			return new Configuration[] {
-					librariesConfiguration,
-					getProject().getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES)
-			};
+			return librariesConfiguration;
 		}));
 
-		dependsOn(getMinecraftVersion().map(version -> {
-			if (version.equals(getExtension().getMinecraftVersion().get())) {
+		dependsOn(minecraftProvider.map(provider -> {
+			if (provider.getVersionInfo().id().equals(getExtension().getMinecraftVersion().get())) {
 				return getProject().getTasks().named("downloadAssets");
 			}
 
@@ -158,16 +152,16 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 					DownloadAssetsTask.class,
 					task -> {
 						task.setDescription("Downloads required game assets for Minecraft.");
-						task.configureForVersion(getMinecraftProvider().get().getVersionInfo());
+						task.configureForVersion(provider.getVersionInfo());
 					}
 			);
 		}));
 
-		getAssetsIndex().set(getMinecraftProvider().map(minecraftProvider -> minecraftProvider.getVersionInfo().assetIndex().fabricId(getMinecraftVersion().get())));
+		getAssetsIndex().set(minecraftProvider.map(provider -> provider.getVersionInfo().assetIndex().fabricId(getMinecraftVersion().get())));
 		getAssetsDir().set(new File(getExtension().getFiles().getUserCache(), "assets"));
 		getMainClass().convention("net.fabricmc.loader.impl.launch.knot.KnotClient");
 
-		getClasspath().from(getMinecraftProvider().map(MinecraftProvider::getMinecraftClientJar));
+		getClasspath().from(minecraftProvider.map(MinecraftProvider::getMinecraftClientJar));
 		getClasspath().from(detachedConfigurationProvider("net.fabricmc:fabric-loader:%s", getProjectLoaderVersion()));
 
 		if (getExtension().getProductionNamespaceEnum().get() == MappingsNamespace.INTERMEDIARY) {

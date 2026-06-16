@@ -243,6 +243,69 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@Unroll
+	@IgnoreIf({ !os.linux }) // XVFB is installed on the CI for this test
+	def "prod client 1.21.6 on 1.21.4 (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.21.4"
+                    mappings "net.fabricmc:yarn:1.21.4+build.4:v2"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+                    modImplementation "net.fabricmc.fabric-api:fabric-api:0.114.0+1.21.4"
+
+                    productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:0.128.2+1.21.6"
+                }
+
+                tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+                	jvmArgs.add("-Dfabric.client.gametest")
+                	minecraftVersion = "1.21.6"
+                }
+            """
+
+		when:
+		def result = gradle.run(task: "prodClient")
+
+		then:
+		result.task(":prodClient").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Timeout(value = 10, unit = TimeUnit.MINUTES)
+	@Unroll
+	@IgnoreIf({ !os.linux }) // XVFB is installed on the CI for this test
+	def "prod client 26.1 on 26.1.2 (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBaseNoRemap", version: version)
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:26.1.2"
+                    implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+                    implementation "net.fabricmc.fabric-api:fabric-api:0.152.1+26.1.2"
+
+                    productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:0.145.1+26.1"
+                }
+
+                tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+                	jvmArgs.add("-Dfabric.client.gametest")
+                	minecraftVersion = "26.1"
+                }
+            """
+
+		when:
+		def result = gradle.run(task: "prodClient")
+
+		then:
+		result.task(":prodClient").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
 	@Unroll
 	@IgnoreIf({ !os.linux })
 	def "client game tests with XVFB (gradle #version)"() {

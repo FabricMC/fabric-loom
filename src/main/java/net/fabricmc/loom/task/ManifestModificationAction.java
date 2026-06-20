@@ -35,17 +35,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.Manifest;
 
-import net.fabricmc.loom.util.ZipReprocessorUtil;
-
 import org.gradle.api.Action;
 import org.gradle.api.Task;
 import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.task.service.JarManifestService;
-import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 
 /**
  * Action that modifies the manifest of a jar file to add Loom metadata.

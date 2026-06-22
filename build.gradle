@@ -220,6 +220,10 @@ checkstyle {
 codenarc {
 	toolVersion = libs.versions.codenarc.get()
 	configFile = file("codenarc.groovy")
+
+	if (ENV.CI) {
+		reportFormat = 'xml'
+	}
 }
 
 gradlePlugin {

@@ -29,6 +29,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: gradle/actions/wrapper-validation@v6
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
+      - uses: FabricMCBot/publish-checkstyle-report@v3
+        if: failure()
+        with:
+          reports: |
+            build/reports/checkstyle/*.xml
+            build/reports/codenarc/*.xml
 
   build_windows:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.extended_tests == 'true' }}

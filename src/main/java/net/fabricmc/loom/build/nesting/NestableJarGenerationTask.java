@@ -118,7 +118,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 		});
 		getJars().from(artifacts.getFiles());
 		dependsOn(configuration);
-		getJarIds().set(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
+		getJarIds().putAll(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
 			Map<String, Metadata> map = new HashMap<>();
 			set.forEach(artifact -> {
 				ResolvedVariantResult variant = artifact.getVariant();

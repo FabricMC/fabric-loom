@@ -110,8 +110,8 @@ public final class LoomProblemReporter {
 				};
 
 				if (problem.details() != null) {
-					// We have details in the body so we can put the message in the title.
-					builder.title(problem.message());
+					// We have details in the body so we can put the short context-free display name in the title.
+					builder.title(problem.id().getDisplayName());
 				}
 
 				if (problem.fileLocation() != null) {

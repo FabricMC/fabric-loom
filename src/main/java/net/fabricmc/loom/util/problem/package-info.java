@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2025 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,7 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+@NullMarked
+package net.fabricmc.loom.util.problem;
 
-import org.gradle.api.problems.ProblemGroup;
-import org.gradle.api.problems.ProblemId;
-
-public final class LoomProblems {
-	public static final ProblemGroup PROBLEM_GROUP = ProblemGroup.create("loom", "Loom");
-
-	private LoomProblems() {
-	}
-
-	public static ProblemId problemId(String name, String displayName) {
-		return ProblemId.create(name, displayName, PROBLEM_GROUP);
-	}
-}
+import org.jspecify.annotations.NullMarked;

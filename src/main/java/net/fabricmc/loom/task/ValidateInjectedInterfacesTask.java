@@ -46,9 +46,9 @@ import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
@@ -66,11 +66,22 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.util.ExceptionUtil;
-import net.fabricmc.loom.util.LoomProblems;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
-import net.fabricmc.loom.util.github.GithubActionsAnnotations;
+import net.fabricmc.loom.util.problem.LoomProblemReporter;
+import net.fabricmc.loom.util.problem.LoomProblems;
+import net.fabricmc.loom.util.problem.ProblemReportingOptions;
 
+/**
+ * Checks that injected interfaces are valid, i.e. that all their instance methods have a default implementation.
+ *
+ * <p>{@snippet lang=groovy :
+ * tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
+ * 	modJar = tasks.jar.flatMap { it.archiveFile }
+ * 	sourceRoots.from(sourceSets.main.java.srcDirs)
+ * }
+ * }
+ */
 @DisableCachingByDefault
 public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidateInjectedInterfacesTask.class);
@@ -91,11 +102,8 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	@PathSensitive(PathSensitivity.ABSOLUTE)
 	public abstract ConfigurableFileCollection getSourceRoots();
 
-	/**
-	 * If true, GitHub Actions annotations will be created and printed to stdout for each error detected by this task.
-	 */
-	@Input
-	public abstract Property<Boolean> getDisplayGithubActionsAnnotations();
+	@Nested
+	public abstract Property<ProblemReportingOptions> getProblemReportingOptions();
 
 	@ApiStatus.Internal
 	@Inject
@@ -103,7 +111,10 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 	public ValidateInjectedInterfacesTask() {
 		setGroup(JavaBasePlugin.VERIFICATION_GROUP);
-		getDisplayGithubActionsAnnotations().convention(false);
+		getProblemReportingOptions().convention(ProblemReportingOptions.createDefault(getProject()));
+
+		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
+		getOutputs().upToDateWhen(task -> true);
 	}
 
 	@TaskAction
@@ -140,35 +151,23 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		}
 
 		if (!violations.isEmpty()) {
-			if (getDisplayGithubActionsAnnotations().get()) {
-				for (Violation violation : violations) {
-					if (violation.sourceFile == null) {
-						continue;
-					}
-
-					GithubActionsAnnotations.error("Injected interface has abstract method " + violation.methodName + violation.methodDesc)
-							.file(violation.sourceFile)
-							.build()
-							.printToStdout();
-				}
-			}
-
-			var messageBuilder = new StringBuilder("Found abstract methods in injected interfaces:");
+			var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions().get());
 
 			for (Violation violation : violations) {
-				messageBuilder.append("\n - ").append(violation.itf).append('.').append(violation.methodName).append(violation.methodDesc);
-				getProblems().getReporter().report(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, spec -> {
-					spec.contextualLabel("%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
-					spec.details("Method %s.%s%s is abstract.\nAll injected interface methods must have a default implementation.".formatted(violation.itf, violation.methodName, violation.methodDesc));
-					spec.solution("Add a default implementation to the method.");
+				reporter.problem(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, builder -> {
+					String qualifiedMethodName = "%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc);
+					builder.contextualLabel(qualifiedMethodName);
+					builder.message(qualifiedMethodName);
+					builder.details("Method %s.%s%s is abstract.\nAll injected interface methods must have a default implementation.".formatted(violation.itf, violation.methodName, violation.methodDesc));
+					builder.solution("Add a default implementation to the method.");
 
 					if (violation.sourceFile != null) {
-						spec.fileLocation(violation.sourceFile.getAbsolutePath());
+						builder.fileLocation(violation.sourceFile.toPath());
 					}
 				});
 			}
 
-			throw new RuntimeException(messageBuilder.toString());
+			reporter.reportAndThrow(ABSTRACT_METHOD_IN_INJECTED_INTERFACE);
 		}
 	}
 

@@ -31,6 +31,8 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
+import net.fabricmc.loom.util.problem.Problem;
+
 public final class GithubActionsAnnotations {
 	// See https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#setting-a-notice-message
 	private static final String ERROR_COMMAND = "error";
@@ -78,6 +80,20 @@ public final class GithubActionsAnnotations {
 
 		public Builder file(Path file) {
 			return file(file.toAbsolutePath().toString());
+		}
+
+		public Builder file(Problem.FileLocation fileLocation) {
+			file(fileLocation.file());
+
+			if (fileLocation.startLine() > 0) {
+				line(fileLocation.startLine(), fileLocation.endLine());
+			}
+
+			if (fileLocation.startColumn() > 0) {
+				column(fileLocation.startColumn(), fileLocation.endColumn());
+			}
+
+			return this;
 		}
 
 		public Builder title(String title) {

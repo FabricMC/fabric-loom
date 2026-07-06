@@ -38,7 +38,9 @@ import spock.util.concurrent.PollingConditions
 
 import net.fabricmc.loom.util.nativeplatform.LoomNativePlatform
 
-@Requires({ os.windows })
+@Requires({
+	os.windows
+})
 class LoomNativePlatformTest extends Specification {
 	def "is supported on windows"() {
 		expect:

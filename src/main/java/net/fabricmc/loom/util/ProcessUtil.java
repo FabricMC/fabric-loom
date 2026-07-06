@@ -34,8 +34,8 @@ import org.gradle.api.logging.LogLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.nativeplatform.LoomNativePlatform;
-import net.fabricmc.loom.nativeplatform.LoomNativePlatformException;
+import net.fabricmc.loom.util.nativeplatform.LoomNativePlatform;
+import net.fabricmc.loom.util.nativeplatform.LoomNativePlatformException;
 
 public record ProcessUtil(ArgumentVisibility argumentVisibility) {
 	private static final String EXPLORER_COMMAND = "C:\\Windows\\explorer.exe";

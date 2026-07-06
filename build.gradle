@@ -18,7 +18,7 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 	kotlinOptions {
-		jvmTarget = "21"
+		jvmTarget = "25"
 	}
 }
 
@@ -105,8 +105,6 @@ dependencies {
 		transitive = false
 	}
 
-	implementation libs.fabric.loom.nativelib
-
 	// decompilers
 	cfrCompileOnly runtimeLibs.cfr
 	cfrCompileOnly libs.fabric.mapping.io
@@ -176,13 +174,13 @@ base {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 spotless {
@@ -274,6 +272,7 @@ test {
 // Workaround https://github.com/gradle/gradle/issues/25898
 tasks.withType(Test).configureEach {
 	jvmArgs = [
+		'--enable-native-access=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang=ALL-UNNAMED',
 		'--add-opens=java.base/java.util=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',

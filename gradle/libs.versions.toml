@@ -10,7 +10,6 @@ mapping-io = "0.8.0"
 lorenz-tiny = "4.0.2"
 mercury = "0.4.3"
 mercury-mixin = "0.2.2"
-loom-native = "0.2.0"
 unpick = "3.0.0-beta.13"
 
 # Plugins
@@ -36,7 +35,6 @@ fabric-mapping-io = { module = "net.fabricmc:mapping-io", version.ref = "mapping
 fabric-lorenz-tiny = { module = "net.fabricmc:lorenz-tiny", version.ref = "lorenz-tiny" }
 fabric-mercury = { module = "net.fabricmc:mercury", version.ref = "mercury" }
 fabric-mercury-mixin = { module = "net.fabricmc:mercurymixin", version.ref = "mercury-mixin" }
-fabric-loom-nativelib = { module = "net.fabricmc:fabric-loom-native", version.ref = "loom-native" }
 fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" }
 fabric-unpick-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }
 

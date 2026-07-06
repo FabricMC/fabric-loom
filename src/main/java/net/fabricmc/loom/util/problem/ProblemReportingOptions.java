@@ -26,7 +26,6 @@ package net.fabricmc.loom.util.problem;
 
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -41,11 +40,9 @@ public interface ProblemReportingOptions {
 	Property<Boolean> getDisplayGithubActionsAnnotations();
 
 	@ApiStatus.Internal
-	static Provider<ProblemReportingOptions> createDefault(Project project) {
-		return project.provider(() -> {
-			final ProblemReportingOptions options = project.getObjects().newInstance(ProblemReportingOptions.class);
-			options.getDisplayGithubActionsAnnotations().convention(false);
-			return options;
-		});
+	static ProblemReportingOptions createDefault(Project project) {
+		final ProblemReportingOptions options = project.getObjects().newInstance(ProblemReportingOptions.class);
+		options.getDisplayGithubActionsAnnotations().convention(false);
+		return options;
 	}
 }

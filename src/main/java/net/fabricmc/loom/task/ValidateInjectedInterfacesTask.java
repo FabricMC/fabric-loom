@@ -39,13 +39,13 @@ import java.util.zip.ZipFile;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.Problems;
-import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
@@ -103,18 +103,26 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	public abstract ConfigurableFileCollection getSourceRoots();
 
 	@Nested
-	public abstract Property<ProblemReportingOptions> getProblemReportingOptions();
+	public ProblemReportingOptions getProblemReportingOptions() {
+		return problemReportingOptions;
+	}
 
 	@ApiStatus.Internal
 	@Inject
 	protected abstract Problems getProblems();
 
+	private final ProblemReportingOptions problemReportingOptions;
+
 	public ValidateInjectedInterfacesTask() {
 		setGroup(JavaBasePlugin.VERIFICATION_GROUP);
-		getProblemReportingOptions().convention(ProblemReportingOptions.createDefault(getProject()));
+		problemReportingOptions = ProblemReportingOptions.createDefault(getProject());
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
+	}
+
+	public void problemReportingOptions(Action<? super ProblemReportingOptions> action) {
+		action.execute(getProblemReportingOptions());
 	}
 
 	@TaskAction
@@ -151,7 +159,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		}
 
 		if (!violations.isEmpty()) {
-			var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions().get());
+			var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions());
 
 			for (Violation violation : violations) {
 				reporter.problem(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, builder -> {

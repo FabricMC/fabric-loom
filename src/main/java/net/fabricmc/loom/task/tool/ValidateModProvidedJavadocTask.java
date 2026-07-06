@@ -37,6 +37,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.Problems;
@@ -104,24 +105,32 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	public abstract Property<String> getExpectedNamespace();
 
 	@Nested
-	public abstract Property<ProblemReportingOptions> getProblemReportingOptions();
+	public ProblemReportingOptions getProblemReportingOptions() {
+		return problemReportingOptions;
+	}
 
 	@ApiStatus.Internal
 	@Inject
 	protected abstract Problems getProblems();
 
+	private final ProblemReportingOptions problemReportingOptions;
+
 	public ValidateModProvidedJavadocTask() {
 		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJarsCollection));
 		getExpectedNamespace().convention(getExtension().getProductionNamespace());
-		getProblemReportingOptions().convention(ProblemReportingOptions.createDefault(getProject()));
+		problemReportingOptions = ProblemReportingOptions.createDefault(getProject());
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
 	}
 
+	public void problemReportingOptions(Action<? super ProblemReportingOptions> action) {
+		action.execute(getProblemReportingOptions());
+	}
+
 	@TaskAction
 	protected void check() throws IOException {
-		final var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions().get());
+		final var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions());
 		final ErrorReporter errorReporter = (problemId, currentPath, details, cause) -> reporter.problem(problemId, builder -> {
 			builder.fileLocation(currentPath);
 

@@ -160,24 +160,22 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 			}
 		}
 
-		if (!violations.isEmpty()) {
-			var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions());
+		var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions());
 
-			for (Violation violation : violations) {
-				reporter.problem(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, builder -> {
-					builder.contextualLabel("%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
-					builder.message("Injected interface %s has abstract method %s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
-					builder.details("Method %s.%s%s is abstract.\nAll injected interface methods must have a default implementation.".formatted(violation.itf, violation.methodName, violation.methodDesc));
-					builder.solution("Add a default implementation to the method.");
+		for (Violation violation : violations) {
+			reporter.problem(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, builder -> {
+				builder.contextualLabel("%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
+				builder.message("Injected interface %s has abstract method %s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
+				builder.details("Method %s.%s%s is abstract.\nAll injected interface methods must have a default implementation.".formatted(violation.itf, violation.methodName, violation.methodDesc));
+				builder.solution("Add a default implementation to the method.");
 
-					if (violation.sourceFile != null) {
-						builder.fileLocation(violation.sourceFile.toPath());
-					}
-				});
-			}
-
-			reporter.reportAndThrow(ABSTRACT_METHOD_IN_INJECTED_INTERFACE);
+				if (violation.sourceFile != null) {
+					builder.fileLocation(violation.sourceFile.toPath());
+				}
+			});
 		}
+
+		reporter.reportAndThrow(ABSTRACT_METHOD_IN_INJECTED_INTERFACE);
 	}
 
 	private void findInjectedInterfacesFromClassTweaker(ZipFile zip, String classTweaker, Consumer<String> consumer) {

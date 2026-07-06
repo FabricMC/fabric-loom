@@ -165,9 +165,8 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 			for (Violation violation : violations) {
 				reporter.problem(ABSTRACT_METHOD_IN_INJECTED_INTERFACE, builder -> {
-					String qualifiedMethodName = "%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc);
-					builder.contextualLabel(qualifiedMethodName);
-					builder.message(qualifiedMethodName);
+					builder.contextualLabel("%s.%s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
+					builder.message("Injected interface %s has abstract method %s%s".formatted(violation.itf, violation.methodName, violation.methodDesc));
 					builder.details("Method %s.%s%s is abstract.\nAll injected interface methods must have a default implementation.".formatted(violation.itf, violation.methodName, violation.methodDesc));
 					builder.solution("Add a default implementation to the method.");
 
@@ -211,7 +210,9 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 			@Override
 			public void visit(int version, int access, String name, @Nullable String signature, @Nullable String superName, String @Nullable [] interfaces) {
-				className = name;
+				// Strip the package to make the error messages more concise.
+				int slashIndex = name.lastIndexOf('/');
+				className = slashIndex >= 0 ? name.substring(slashIndex + 1) : name;
 			}
 
 			@Override

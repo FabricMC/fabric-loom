@@ -109,7 +109,7 @@ public final class LoomProblemReporter {
 				case ADVICE -> GithubActionsAnnotations.notice(message);
 				};
 
-				if (problem.details() != null) {
+				if (!message.equals(problem.id().getDisplayName())) {
 					// We have details in the body so we can put the short context-free display name in the title.
 					builder.title(problem.id().getDisplayName());
 				}

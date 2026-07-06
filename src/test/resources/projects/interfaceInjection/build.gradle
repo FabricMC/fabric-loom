@@ -21,3 +21,11 @@ dependencies {
 base {
 	archivesName = "fabric-example-mod"
 }
+
+tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
+	modJar = tasks.named('jar').flatMap { it.archiveFile }
+}
+
+tasks.named('check') {
+	dependsOn 'validateInjectedInterfaces'
+}

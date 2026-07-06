@@ -241,7 +241,7 @@ public abstract class InterfaceInjectionProcessor implements MinecraftJarProcess
 		return commentBuilder.toString();
 	}
 
-	private record InjectedInterface(String modId, String className, String ifaceName, @Nullable String generics) {
+	public record InjectedInterface(String modId, String className, String ifaceName, @Nullable String generics) {
 		public static List<InjectedInterface> fromMod(FabricModJson fabricModJson) {
 			final String modId = fabricModJson.getId();
 			final JsonElement jsonElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.INJECTED_INTERFACE);

@@ -77,7 +77,7 @@ import net.fabricmc.loom.util.problem.ProblemReportingOptions;
  *
  * <p>{@snippet lang=groovy :
  * tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
- * 	modJar = tasks.jar.flatMap { it.archiveFile }
+ * 	modJar = tasks.named('jar').flatMap { it.archiveFile }
  * 	sourceRoots.from(sourceSets.main.java.srcDirs)
  * }
  * }
@@ -97,6 +97,8 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	/**
 	 * A collection of source code roots where the mod jar was built from.
 	 * This is used for resolving the corresponding source code files where report details are attached.
+	 *
+	 * <p>Adding source roots is optional. If not added, the file paths simply won't show up in error reports.
  	 */
 	@InputFiles
 	@PathSensitive(PathSensitivity.ABSOLUTE)

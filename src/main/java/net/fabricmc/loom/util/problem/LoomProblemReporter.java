@@ -104,7 +104,7 @@ public final class LoomProblemReporter {
 				}
 
 				GithubActionsAnnotations.Builder builder = switch (problem.severity()) {
-				case ERROR-> GithubActionsAnnotations.error(message);
+				case ERROR -> GithubActionsAnnotations.error(message);
 				case WARNING -> GithubActionsAnnotations.warning(message);
 				case ADVICE -> GithubActionsAnnotations.notice(message);
 				};

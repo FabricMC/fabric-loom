@@ -118,7 +118,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	public ValidateModProvidedJavadocTask() {
 		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJarsCollection));
 		getExpectedNamespace().convention(getExtension().getProductionNamespace());
-		problemReportingOptions = ProblemReportingOptions.createDefault(getProject());
+		problemReportingOptions = getProject().getObjects().newInstance(ProblemReportingOptions.class);
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);

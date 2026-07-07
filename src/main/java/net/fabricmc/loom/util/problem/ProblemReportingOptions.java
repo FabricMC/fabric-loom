@@ -24,25 +24,20 @@
 
 package net.fabricmc.loom.util.problem;
 
-import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Options for tasks that report problems.
  */
-public interface ProblemReportingOptions {
+public abstract class ProblemReportingOptions {
 	/**
 	 * If true, GitHub Actions file annotations will be displayed for detected problems.
 	 */
 	@Input
-	Property<Boolean> getDisplayGithubActionsAnnotations();
+	public abstract Property<Boolean> getDisplayGithubActionsAnnotations();
 
-	@ApiStatus.Internal
-	static ProblemReportingOptions createDefault(Project project) {
-		final ProblemReportingOptions options = project.getObjects().newInstance(ProblemReportingOptions.class);
-		options.getDisplayGithubActionsAnnotations().convention(false);
-		return options;
+	public ProblemReportingOptions() {
+		getDisplayGithubActionsAnnotations().convention(false);
 	}
 }

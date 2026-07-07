@@ -99,7 +99,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	 * This is used for resolving the corresponding source code files where report details are attached.
 	 *
 	 * <p>Adding source roots is optional. If not added, the file paths simply won't show up in error reports.
- 	 */
+	 */
 	@InputFiles
 	@PathSensitive(PathSensitivity.ABSOLUTE)
 	public abstract ConfigurableFileCollection getSourceRoots();
@@ -223,7 +223,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 			@Override
 			public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor, @Nullable String signature, String @Nullable [] exceptions) {
 				if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-					violationConsumer.accept(new Violation(className, name,descriptor, resolveSourceFile(className, sourceFile)));
+					violationConsumer.accept(new Violation(className, name, descriptor, resolveSourceFile(className, sourceFile)));
 				}
 
 				return null;

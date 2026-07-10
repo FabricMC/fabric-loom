@@ -84,6 +84,34 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		version << STANDARD_TEST_VERSIONS
 	}
 
+	def "Run config can configure run task"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase")
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18.1"
+                    mappings "net.fabricmc:yarn:1.18.1+build.18:v2"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+                }
+
+                loom {
+                    runs {
+                        client {
+                            task {
+                                description = "Configured through the run config"
+                            }
+                        }
+                    }
+                }
+            """
+
+		when:
+		def result = gradle.run(task: "help", args: ["--task", "runClient"])
+
+		then:
+		result.output.contains("Configured through the run config")
+	}
+
 	@RestoreSystemProperties
 	@Unroll
 	def "idea auto configuration (gradle #version)"() {

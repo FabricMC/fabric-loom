@@ -24,13 +24,20 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import org.gradle.api.Action;
 import org.gradle.api.provider.Property;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.RunConfiguration;
+import net.fabricmc.loom.task.RunGameTask;
 
 @ApiStatus.Internal
 public interface RunConfigurationInternal extends RunConfiguration {
 	@ApiStatus.Internal
 	Property<Boolean> getIsFinalised();
+
+	@Override
+	default void task(Action<RunGameTask> action) {
+		throw new UnsupportedOperationException("Cannot configure the task of a serialised run configuration");
+	}
 }

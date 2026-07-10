@@ -96,7 +96,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 				getProject(),
 				getTasks().named(REMAP_JAR_TASK_NAME, RemapJarTask.class),
 				getConfigurations().named(Constants.Configurations.INCLUDE),
-				Constants.Task.PROCESS_INCLUDE_JARS
+				Constants.Task.PROCESS_INCLUDE_JARS,
+				Constants.Configurations.INCLUDE_INTERNAL
 		);
 
 		// Configure the default jar task

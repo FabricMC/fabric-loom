@@ -30,9 +30,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
+import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -44,6 +46,8 @@ import org.intellij.lang.annotations.MagicConstant;
 public class ZipReprocessorUtil {
 	private ZipReprocessorUtil() { }
 
+	private static final Comparator<ZipEntry> ENTRY_COMPARATOR = Comparator.comparing(ZipEntry::getName, ZipReprocessorUtil::specialOrdering);
+
 	private static final String META_INF = "META-INF/";
 
 	// See https://docs.oracle.com/en/java/javase/20/docs/specs/jar/jar.html#signed-jar-file
@@ -52,17 +56,15 @@ public class ZipReprocessorUtil {
 			return false;
 		}
 
-		String[] parts = zipEntryName.split("/");
-
-		if (parts.length != 2) {
+		if (zipEntryName.indexOf('/', META_INF.length()) != -1) {
 			return false;
 		}
 
-		return parts[1].startsWith("SIG-")
-				|| parts[1].endsWith(".SF")
-				|| parts[1].endsWith(".DSA")
-				|| parts[1].endsWith(".RSA")
-				|| parts[1].endsWith(".EC");
+		return zipEntryName.startsWith("SIG-", META_INF.length())
+				|| zipEntryName.endsWith(".SF")
+				|| zipEntryName.endsWith(".DSA")
+				|| zipEntryName.endsWith(".RSA")
+				|| zipEntryName.endsWith(".EC");
 	}
 
 	private static int specialOrdering(String name1, String name2) {
@@ -97,15 +99,10 @@ public class ZipReprocessorUtil {
 
 		try (var zipFile = new ZipFile(file.toFile());
 				var fileOutputStream = Files.newOutputStream(tempFile)) {
-			ZipEntry[] entries;
+			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);
 
 			if (reproducibleFileOrder) {
-				entries = zipFile.stream()
-						.sorted(Comparator.comparing(ZipEntry::getName, ZipReprocessorUtil::specialOrdering))
-						.toArray(ZipEntry[]::new);
-			} else {
-				entries = zipFile.stream()
-						.toArray(ZipEntry[]::new);
+				Arrays.sort(entries, ENTRY_COMPARATOR);
 			}
 
 			try (var zipOutputStream = new ZipOutputStream(fileOutputStream)) {
@@ -185,26 +182,37 @@ public class ZipReprocessorUtil {
 	 * This method should only be used when a reproducible output is required, use {@link ZipUtils#add(Path, String, byte[])} normally.
 	 */
 	public static void appendZipEntry(Path file, String path, InputStream data) throws IOException {
+		appendZipEntries(file, Map.of(path, data));
+	}
+
+	/**
+	 * Appends multiple entries to a zip file in a single pass, preserving the existing entry order and time stamps.
+	 * New entries are added with a constant time stamp to ensure reproducibility.
+	 * This method should only be used when a reproducible output is required, use {@link ZipUtils#add(Path, String, byte[])} normally.
+	 *
+	 * @throws IllegalArgumentException if the zip file already contains any of the specified entries
+	 */
+	public static void appendZipEntries(Path file, Map<String, InputStream> entries) throws IOException {
 		final Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
 
 		try (var zipFile = new ZipFile(file.toFile());
 				var fileOutputStream = Files.newOutputStream(tempFile)) {
-			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);
+			ZipEntry[] existingEntries = zipFile.stream().toArray(ZipEntry[]::new);
 
 			try (var zipOutputStream = new ZipOutputStream(fileOutputStream)) {
-				// Copy existing entries
-				for (ZipEntry entry : entries) {
-					if (entry.getName().equals(path)) {
-						throw new IllegalArgumentException("Zip file (%s) already contains entry (%s)".formatted(file.getFileName().toString(), path));
+				for (ZipEntry entry : existingEntries) {
+					if (entries.containsKey(entry.getName())) {
+						throw new IllegalArgumentException("Zip file (%s) already contains entry (%s)".formatted(file.getFileName().toString(), entry.getName()));
 					}
 
 					copyZipEntry(zipOutputStream, entry, zipFile.getInputStream(entry));
 				}
 
-				// Append the new entry
-				var entry = new ZipEntry(path);
-				setConstantFileTime(entry);
-				copyZipEntry(zipOutputStream, entry, data);
+				for (var mapEntry : entries.entrySet()) {
+					var newEntry = new ZipEntry(mapEntry.getKey());
+					setConstantFileTime(newEntry);
+					copyZipEntry(zipOutputStream, newEntry, mapEntry.getValue());
+				}
 			}
 		}
 

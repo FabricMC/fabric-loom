@@ -26,9 +26,11 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -56,15 +58,31 @@ public class JarNester {
 		Collection<File> sortedJars = jars.stream().sorted(Comparator.comparing(File::getName)).toList();
 
 		try {
+			// Collect all nested jar entries into a single map for batch processing
+			LinkedHashMap<String, InputStream> nestedJarEntries = new LinkedHashMap<>();
+
 			for (File file : sortedJars) {
 				String nestedJarPath = "META-INF/jars/" + file.getName();
+				Check.require(!nestedJarEntries.containsKey(nestedJarPath), "Duplicate nested jar path: " + nestedJarPath);
 				Check.require(FabricModJsonFactory.isModJar(file), "Cannot nest none mod jar: " + file.getName());
 
-				try (var is = Files.newInputStream(file.toPath())) {
-					ZipReprocessorUtil.appendZipEntry(modJar.toPath(), nestedJarPath, is);
-				}
+				nestedJarEntries.put(nestedJarPath, Files.newInputStream(file.toPath()));
+			}
 
-				LOGGER.debug("Nested {} into {}", nestedJarPath, modJar.getName());
+			try {
+				ZipReprocessorUtil.appendZipEntries(modJar.toPath(), nestedJarEntries);
+			} finally {
+				for (var is : nestedJarEntries.values()) {
+					try {
+						is.close();
+					} catch (IOException ignored) {
+						// Ignore close failures
+					}
+				}
+			}
+
+			for (File file : sortedJars) {
+				LOGGER.debug("Nested {} into {}", "META-INF/jars/" + file.getName(), modJar.getName());
 			}
 
 			ZipReprocessorUtil.transformZipEntry(modJar.toPath(), "fabric.mod.json", bytes -> {

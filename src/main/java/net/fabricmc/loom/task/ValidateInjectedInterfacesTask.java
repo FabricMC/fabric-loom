@@ -203,7 +203,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		ClassVisitor visitor = new ClassVisitor(Constants.ASM_VERSION) {
 			private @Nullable String packageName;
 			private @Nullable String simpleClassName;
-			private @Nullable String sourceFile;
+			private @Nullable String sourceFileName;
 
 			@Override
 			public void visit(int version, int access, String name, @Nullable String signature, @Nullable String superName, String @Nullable [] interfaces) {
@@ -222,13 +222,14 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 			@Override
 			public void visitSource(@Nullable String source, @Nullable String debug) {
-				sourceFile = source;
+				sourceFileName = source;
 			}
 
 			@Override
 			public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor, @Nullable String signature, String @Nullable [] exceptions) {
 				if (Modifier.isAbstract(access)) {
-					violationConsumer.accept(new Violation(simpleClassName, name, descriptor, resolveSourceFile(packageName, sourceFile, sourceRoots)));
+					final File sourceFile = resolveSourceFile(simpleClassName, packageName, sourceFileName, sourceRoots);
+					violationConsumer.accept(new Violation(simpleClassName, name, descriptor, sourceFile));
 				}
 
 				return null;
@@ -237,8 +238,9 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		new ClassReader(classBytes).accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 	}
 
-	private static @Nullable File resolveSourceFile(@Nullable String packageName, @Nullable String sourceFileName, FileCollection sourceRoots) {
+	private static @Nullable File resolveSourceFile(String className, @Nullable String packageName, @Nullable String sourceFileName, FileCollection sourceRoots) {
 		if (sourceFileName == null) {
+			LOGGER.warn("No source file name present for injected interface {} (package {})", className, packageName);
 			return null;
 		}
 

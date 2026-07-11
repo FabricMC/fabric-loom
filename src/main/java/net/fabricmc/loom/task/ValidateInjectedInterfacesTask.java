@@ -73,6 +73,7 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -90,7 +91,7 @@ import net.fabricmc.loom.util.problem.ProblemReportingOptions;
  * 	// By default, this task is set up for the default mod jar - the "jar" or "remapJar" task depending
  * 	// on the project configuration - and the main source set. To modify the defaults:
  * 	modJar = tasks.named('otherJar').flatMap { it.archiveFile }
- * 	sourceRoots.setFrom(sourceSets.other.java.srcDirs)
+ * 	source(sourceSets.other) // Add a new source set.
  * }
  * }
  */
@@ -111,6 +112,9 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	 * This is used for resolving the corresponding source code files where report details are attached.
 	 *
 	 * <p>Adding source roots is optional. If not added, the file paths simply won't show up in error reports.
+	 *
+	 * <p>Sources from source sets can be added with {@link #source}. By default, the {@code main}
+	 * and {@code client} (if using split source sets) will be present in this collection.
 	 */
 	@InputFiles
 	@PathSensitive(PathSensitivity.ABSOLUTE)
@@ -137,17 +141,29 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	}
 
 	private void configureForDefaultSetup() {
-		if (LoomGradleExtension.get(getProject()).dontRemapOutputs()) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		if (extension.dontRemapOutputs()) {
 			getModJar().convention(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile));
 		} else {
 			getModJar().convention(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile));
 		}
 
-		getSourceRoots().from(
-				SourceSetHelper.getSourceSets(getProject())
-						.named(SourceSet.MAIN_SOURCE_SET_NAME)
-						.map(sourceSet -> sourceSet.getJava().getSrcDirs())
-		);
+		source(SourceSetHelper.getMainSourceSet(getProject()));
+
+		if (extension.areEnvironmentSourceSetsSplit()) {
+			source(SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
+		}
+	}
+
+	/**
+	 * Adds all sources from a {@link SourceSet} to the {@linkplain #getSourceRoots() source roots}
+	 * for error messages.
+	 *
+	 * @param sourceSet the source set to add
+	 */
+	public void source(SourceSet sourceSet) {
+		getSourceRoots().from(sourceSet.getAllSource().getSrcDirs());
 	}
 
 	public void problemReportingOptions(Action<? super ProblemReportingOptions> action) {

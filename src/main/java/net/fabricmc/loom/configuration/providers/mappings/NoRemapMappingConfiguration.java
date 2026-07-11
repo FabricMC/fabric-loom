@@ -74,11 +74,6 @@ public final class NoRemapMappingConfiguration extends MappingConfiguration {
 		}
 	}
 
-	@Override
-	protected void configureUnpickDefinitions(FileSystem jar, Path unpickPath) {
-		setUnpickDefinitions(inputJar(), UnpickMetadata.UNPICK_DEFINITIONS_PATH);
-	}
-
 	static void validateMappings(Path mappings) throws IOException {
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
 		MappingReader.read(mappings, mappingTree);
@@ -106,12 +101,12 @@ public final class NoRemapMappingConfiguration extends MappingConfiguration {
 
 	@Override
 	public Provider<TinyMappingsService.Options> getMappingsServiceOptions(Project project) {
-		return TinyMappingsService.createOptions(project, project.provider(inputJar()::toFile), MAPPINGS_PATH);
+		return TinyMappingsService.createOptions(project, project.provider(inputJar()::toFile), TinyJarInfo.MAPPINGS_PATH);
 	}
 
 	@Override
-	public Path getMappingsInputFile() {
-		return inputJar();
+	public String getMappingsHash() {
+		return Checksum.of(inputJar()).sha256().hex();
 	}
 
 	@Override

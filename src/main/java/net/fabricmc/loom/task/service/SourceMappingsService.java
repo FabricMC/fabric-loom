@@ -112,15 +112,17 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 			}
 		}
 
-		final Path inputMappings = mappingConfiguration != null ? mappingConfiguration.getMappingsInputFile() : emptyMappingsPath;
 		final String processorHash = jarProcessor != null ? jarProcessor.getSourceMappingsHash() : "none";
-		final String hash = Checksum.of(processorHash + ":" + Checksum.of(inputMappings).sha256().hex()).sha1().hex();
+		final String mappingsHash = mappingConfiguration != null
+				? mappingConfiguration.getMappingsHash()
+				: Checksum.of(emptyMappingsPath).sha256().hex();
+		final String hash = Checksum.of(processorHash + ":" + mappingsHash).sha1().hex();
 		hashProperty.set(hash);
 
 		if (jarProcessor == null) {
-			if (mappingConfiguration instanceof RemapMappingConfiguration) {
+			if (mappingConfiguration instanceof RemapMappingConfiguration remapMappingConfiguration) {
 				LOGGER.info("No jar processor found, using configured source mappings");
-				return inputMappings;
+				return remapMappingConfiguration.tinyMappings;
 			} else if (mappingConfiguration == null) {
 				LOGGER.info("No jar processor found, using empty source mappings");
 				return emptyMappingsPath;

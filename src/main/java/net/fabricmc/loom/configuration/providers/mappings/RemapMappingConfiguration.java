@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.ZipUtils;
@@ -102,24 +103,17 @@ public final class RemapMappingConfiguration extends MappingConfiguration {
 	}
 
 	@Override
-	protected void configureUnpickDefinitions(FileSystem jar, Path unpickPath) throws IOException {
-		Path definitions = tinyMappings.getParent().resolve("mappings.unpick");
-		Files.copy(unpickPath, definitions, StandardCopyOption.REPLACE_EXISTING);
-		setUnpickDefinitions(definitions, null);
-	}
-
-	@Override
 	protected void setupMappings(Project project, MinecraftProvider minecraftProvider, FileSystem inputJar) throws IOException {
 		extractSignatureFixes(inputJar);
 
 		if (Files.notExists(tinyMappings) || minecraftProvider.refreshDeps()) {
-			extractMappings(inputJar, baseTinyMappings);
+			TinyJarInfo.extractMappings(inputJar, baseTinyMappings);
 			storeMappings(project, minecraftProvider);
 		}
 
 		if (Files.notExists(tinyMappingsJar) || minecraftProvider.refreshDeps()) {
 			Files.deleteIfExists(tinyMappingsJar);
-			ZipUtils.add(tinyMappingsJar, MAPPINGS_PATH, Files.readAllBytes(tinyMappings));
+			ZipUtils.add(tinyMappingsJar, TinyJarInfo.MAPPINGS_PATH, Files.readAllBytes(tinyMappings));
 		}
 	}
 
@@ -152,8 +146,8 @@ public final class RemapMappingConfiguration extends MappingConfiguration {
 	}
 
 	@Override
-	public Path getMappingsInputFile() {
-		return tinyMappings;
+	public String getMappingsHash() {
+		return Checksum.of(tinyMappings).sha256().hex();
 	}
 
 	@Override

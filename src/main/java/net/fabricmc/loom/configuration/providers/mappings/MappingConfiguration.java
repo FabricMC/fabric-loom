@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 
@@ -53,15 +52,13 @@ import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 public abstract sealed class MappingConfiguration permits RemapMappingConfiguration, NoRemapMappingConfiguration {
-	protected static final String MAPPINGS_PATH = "mappings/mappings.tiny";
 	protected static final Logger LOGGER = LoggerFactory.getLogger(MappingConfiguration.class);
 
 	public final String mappingsIdentifier;
 
 	private final Path inputJar;
-	private Path unpickDefinitions;
 	@Nullable
-	private String unpickDefinitionsEntry;
+	private byte[] unpickDefinitions;
 
 	private List<AnnotationsData> annotationsData = List.of();
 	@Nullable
@@ -101,7 +98,7 @@ public abstract sealed class MappingConfiguration permits RemapMappingConfigurat
 
 	public abstract Provider<TinyMappingsService.Options> getMappingsServiceOptions(Project project);
 
-	public abstract Path getMappingsInputFile();
+	public abstract String getMappingsHash();
 
 	public abstract MappingsNamespace getRuntimeNamespace();
 
@@ -156,16 +153,6 @@ public abstract sealed class MappingConfiguration permits RemapMappingConfigurat
 		return mappingsName + "." + minecraftVersion.replace(' ', '_').replace('.', '_').replace('-', '_') + "." + version + classifier;
 	}
 
-	public static void extractMappings(Path jar, Path extractTo) throws IOException {
-		try (FileSystemUtil.Delegate delegate = FileSystemUtil.getJarFileSystem(jar)) {
-			extractMappings(delegate.fs(), extractTo);
-		}
-	}
-
-	public static void extractMappings(FileSystem jar, Path extractTo) throws IOException {
-		Files.copy(jar.getPath(MAPPINGS_PATH), extractTo, StandardCopyOption.REPLACE_EXISTING);
-	}
-
 	private void readExtras(FileSystem jar) throws IOException {
 		readAnnotationsData(jar);
 		readUnpickDefinitions(jar);
@@ -192,14 +179,7 @@ public abstract sealed class MappingConfiguration permits RemapMappingConfigurat
 		}
 
 		unpickMetadata = UnpickMetadata.parse(unpickMetadataPath);
-		configureUnpickDefinitions(jar, unpickPath);
-	}
-
-	protected abstract void configureUnpickDefinitions(FileSystem jar, Path unpickPath) throws IOException;
-
-	protected final void setUnpickDefinitions(Path path, @Nullable String entry) {
-		unpickDefinitions = path;
-		unpickDefinitionsEntry = entry;
+		unpickDefinitions = Files.readAllBytes(unpickPath);
 	}
 
 	protected final Path inputJar() {
@@ -210,13 +190,8 @@ public abstract sealed class MappingConfiguration permits RemapMappingConfigurat
 		return mappingsIdentifier;
 	}
 
-	public Path getUnpickDefinitionsFile() {
+	public byte[] getUnpickDefinitions() {
 		return Objects.requireNonNull(unpickDefinitions, "Unpick definitions are not available");
-	}
-
-	@Nullable
-	public String getUnpickDefinitionsEntry() {
-		return unpickDefinitionsEntry;
 	}
 
 	public boolean hasUnpickDefinitions() {

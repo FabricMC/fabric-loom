@@ -51,12 +51,9 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -90,13 +87,8 @@ public class UnpickService extends Service<UnpickService.Options> {
 	public static final ServiceType<Options, UnpickService> TYPE = new ServiceType<>(Options.class, UnpickService.class);
 
 	public interface Options extends Service.Options {
-		@InputFile
-		@PathSensitive(PathSensitivity.NONE)
-		RegularFileProperty getUnpickDefinitions();
-
-		@Optional
 		@Input
-		Property<String> getUnpickDefinitionsEntry();
+		Property<byte[]> getUnpickDefinitions();
 
 		@Optional
 		@Nested
@@ -135,11 +127,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 			}
 
 			ConfigurationContainer configurations = project.getConfigurations();
-			options.getUnpickDefinitions().set(mappingConfiguration.getUnpickDefinitionsFile().toFile());
-
-			if (mappingConfiguration.getUnpickDefinitionsEntry() != null) {
-				options.getUnpickDefinitionsEntry().set(mappingConfiguration.getUnpickDefinitionsEntry());
-			}
+			options.getUnpickDefinitions().set(mappingConfiguration.getUnpickDefinitions());
 
 			options.getUnpickOutputJar().set(task.getInputJarName().map(s -> project.getLayout()
 					.dir(project.provider(() -> extension.getFiles().getProjectPersistentCache().toPath()
@@ -190,19 +178,10 @@ public class UnpickService extends Service<UnpickService.Options> {
 	}
 
 	private InputStream getUnpickDefinitionsInputStream() throws IOException {
-		final Path unpickDefinitionsPath = getOptions().getUnpickDefinitions().getAsFile().get().toPath();
-		final byte[] definitions;
-
-		if (getOptions().getUnpickDefinitionsEntry().isPresent()) {
-			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(unpickDefinitionsPath, false)) {
-				definitions = Files.readAllBytes(fs.fs().getPath(getOptions().getUnpickDefinitionsEntry().get()));
-			}
-		} else {
-			definitions = Files.readAllBytes(unpickDefinitionsPath);
-		}
+		final byte[] definitions = getOptions().getUnpickDefinitions().get();
 
 		if (getOptions().getUnpickRemapperService().isPresent()) {
-			LOGGER.info("Remapping unpick definitions: {}", unpickDefinitionsPath);
+			LOGGER.info("Remapping unpick definitions");
 
 			UnpickRemapperService unpickRemapperService = getServiceFactory().get(getOptions().getUnpickRemapperService());
 			String remapped = unpickRemapperService.remap(new InputStreamReader(new ByteArrayInputStream(definitions), StandardCharsets.UTF_8));
@@ -210,14 +189,14 @@ public class UnpickService extends Service<UnpickService.Options> {
 			return new ByteArrayInputStream(remapped.getBytes(StandardCharsets.UTF_8));
 		}
 
-		LOGGER.debug("Using unpick definitions: {}", unpickDefinitionsPath);
+		LOGGER.debug("Using unpick definitions");
 
 		return new ByteArrayInputStream(definitions);
 	}
 
 	public String getUnpickCacheKey() {
 		return Checksum.of(List.of(
-				Checksum.of(getOptions().getUnpickDefinitions().getAsFile().get()),
+				Checksum.of(getOptions().getUnpickDefinitions().get()),
 				Checksum.of(getOptions().getUnpickConstantJar()),
 				Checksum.of(getOptions().getUnpickRemapperService()
 						.flatMap(options -> options.getTinyRemapper()

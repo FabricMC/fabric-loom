@@ -39,6 +39,7 @@ import spock.lang.Specification
 import spock.lang.TempDir
 
 import net.fabricmc.fernflower.api.FabricJavadocStyle
+import net.fabricmc.loom.api.decompilers.JavadocStyle
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider
 
@@ -82,7 +83,7 @@ c\t${V2_NAME}
 		StructClass structClass = readStructClass(UnpickMetadata.V2)
 		def field = structClass.getField("namespace", "Ljava/lang/String;")
 		def method = structClass.getMethod("<init>", "(Ljava/lang/String;Ljava/lang/String;)V")
-		def provider = new TinyJavadocProvider(mappings.toFile(), "official")
+		def provider = new TinyJavadocProvider(mappings.toFile(), "official", JavadocStyle.MARKDOWN)
 
 		expect:
 		provider.getClassJavadocStyle(structClass) == FabricJavadocStyle.MARKDOWN
@@ -92,12 +93,12 @@ c\t${V2_NAME}
 		provider.getMethodDoc(structClass, method) == "@param namespace The namespace."
 	}
 
-	def "uses HTML javadoc for multi-namespace mappings"() {
+	def "uses the configured HTML javadoc style"() {
 		given:
 		Path mappings = tempDir.resolve("mappings.tiny")
-		Files.writeString(mappings, "tiny\t2\t0\tofficial\tnamed\n")
+		Files.writeString(mappings, "tiny\t2\t0\tofficial\n")
 		StructClass structClass = readStructClass(UnpickMetadata.V2)
-		def provider = new TinyJavadocProvider(mappings.toFile(), "named")
+		def provider = new TinyJavadocProvider(mappings.toFile(), "official", JavadocStyle.HTML)
 
 		expect:
 		provider.getClassJavadocStyle(structClass) == FabricJavadocStyle.HTML

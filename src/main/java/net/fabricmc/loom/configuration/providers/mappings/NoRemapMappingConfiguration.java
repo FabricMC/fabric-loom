@@ -37,6 +37,7 @@ import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
@@ -112,5 +113,10 @@ public final class NoRemapMappingConfiguration extends MappingConfiguration {
 	@Override
 	public MappingsNamespace getRuntimeNamespace() {
 		return MappingsNamespace.OFFICIAL;
+	}
+
+	@Override
+	public JavadocStyle getJavadocStyle() {
+		return JavadocStyle.MARKDOWN;
 	}
 }

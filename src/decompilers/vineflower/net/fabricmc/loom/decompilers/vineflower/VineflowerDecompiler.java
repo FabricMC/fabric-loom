@@ -53,7 +53,7 @@ public final class VineflowerDecompiler implements LoomInternalDecompiler {
 		);
 
 		if (context.javaDocs() != null) {
-			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(context.javaDocs().toFile(), context.runtimeNamespace()));
+			options.put(IFabricJavadocProvider.PROPERTY_NAME, new TinyJavadocProvider(context.javaDocs().toFile(), context.runtimeNamespace(), context.javadocStyle()));
 		}
 
 		options.putAll(context.options());

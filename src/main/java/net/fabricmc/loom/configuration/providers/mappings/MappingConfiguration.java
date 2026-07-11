@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.Ann
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -101,6 +102,8 @@ public abstract sealed class MappingConfiguration permits RemapMappingConfigurat
 	public abstract String getMappingsHash();
 
 	public abstract MappingsNamespace getRuntimeNamespace();
+
+	public abstract JavadocStyle getJavadocStyle();
 
 	public TinyMappingsService getMappingsService(Project project, ServiceFactory serviceFactory) {
 		return serviceFactory.get(getMappingsServiceOptions(project));

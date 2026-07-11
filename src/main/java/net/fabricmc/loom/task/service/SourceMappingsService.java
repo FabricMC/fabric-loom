@@ -52,6 +52,7 @@ import net.fabricmc.loom.configuration.processors.MappingProcessorContextImpl;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.task.GenerateSourcesTask;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -78,6 +79,9 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		@Input
 		@Optional
 		Property<String> getProcessorHash(); // the hash of the processors applied to the mappings
+
+		@Input
+		Property<JavadocStyle> getJavadocStyle();
 	}
 
 	public static Provider<Options> create(Project project) {
@@ -87,6 +91,8 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		return TYPE.create(project, options -> {
 			options.getMappings().fileValue(project.file(mappings));
 			options.getProcessorHash().set(hash);
+			MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfigurationOrNull();
+			options.getJavadocStyle().set(mappingConfiguration != null ? mappingConfiguration.getJavadocStyle() : JavadocStyle.HTML);
 		});
 	}
 
@@ -200,5 +206,9 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 
 	public @Nullable String getProcessorHash() {
 		return getOptions().getProcessorHash().getOrNull();
+	}
+
+	public JavadocStyle getJavadocStyle() {
+		return getOptions().getJavadocStyle().get();
 	}
 }

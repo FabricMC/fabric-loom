@@ -609,7 +609,8 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 						getLibraries(),
 						logger,
 						decompilerOptions.options(),
-						getParameters().getRuntimeNamespace().get()
+						getParameters().getRuntimeNamespace().get(),
+						mappingsService.getJavadocStyle()
 				);
 
 				decompiler.decompile(

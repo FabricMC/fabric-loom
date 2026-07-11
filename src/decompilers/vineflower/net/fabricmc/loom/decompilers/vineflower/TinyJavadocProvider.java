@@ -38,6 +38,7 @@ import org.jetbrains.java.decompiler.struct.StructRecordComponent;
 
 import net.fabricmc.fernflower.api.FabricJavadocStyle;
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MappingTree;
@@ -49,9 +50,12 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 	private final MappingTree mappingTree;
 	private final FabricJavadocStyle javadocStyle;
 
-	public TinyJavadocProvider(File tinyFile, String runtimeNamespace) {
+	public TinyJavadocProvider(File tinyFile, String runtimeNamespace, JavadocStyle javadocStyle) {
 		mappingTree = readMappings(tinyFile, runtimeNamespace);
-		javadocStyle = mappingTree.getDstNamespaces().isEmpty() ? FabricJavadocStyle.MARKDOWN : FabricJavadocStyle.HTML;
+		this.javadocStyle = switch (javadocStyle) {
+		case HTML -> FabricJavadocStyle.HTML;
+		case MARKDOWN -> FabricJavadocStyle.MARKDOWN;
+		};
 	}
 
 	@Override

@@ -47,6 +47,7 @@ import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
@@ -153,6 +154,11 @@ public final class RemapMappingConfiguration extends MappingConfiguration {
 	@Override
 	public MappingsNamespace getRuntimeNamespace() {
 		return MappingsNamespace.NAMED;
+	}
+
+	@Override
+	public JavadocStyle getJavadocStyle() {
+		return JavadocStyle.HTML;
 	}
 
 	@Override

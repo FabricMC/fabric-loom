@@ -26,11 +26,11 @@ package net.fabricmc.loom.task.service;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 
@@ -81,6 +81,12 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 	 * Return the remapped definitions.
 	 */
 	public String remap(File input) throws IOException {
+		try (Reader reader = Files.newBufferedReader(input.toPath())) {
+			return remap(reader);
+		}
+	}
+
+	public String remap(Reader input) throws IOException {
 		TinyRemapperServiceInterface tinyRemapperService = getServiceFactory().get(getOptions().getTinyRemapper());
 		TinyRemapper tinyRemapper = tinyRemapperService.getTinyRemapperForRemapping();
 
@@ -90,9 +96,8 @@ public class UnpickRemapperService extends Service<UnpickRemapperService.Options
 		return doRemap(input, tinyRemapper, packageIndex);
 	}
 
-	private String doRemap(File input, TinyRemapper remapper, JarPackageIndex packageIndex) throws IOException {
-		try (Reader fileReader = new BufferedReader(new FileReader(input));
-				var reader = new UnpickV3Reader(fileReader)) {
+	private String doRemap(Reader input, TinyRemapper remapper, JarPackageIndex packageIndex) throws IOException {
+		try (var reader = new UnpickV3Reader(new BufferedReader(input))) {
 			var writer = new UnpickV3Writer();
 			reader.accept(new UnpickRemapper(writer, remapper, packageIndex));
 			return writer.getOutput().replace(System.lineSeparator(), "\n");

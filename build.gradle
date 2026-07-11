@@ -150,6 +150,7 @@ dependencies {
 	testImplementation testLibs.bcutil
 	testImplementation testLibs.bcpkix
 	testImplementation testLibs.fabric.loader
+	testImplementation runtimeLibs.vineflower
 
 	compileOnly runtimeLibs.jetbrains.annotations
 	testCompileOnly runtimeLibs.jetbrains.annotations

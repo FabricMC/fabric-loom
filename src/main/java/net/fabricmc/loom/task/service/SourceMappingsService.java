@@ -50,7 +50,10 @@ import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContextImpl;
 import net.fabricmc.loom.configuration.processors.MappingProcessorContextImpl;
 import net.fabricmc.loom.configuration.processors.MinecraftJarProcessorManager;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.task.GenerateSourcesTask;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -93,8 +96,13 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		final Path dir = extension.getFiles().getProjectPersistentCache().toPath().resolve("source_mappings");
 		final Path emptyMappingsPath = dir.resolve("empty.tiny"); // empty base mappings for unobf
 		final boolean disableObf = extension.disableObfuscation();
+		final MappingConfiguration mappingConfiguration = extension.getMappingConfigurationOrNull();
 
-		if (disableObf && (!Files.exists(emptyMappingsPath) || extension.refreshDeps())) {
+		if (!disableObf && mappingConfiguration == null) {
+			throw new IllegalStateException("Mappings have not been configured");
+		}
+
+		if (mappingConfiguration == null && (!Files.exists(emptyMappingsPath) || extension.refreshDeps())) {
 			try {
 				Files.createDirectories(dir);
 				Files.deleteIfExists(emptyMappingsPath);
@@ -104,18 +112,20 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 			}
 		}
 
+		final Path inputMappings = mappingConfiguration != null ? mappingConfiguration.getMappingsInputFile() : emptyMappingsPath;
+		final String processorHash = jarProcessor != null ? jarProcessor.getSourceMappingsHash() : "none";
+		final String hash = Checksum.of(processorHash + ":" + Checksum.of(inputMappings).sha256().hex()).sha1().hex();
+		hashProperty.set(hash);
+
 		if (jarProcessor == null) {
-			if (!disableObf) {
-				LOGGER.info("No jar processor found, not creating source mappings, using project mappings");
-				return extension.getMappingConfiguration().tinyMappings;
-			} else {
+			if (mappingConfiguration instanceof RemapMappingConfiguration) {
+				LOGGER.info("No jar processor found, using configured source mappings");
+				return inputMappings;
+			} else if (mappingConfiguration == null) {
 				LOGGER.info("No jar processor found, using empty source mappings");
 				return emptyMappingsPath;
 			}
 		}
-
-		final String hash = jarProcessor.getSourceMappingsHash();
-		hashProperty.set(hash);
 
 		final Path path = dir.resolve(hash + ".tiny");
 
@@ -124,13 +134,12 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 			return path;
 		}
 
-		LOGGER.info("Creating source mappings for hash {}", jarProcessor.getSourceMappingsHash());
+		LOGGER.info("Creating source mappings for hash {}", hash);
 
 		try {
 			Files.createDirectories(dir);
 			Files.deleteIfExists(path);
-			final Path inputMappings = disableObf ? emptyMappingsPath : extension.getMappingConfiguration().tinyMappings;
-			createMappings(project, jarProcessor, inputMappings, path);
+			createMappings(project, jarProcessor, mappingConfiguration, emptyMappingsPath, path);
 		} catch (IOException e) {
 			throw new UncheckedIOException("Failed to create source mappings", e);
 		}
@@ -138,27 +147,39 @@ public class SourceMappingsService extends Service<SourceMappingsService.Options
 		return path;
 	}
 
-	private static void createMappings(Project project, MinecraftJarProcessorManager jarProcessor, Path inputMappings, Path outputMappings) throws IOException {
+	private static void createMappings(Project project, @Nullable MinecraftJarProcessorManager jarProcessor, @Nullable MappingConfiguration mappingConfiguration, Path emptyMappings, Path outputMappings) throws IOException {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		MemoryMappingTree mappingTree = new MemoryMappingTree();
+		String sourceNamespace = !extension.disableObfuscation() && extension.getUseIntermediateMappings().get()
+				? MappingsNamespace.INTERMEDIARY.toString()
+				: MappingsNamespace.OFFICIAL.toString();
 
-		try (Reader reader = Files.newBufferedReader(inputMappings, StandardCharsets.UTF_8)) {
-			MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, extension.getUseIntermediateMappings().get() ? MappingsNamespace.INTERMEDIARY.toString() : MappingsNamespace.OFFICIAL.toString()));
+		if (mappingConfiguration != null) {
+			try (var serviceFactory = new ScopedServiceFactory()) {
+				mappingConfiguration.getMappingsService(project, serviceFactory).getMappingTree()
+						.accept(new MappingSourceNsSwitch(mappingTree, sourceNamespace));
+			}
+		} else {
+			try (Reader reader = Files.newBufferedReader(emptyMappings, StandardCharsets.UTF_8)) {
+				MappingReader.read(reader, new MappingSourceNsSwitch(mappingTree, sourceNamespace));
+			}
 		}
 
-		GenerateSourcesTask.MappingsProcessor mappingsProcessor = mappings -> {
-			try (var serviceFactory = new ScopedServiceFactory()) {
-				final var configContext = new ConfigContextImpl(project, serviceFactory, extension);
-				return jarProcessor.processMappings(mappings, new MappingProcessorContextImpl(configContext));
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
+		if (jarProcessor != null) {
+			GenerateSourcesTask.MappingsProcessor mappingsProcessor = mappings -> {
+				try (var serviceFactory = new ScopedServiceFactory()) {
+					final var configContext = new ConfigContextImpl(project, serviceFactory, extension);
+					return jarProcessor.processMappings(mappings, new MappingProcessorContextImpl(configContext));
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			};
+
+			boolean transformed = mappingsProcessor.transform(mappingTree);
+
+			if (!transformed) {
+				LOGGER.info("No mappings processors transformed the mappings");
 			}
-		};
-
-		boolean transformed = mappingsProcessor.transform(mappingTree);
-
-		if (!transformed) {
-			LOGGER.info("No mappings processors transformed the mappings");
 		}
 
 		try (Writer writer = Files.newBufferedWriter(outputMappings, StandardCharsets.UTF_8)) {

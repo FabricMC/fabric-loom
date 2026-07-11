@@ -41,6 +41,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomNoRemapGradlePlugin;
@@ -53,6 +54,7 @@ import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
@@ -169,21 +171,22 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	}
 
 	@Override
-	public MappingConfiguration getMappingConfiguration() {
+	public RemapMappingConfiguration getMappingConfiguration() {
 		if (disableObfuscation()) {
 			project.getLogger().lifecycle("help", new RuntimeException());
 			throw new UnsupportedOperationException("Cannot get mappings configuration in a non-obfuscated environment");
 		}
 
-		return Objects.requireNonNull(mappingConfiguration, "Cannot get MappingsProvider before it has been setup");
+		return (RemapMappingConfiguration) Objects.requireNonNull(mappingConfiguration, "Cannot get MappingsProvider before it has been setup");
+	}
+
+	@Override
+	public @Nullable MappingConfiguration getMappingConfigurationOrNull() {
+		return mappingConfiguration;
 	}
 
 	@Override
 	public void setMappingConfiguration(MappingConfiguration mappingConfiguration) {
-		if (disableObfuscation()) {
-			throw new UnsupportedOperationException("Cannot set mappings configuration in a non-obfuscated environment");
-		}
-
 		this.mappingConfiguration = mappingConfiguration;
 	}
 

@@ -67,6 +67,8 @@ import net.fabricmc.loom.configuration.processors.ModJavadocProcessor;
 import net.fabricmc.loom.configuration.processors.speccontext.DebofConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.NoRemapMappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -190,9 +192,18 @@ public abstract class CompileConfiguration implements Runnable {
 
 			// Resolve the mapping files from the configuration
 			final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
-			final MappingConfiguration mappingConfiguration = MappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
+			final MappingConfiguration mappingConfiguration = RemapMappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
 			extension.setMappingConfiguration(mappingConfiguration);
 			mappingConfiguration.applyToProject(getProject(), mappingsDep);
+		} else {
+			var annotations = project.getConfigurations().getByName(Configurations.ANNOTATIONS);
+
+			if (!annotations.getDependencies().isEmpty()) {
+				final DependencyInfo annotationsDep = DependencyInfo.create(getProject(), annotations);
+				final MappingConfiguration mappingConfiguration = NoRemapMappingConfiguration.create(getProject(), annotationsDep, minecraftProvider);
+				extension.setMappingConfiguration(mappingConfiguration);
+				mappingConfiguration.applyToProject(getProject(), annotationsDep);
+			}
 		}
 
 		// Provide the remapped mc jars

@@ -83,15 +83,13 @@ public abstract class LoomConfigurations implements Runnable {
 		registerNonTransitive(Constants.Configurations.MINECRAFT, Role.NONE);
 
 		register(Constants.Configurations.INCLUDE, Role.NONE);
+		registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
+		extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
 
 		if (!extension.disableObfuscation()) {
-			registerNonTransitive(Constants.Configurations.MAPPING_CONSTANTS, Role.RESOLVABLE);
-
 			register(Constants.Configurations.NAMED_ELEMENTS, Role.CONSUMABLE).configure(configuration -> {
 				configuration.extendsFrom(getConfigurations().named(JavaPlugin.API_CONFIGURATION_NAME));
 			});
-
-			extendsFrom(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME, Constants.Configurations.MAPPING_CONSTANTS);
 
 			register(Constants.Configurations.MAPPINGS, Role.RESOLVABLE);
 			register(Constants.Configurations.MAPPINGS_FINAL, Role.RESOLVABLE);
@@ -99,6 +97,8 @@ public abstract class LoomConfigurations implements Runnable {
 			extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
 
 			extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(getProject()));
+		} else {
+			registerNonTransitive(Constants.Configurations.ANNOTATIONS, Role.RESOLVABLE);
 		}
 
 		register(Constants.Configurations.LOOM_DEVELOPMENT_DEPENDENCIES, Role.RESOLVABLE);

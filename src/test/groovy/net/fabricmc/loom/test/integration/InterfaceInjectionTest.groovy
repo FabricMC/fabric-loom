@@ -130,7 +130,6 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
  			}
 
  			tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
- 				modJar = tasks.named('jar').flatMap { it.archiveFile }
  				problemReportingOptions.displayGithubActionsAnnotations = true
  			}
 
@@ -177,7 +176,12 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 		result.task(':validateInjectedInterfaces').outcome == FAILED
 		result.output.contains('Injected interface TestItf has abstract method foo()V')
 		// Check that the output has the GH Actions command.
-		result.output.contains('::error title=Abstract method in injected interface::Method TestItf.foo()V is abstract.')
+		result.output.lines()
+				.anyMatch {
+					// Note: the final .+ is for catching the rest of the message. We don't care about the exact
+					// message contents in this test.
+					it.matches("::error file=.+TestItf\\.java,line=1,title=Abstract method in injected interface::Method TestItf\\.foo\\(\\)V is abstract\\..+")
+				}
 
 		where:
 		version << STANDARD_TEST_VERSIONS

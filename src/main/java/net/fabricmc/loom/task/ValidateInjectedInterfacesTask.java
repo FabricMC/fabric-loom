@@ -44,6 +44,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.plugins.JavaBasePlugin;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.Property;
@@ -52,7 +53,9 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.work.DisableCachingByDefault;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
@@ -68,11 +71,13 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.problem.LoomProblemReporter;
 import net.fabricmc.loom.util.problem.LoomProblems;
 import net.fabricmc.loom.util.problem.ProblemReportingOptions;
@@ -82,8 +87,10 @@ import net.fabricmc.loom.util.problem.ProblemReportingOptions;
  *
  * <p>{@snippet lang=groovy :
  * tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
- * 	modJar = tasks.named('jar').flatMap { it.archiveFile }
- * 	sourceRoots.from(sourceSets.main.java.srcDirs)
+ * 	// By default, this task is set up for the default mod jar - the "jar" or "remapJar" task depending
+ * 	// on the project configuration - and the main source set. To modify the defaults:
+ * 	modJar = tasks.named('otherJar').flatMap { it.archiveFile }
+ * 	sourceRoots.setFrom(sourceSets.other.java.srcDirs)
  * }
  * }
  */
@@ -123,9 +130,24 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	public ValidateInjectedInterfacesTask() {
 		setGroup(JavaBasePlugin.VERIFICATION_GROUP);
 		problemReportingOptions = getProject().getObjects().newInstance(ProblemReportingOptions.class);
+		configureForDefaultSetup();
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
+	}
+
+	private void configureForDefaultSetup() {
+		if (LoomGradleExtension.get(getProject()).dontRemapOutputs()) {
+			getModJar().convention(getProject().getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile));
+		} else {
+			getModJar().convention(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile));
+		}
+
+		getSourceRoots().from(
+				SourceSetHelper.getSourceSets(getProject())
+						.named(SourceSet.MAIN_SOURCE_SET_NAME)
+						.map(sourceSet -> sourceSet.getJava().getSrcDirs())
+		);
 	}
 
 	public void problemReportingOptions(Action<? super ProblemReportingOptions> action) {

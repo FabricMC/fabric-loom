@@ -224,9 +224,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 			@Override
 			public void visitSource(@Nullable String source, @Nullable String debug) {
-				if (source != null) {
-					sourceFile = source;
-				}
+				sourceFile = source;
 			}
 
 			@Override

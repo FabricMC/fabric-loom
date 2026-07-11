@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -64,13 +65,13 @@ import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
@@ -168,7 +169,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 	}
 
 	private static void checkInjectedInterface(byte[] classBytes, FileCollection sourceRoots, Consumer<Violation> violationConsumer) {
-		ClassVisitor visitor = new ClassVisitor(Opcodes.ASM9) {
+		ClassVisitor visitor = new ClassVisitor(Constants.ASM_VERSION) {
 			private @Nullable String packageName;
 			private @Nullable String simpleClassName;
 			private @Nullable String sourceFile;
@@ -195,7 +196,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 			@Override
 			public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor, @Nullable String signature, String @Nullable [] exceptions) {
-				if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+				if (Modifier.isAbstract(access)) {
 					violationConsumer.accept(new Violation(simpleClassName, name, descriptor, resolveSourceFile(packageName, sourceFile, sourceRoots)));
 				}
 

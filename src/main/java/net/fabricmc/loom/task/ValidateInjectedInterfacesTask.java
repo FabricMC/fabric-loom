@@ -203,14 +203,23 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 
 	private void checkInjectedInterface(byte[] classBytes, Consumer<Violation> violationConsumer) {
 		ClassVisitor visitor = new ClassVisitor(Opcodes.ASM9) {
-			private @Nullable String className;
+			private @Nullable String packageName;
+			private @Nullable String simpleClassName;
 			private @Nullable String sourceFile;
 
 			@Override
 			public void visit(int version, int access, String name, @Nullable String signature, @Nullable String superName, String @Nullable [] interfaces) {
-				// Strip the package to make the error messages more concise.
+				// Only the simple name is used in the error messages to make them more concise.
+				// The package is needed for resolving the source code file based on package + file name.
 				int slashIndex = name.lastIndexOf('/');
-				className = slashIndex >= 0 ? name.substring(slashIndex + 1) : name;
+
+				if (slashIndex >= 0) {
+					simpleClassName = name.substring(slashIndex + 1);
+					packageName = name.substring(0, slashIndex);
+				} else {
+					simpleClassName = name;
+					packageName = null;
+				}
 			}
 
 			@Override
@@ -223,7 +232,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 			@Override
 			public @Nullable MethodVisitor visitMethod(int access, String name, String descriptor, @Nullable String signature, String @Nullable [] exceptions) {
 				if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-					violationConsumer.accept(new Violation(className, name, descriptor, resolveSourceFile(className, sourceFile)));
+					violationConsumer.accept(new Violation(simpleClassName, name, descriptor, resolveSourceFile(packageName, sourceFile)));
 				}
 
 				return null;
@@ -232,14 +241,12 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		new ClassReader(classBytes).accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 	}
 
-	private @Nullable File resolveSourceFile(String className, @Nullable String sourceFileName) {
+	private @Nullable File resolveSourceFile(@Nullable String packageName, @Nullable String sourceFileName) {
 		if (sourceFileName == null) {
 			return null;
 		}
 
-		int slashIndex = className.lastIndexOf('/');
-		String directory = slashIndex >= 0 ? className.substring(0, className.lastIndexOf('/') + 1) : "";
-		String relativeSourcePath = directory + sourceFileName;
+		String relativeSourcePath = packageName != null ? packageName + File.separator + sourceFileName : sourceFileName;
 
 		for (File sourceRoot : getSourceRoots()) {
 			File sourceFile = new File(sourceRoot, relativeSourcePath);

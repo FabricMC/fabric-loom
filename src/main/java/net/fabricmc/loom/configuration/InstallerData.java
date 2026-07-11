@@ -92,7 +92,7 @@ public record InstallerData(String version, JsonObject installerJson) {
 
 			// If user choose to use dependencyResolutionManagement, then they should declare
 			// these repositories manually in the settings file.
-			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
+			if (project.getPlugins().hasPlugin(LoomRepositoryPlugin.RepositoryManagementPlugin.class)) {
 				continue;
 			}
 

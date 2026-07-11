@@ -26,17 +26,15 @@ package net.fabricmc.loom.task;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import javax.inject.Inject;
 
@@ -72,7 +70,7 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ExceptionUtil;
+import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.problem.LoomProblemReporter;
@@ -145,8 +143,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 		});
 	}
 
-	private static void findInjectedInterfacesFromClassTweaker(ZipFile zip, String classTweaker, Consumer<String> consumer) {
-		ZipEntry ctEntry = zip.getEntry(classTweaker);
+	private static void findInjectedInterfacesFromClassTweaker(byte[] ctBytes, Consumer<String> consumer) {
 		ClassTweakerVisitor visitor = new ClassTweakerVisitor() {
 			@Override
 			public void visitInjectedInterface(String owner, String iface, boolean transitive) {
@@ -161,11 +158,7 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 			}
 		};
 
-		try (InputStream in = zip.getInputStream(ctEntry)) {
-			ClassTweakerReader.create(visitor).read(in.readAllBytes());
-		} catch (IOException e) {
-			throw ExceptionUtil.createDescriptiveWrapper(UncheckedIOException::new, "Could not read class tweaker " + classTweaker, e);
-		}
+		ClassTweakerReader.create(visitor).read(ctBytes);
 	}
 
 	private static void checkInjectedInterface(byte[] classBytes, FileCollection sourceRoots, Consumer<Violation> violationConsumer) {
@@ -256,24 +249,24 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 				injectedInterfaces.add(injectedInterface.ifaceName());
 			}
 
-			try (var zip = new ZipFile(modJar.toFile())) {
+			try (FileSystemUtil.Delegate fs = FileSystemUtil.getJarFileSystem(modJar)) {
 				// Look for injected interfaces in class tweakers
 				for (String classTweaker : fabricModJson.getClassTweakers().keySet()) {
-					findInjectedInterfacesFromClassTweaker(zip, classTweaker, injectedInterfaces::add);
+					byte[] ctBytes = Files.readAllBytes(fs.getPath(classTweaker));
+					findInjectedInterfacesFromClassTweaker(ctBytes, injectedInterfaces::add);
 				}
 
 				// Check injected interfaces
 				for (String itf : injectedInterfaces) {
-					ZipEntry classEntry = zip.getEntry(itf + ".class");
+					Path interfacePath = fs.getPath(itf + ".class");
 
-					if (classEntry == null) {
+					if (!Files.exists(interfacePath)) {
 						LOGGER.info("Injected interface {} not found in mod jar {}, skipping validation", itf, modJar);
 						continue;
 					}
 
-					try (InputStream in = zip.getInputStream(classEntry)) {
-						checkInjectedInterface(in.readAllBytes(), getParameters().getSourceRoots(), violations::add);
-					}
+					byte[] classBytes = Files.readAllBytes(interfacePath);
+					checkInjectedInterface(classBytes, getParameters().getSourceRoots(), violations::add);
 				}
 			}
 

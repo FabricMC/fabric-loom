@@ -288,7 +288,7 @@ public final class Download {
 	}
 
 	private void copyWithCallback(InputStream is, OutputStream os, IntConsumer consumer) throws IOException {
-		byte[] buffer = new byte[1024];
+		byte[] buffer = new byte[8192];
 		int length;
 
 		while ((length = is.read(buffer)) > 0) {

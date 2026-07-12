@@ -34,6 +34,9 @@ import net.fabricmc.loom.task.launch.auth.MicrosoftLoginServiceImpl
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProvider
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProviderImpl
 import net.fabricmc.loom.util.EncryptedStringStore
+import net.fabricmc.loom.util.Platform
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStore
+import net.fabricmc.loom.util.nativeplatform.MacOSEncryptionKeyStore
 import net.fabricmc.loom.util.nativeplatform.WindowsEncryptionKeyStore
 
 /**
@@ -56,7 +59,12 @@ final class MicrosoftAuthManualTest {
 			throw new IllegalArgumentException("Pass the Microsoft client ID as the first argument or set LOOM_MICROSOFT_CLIENT_ID")
 		}
 
-		WindowsEncryptionKeyStore keyStore = new WindowsEncryptionKeyStore()
+		EncryptionKeyStore keyStore = createEncryptionKeyStore()
+
+		if (!hasStoredLogin) {
+			keyStore.delete()
+		}
+
 		keyStore.prepare()
 		EncryptedStringStore storedLoginStore = new EncryptedStringStore(keyStore)
 		StoredLogin storedLogin
@@ -87,6 +95,20 @@ final class MicrosoftAuthManualTest {
 		println "Minecraft access token: ${accessToken.accessToken()}"
 		println "Minecraft access token expires in: ${accessToken.expiresIn()} seconds"
 		println "Updated encrypted login in ${STORED_LOGIN_FILE.toAbsolutePath()}"
+	}
+
+	private static EncryptionKeyStore createEncryptionKeyStore() {
+		def operatingSystem = Platform.CURRENT.getOperatingSystem()
+
+		if (operatingSystem.isWindows()) {
+			return new WindowsEncryptionKeyStore()
+		}
+
+		if (operatingSystem.isMacOS()) {
+			return new MacOSEncryptionKeyStore()
+		}
+
+		throw new UnsupportedOperationException("Microsoft authentication secure storage is not supported on ${operatingSystem}")
 	}
 
 	private static StoredLogin login(EncryptedStringStore storedLoginStore, String clientId) {

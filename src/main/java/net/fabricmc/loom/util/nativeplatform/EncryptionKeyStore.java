@@ -35,6 +35,9 @@ import javax.crypto.SecretKey;
 /// platform key remains available. Encryption of application data remains independent of the
 /// platform because [#read(StoredKey)] returns a standard [SecretKey].
 public interface EncryptionKeyStore {
+	/// Prepares and verifies the platform key before credentials are acquired.
+	void prepare() throws LoomNativePlatformException;
+
 	StoredKey store(SecretKey key) throws LoomNativePlatformException;
 
 	SecretKey read(StoredKey key) throws LoomNativePlatformException;

@@ -45,6 +45,15 @@ class WindowsEncryptionKeyStoreTest extends Specification {
 		store.delete()
 	}
 
+	def "prepares a persistent key without user interaction"() {
+		when:
+		store.prepare()
+		new WindowsEncryptionKeyStore(keyName, EncryptionKeyStore.UserInteraction.DISABLED).prepare()
+
+		then:
+		noExceptionThrown()
+	}
+
 	def "stores and reads a Java encryption key without user interaction"() {
 		given:
 		SecretKey original = aesKey()

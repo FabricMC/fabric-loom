@@ -50,10 +50,18 @@ final class MicrosoftAuthManualTest {
 
 	static void main(String[] args) {
 		String requestedClientId = args.length > 0 ? args[0] : System.getenv("LOOM_MICROSOFT_CLIENT_ID")
-		EncryptedStringStore storedLoginStore = new EncryptedStringStore(new WindowsEncryptionKeyStore())
+		boolean hasStoredLogin = Files.exists(STORED_LOGIN_FILE)
+
+		if (!hasStoredLogin && !requestedClientId) {
+			throw new IllegalArgumentException("Pass the Microsoft client ID as the first argument or set LOOM_MICROSOFT_CLIENT_ID")
+		}
+
+		WindowsEncryptionKeyStore keyStore = new WindowsEncryptionKeyStore()
+		keyStore.prepare()
+		EncryptedStringStore storedLoginStore = new EncryptedStringStore(keyStore)
 		StoredLogin storedLogin
 
-		if (Files.exists(STORED_LOGIN_FILE)) {
+		if (hasStoredLogin) {
 			storedLogin = readStoredLogin(storedLoginStore)
 
 			if (requestedClientId && requestedClientId != storedLogin.clientId) {
@@ -62,10 +70,6 @@ final class MicrosoftAuthManualTest {
 
 			println "Loaded encrypted login from ${STORED_LOGIN_FILE.toAbsolutePath()}"
 		} else {
-			if (!requestedClientId) {
-				throw new IllegalArgumentException("Pass the Microsoft client ID as the first argument or set LOOM_MICROSOFT_CLIENT_ID")
-			}
-
 			storedLogin = login(storedLoginStore, requestedClientId)
 		}
 

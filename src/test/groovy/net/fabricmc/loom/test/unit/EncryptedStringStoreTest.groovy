@@ -136,6 +136,10 @@ class EncryptedStringStoreTest extends Specification {
 
 	private static final class ReversibleTestKeyStore implements EncryptionKeyStore {
 		@Override
+		void prepare() {
+		}
+
+		@Override
 		StoredKey store(SecretKey key) {
 			return new StoredKey(key.algorithm, transform(key.encoded))
 		}

@@ -62,6 +62,18 @@ public final class WindowsEncryptionKeyStore implements EncryptionKeyStore {
 	}
 
 	@Override
+	public void prepare() throws LoomNativePlatformException {
+		try (Arena arena = Arena.ofConfined(); NativeHandle provider = openProvider(arena); NativeHandle wrappingKey = openOrCreateKey(arena, provider)) {
+			Win32.ncryptEncrypt(arena, wrappingKey.segment(), new byte[] {0});
+		} catch (Throwable e) {
+			String message = userInteraction == UserInteraction.REQUIRED
+					? "Could not initialize TPM-backed secure storage. Microsoft login requires an enabled and provisioned TPM on Windows, and setup must be approved when prompted."
+					: "Could not initialize Windows CNG secure storage.";
+			throw new LoomNativePlatformException(message, e);
+		}
+	}
+
+	@Override
 	public StoredKey store(SecretKey key) throws LoomNativePlatformException {
 		Objects.requireNonNull(key, "key");
 		byte[] encoded = key.getEncoded();

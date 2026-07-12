@@ -49,6 +49,8 @@ public final class MacOSEncryptionKeyStore implements EncryptionKeyStore {
 	private static final int WRAPPING_KEY_BYTES = 32;
 	private static final int INITIALIZATION_VECTOR_BYTES = 12;
 	private static final int GCM_TAG_BITS = 128;
+	private static final String SERVICE = "net.fabricmc.fabric-loom.encryption-key";
+	private static final String ITEM_DESCRIPTION = "Fabric Loom encryption key";
 
 	private final String keyName;
 	private final UserInteraction userInteraction;
@@ -140,7 +142,7 @@ public final class MacOSEncryptionKeyStore implements EncryptionKeyStore {
 	@Override
 	public void delete() throws LoomNativePlatformException {
 		try {
-			MacOS.delete(keyName, userInteraction);
+			MacOS.delete(SERVICE, keyName, userInteraction);
 		} catch (LoomNativePlatformException e) {
 			throw e;
 		} catch (Throwable e) {
@@ -157,19 +159,19 @@ public final class MacOSEncryptionKeyStore implements EncryptionKeyStore {
 		}
 
 		try {
-			byte[] wrappingKey = MacOS.read(keyName, userInteraction);
+			byte[] wrappingKey = MacOS.read(SERVICE, keyName, userInteraction);
 
 			if (wrappingKey == null && create) {
 				byte[] generated = new byte[WRAPPING_KEY_BYTES];
 				secureRandom.nextBytes(generated);
 
 				try {
-					MacOS.add(keyName, generated, userInteraction);
+					MacOS.add(SERVICE, keyName, ITEM_DESCRIPTION, generated, userInteraction);
 				} finally {
 					Arrays.fill(generated, (byte) 0);
 				}
 
-				wrappingKey = MacOS.read(keyName, userInteraction);
+				wrappingKey = MacOS.read(SERVICE, keyName, userInteraction);
 			}
 
 			if (wrappingKey == null) {

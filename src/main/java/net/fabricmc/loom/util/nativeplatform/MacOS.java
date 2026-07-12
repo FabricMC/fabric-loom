@@ -43,8 +43,6 @@ final class MacOS {
 	private static final int ERR_SEC_DUPLICATE_ITEM = -25299;
 	private static final int ERR_SEC_ITEM_NOT_FOUND = -25300;
 	private static final int CF_STRING_ENCODING_UTF_8 = 0x08000100;
-	private static final String SERVICE = "net.fabricmc.fabric-loom.encryption-key";
-	private static final String ITEM_DESCRIPTION = "Fabric Loom encryption key";
 
 	private static final Linker LINKER = Linker.nativeLinker();
 	private static final SymbolLookup CORE_FOUNDATION = SymbolLookup.libraryLookup(
@@ -107,11 +105,11 @@ final class MacOS {
 	private MacOS() {
 	}
 
-	static boolean add(String keyName, byte[] value, UserInteraction userInteraction) throws Throwable {
+	static boolean add(String serviceName, String accountName, String description, byte[] value, UserInteraction userInteraction) throws Throwable {
 		try (Arena arena = Arena.ofConfined();
-				CFObject service = createString(arena, SERVICE);
-				CFObject account = createString(arena, keyName);
-				CFObject label = createString(arena, ITEM_DESCRIPTION);
+				CFObject service = createString(arena, serviceName);
+				CFObject account = createString(arena, accountName);
+				CFObject label = createString(arena, description);
 				CFObject data = createData(arena, value);
 				CFObject access = createAccess(arena, label, userInteraction);
 				CFObject query = createDictionary()) {
@@ -134,10 +132,10 @@ final class MacOS {
 		}
 	}
 
-	static @Nullable byte[] read(String keyName, UserInteraction userInteraction) throws Throwable {
+	static @Nullable byte[] read(String serviceName, String accountName, UserInteraction userInteraction) throws Throwable {
 		try (Arena arena = Arena.ofConfined();
-				CFObject service = createString(arena, SERVICE);
-				CFObject account = createString(arena, keyName);
+				CFObject service = createString(arena, serviceName);
+				CFObject account = createString(arena, accountName);
 				CFObject query = createDictionary()) {
 			put(query, SEC_CLASS, SEC_CLASS_GENERIC_PASSWORD);
 			put(query, SEC_ATTR_SERVICE, service.segment());
@@ -166,10 +164,10 @@ final class MacOS {
 		}
 	}
 
-	static void delete(String keyName, UserInteraction userInteraction) throws Throwable {
+	static void delete(String serviceName, String accountName, UserInteraction userInteraction) throws Throwable {
 		try (Arena arena = Arena.ofConfined();
-				CFObject service = createString(arena, SERVICE);
-				CFObject account = createString(arena, keyName);
+				CFObject service = createString(arena, serviceName);
+				CFObject account = createString(arena, accountName);
 				CFObject query = createDictionary()) {
 			put(query, SEC_CLASS, SEC_CLASS_GENERIC_PASSWORD);
 			put(query, SEC_ATTR_SERVICE, service.segment());

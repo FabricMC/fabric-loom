@@ -26,7 +26,6 @@ package net.fabricmc.loom.task.launch.auth;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -150,32 +149,11 @@ public interface MicrosoftAuthService {
 	record MinecraftEntitlements(boolean canPlayMinecraft, boolean ownsMinecraft) {
 	}
 
-	/// The authenticated player's Java Edition identity and cosmetics.
-	record MinecraftProfile(String id, String name, List<Skin> skins, List<Cape> capes) {
+	/// The authenticated player's Java Edition identity.
+	record MinecraftProfile(String id, String name) {
 		public MinecraftProfile {
 			Objects.requireNonNull(id, "id");
 			Objects.requireNonNull(name, "name");
-			skins = List.copyOf(skins);
-			capes = List.copyOf(capes);
-		}
-	}
-
-	record Skin(String id, String state, URI url, String variant, String alias) {
-		public Skin {
-			Objects.requireNonNull(id, "id");
-			Objects.requireNonNull(state, "state");
-			Objects.requireNonNull(url, "url");
-			Objects.requireNonNull(variant, "variant");
-			Objects.requireNonNull(alias, "alias");
-		}
-	}
-
-	record Cape(String id, String state, URI url, String alias) {
-		public Cape {
-			Objects.requireNonNull(id, "id");
-			Objects.requireNonNull(state, "state");
-			Objects.requireNonNull(url, "url");
-			Objects.requireNonNull(alias, "alias");
 		}
 	}
 }

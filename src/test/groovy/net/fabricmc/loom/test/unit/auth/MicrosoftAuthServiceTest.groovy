@@ -170,7 +170,7 @@ class MicrosoftAuthServiceTest extends Specification {
 				id: "0123456789abcdef0123456789abcdef",
 				name: "Player",
 				skins: [
-					[id: "skin-id", state: "ACTIVE", url: "https://textures.minecraft.net/skin", variant: "CLASSIC", alias: "Steve"]
+					[id: "skin-id", state: "ACTIVE", url: "https://textures.minecraft.net/skin", variant: "CLASSIC"]
 				],
 				capes: []
 			])
@@ -183,7 +183,7 @@ class MicrosoftAuthServiceTest extends Specification {
 		then:
 		token.expiresIn() == 86400
 		profile.name() == "Player"
-		profile.skins()*.id() == ["skin-id"]
+		profile.id() == "0123456789abcdef0123456789abcdef"
 	}
 
 	def "rejects a successful response with missing required fields"() {

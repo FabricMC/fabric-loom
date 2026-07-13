@@ -26,12 +26,14 @@ package net.fabricmc.loom.task.launch.auth;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /// Obtains a fresh Minecraft access token immediately before the game is launched.
 public interface MinecraftAccessTokenProvider {
 	/// Refreshes the stored Microsoft session and exchanges it for a Minecraft access token.
-	/// The returned Microsoft refresh token must replace the previously stored value.
-	AccessToken getAccessToken(String clientId, String refreshToken) throws IOException;
+	/// The consumer is called with the replacement Microsoft refresh token immediately after it is
+	/// issued, before the Xbox and Minecraft exchanges are attempted.
+	AccessToken getAccessToken(String clientId, String refreshToken, Consumer<String> refreshTokenConsumer) throws IOException;
 
 	record AccessToken(String accessToken, String refreshToken, int expiresIn) {
 		public AccessToken {

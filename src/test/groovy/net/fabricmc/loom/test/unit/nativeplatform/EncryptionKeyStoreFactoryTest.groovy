@@ -22,29 +22,38 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.task.launch.auth;
+package net.fabricmc.loom.test.unit.nativeplatform
 
-import java.io.IOException;
-import java.util.Objects;
-import java.util.function.Consumer;
+import java.nio.file.Path
 
-public final class MinecraftAccessTokenProviderImpl implements MinecraftAccessTokenProvider {
-	private final MicrosoftAuthService authService;
+import spock.lang.Requires
+import spock.lang.Specification
+import spock.lang.TempDir
 
-	public MinecraftAccessTokenProviderImpl() {
-		this(new MicrosoftAuthServiceImpl());
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory
+
+class EncryptionKeyStoreFactoryTest extends Specification {
+	@TempDir
+	Path tempDir
+
+	def "uses a stable key name for a normalized account path"() {
+		expect:
+		EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("nested/../microsoft-auth.json")) ==
+				EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("microsoft-auth.json"))
 	}
 
-	public MinecraftAccessTokenProviderImpl(MicrosoftAuthService authService) {
-		this.authService = Objects.requireNonNull(authService, "authService");
+	def "uses distinct key names for distinct Gradle user homes"() {
+		expect:
+		EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("first/caches/fabric-loom/microsoft-auth.json")) !=
+				EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("second/caches/fabric-loom/microsoft-auth.json"))
 	}
 
-	@Override
-	public AccessToken getAccessToken(String clientId, String refreshToken, Consumer<String> refreshTokenConsumer) throws IOException {
-		Objects.requireNonNull(refreshTokenConsumer, "refreshTokenConsumer");
-		MicrosoftAuthService.MicrosoftToken.Success microsoftToken = authService.refreshMicrosoftToken(clientId, refreshToken);
-		refreshTokenConsumer.accept(microsoftToken.refreshToken());
-		MinecraftAuthFlow.Result minecraft = MinecraftAuthFlow.authenticate(authService, microsoftToken.accessToken());
-		return new AccessToken(minecraft.token().accessToken(), microsoftToken.refreshToken(), minecraft.token().expiresIn());
+	@Requires({
+		os.windows
+	})
+	def "uses the same key name for differently cased Windows paths"() {
+		expect:
+		EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("Fabric-Loom/Microsoft-Auth.json")) ==
+				EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("fabric-loom/microsoft-auth.json"))
 	}
 }

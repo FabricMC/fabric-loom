@@ -34,6 +34,7 @@ public class Constants {
 	public static final String EXPERIMENTAL_VERSIONS = "https://maven.fabricmc.net/net/minecraft/experimental_versions.json";
 	public static final String FABRIC_REPOSITORY = "https://maven.fabricmc.net/";
 	public static final String DLI_ENTRYPOINT = "net.fabricmc.devlaunchinjector.Main";
+	public static final String MICROSOFT_CLIENT_ID = "";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 	public static final String RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS = "2025-11-01T00:00:00+00:00";

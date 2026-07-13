@@ -24,94 +24,71 @@
 
 package net.fabricmc.loom.test.unit.auth
 
-import java.nio.file.Files
 import java.nio.file.Path
 
-import com.google.gson.Gson
-
+import net.fabricmc.loom.task.launch.auth.MicrosoftAccountStore
 import net.fabricmc.loom.task.launch.auth.MicrosoftLoginService
 import net.fabricmc.loom.task.launch.auth.MicrosoftLoginServiceImpl
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProvider
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProviderImpl
-import net.fabricmc.loom.util.EncryptedStringStore
-import net.fabricmc.loom.util.Platform
 import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStore
-import net.fabricmc.loom.util.nativeplatform.MacOSEncryptionKeyStore
-import net.fabricmc.loom.util.nativeplatform.WindowsEncryptionKeyStore
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory
 
 /**
  * Manual authentication smoke test. This intentionally prints credentials and must not be used in
  * CI or with logs that will be retained or shared.
  */
 final class MicrosoftAuthManualTest {
-	private static final int STORED_LOGIN_VERSION = 1
 	private static final Path STORED_LOGIN_FILE = Path.of("microsoft-auth-test.json")
-	private static final Gson GSON = new Gson()
+	private static final String KEY_NAME = "FabricLoomMicrosoftAuthManualTestEncryptionKey"
 
 	private MicrosoftAuthManualTest() {
 	}
 
 	static void main(String[] args) {
 		String requestedClientId = args.length > 0 ? args[0] : System.getenv("LOOM_MICROSOFT_CLIENT_ID")
-		boolean hasStoredLogin = Files.exists(STORED_LOGIN_FILE)
+		EncryptionKeyStore keyStore = EncryptionKeyStoreFactory.create(KEY_NAME, EncryptionKeyStore.UserInteraction.REQUIRED)
+		MicrosoftAccountStore accountStore = new MicrosoftAccountStore(STORED_LOGIN_FILE, keyStore)
+		boolean hasStoredLogin = accountStore.exists()
 
 		if (!hasStoredLogin && !requestedClientId) {
 			throw new IllegalArgumentException("Pass the Microsoft client ID as the first argument or set LOOM_MICROSOFT_CLIENT_ID")
 		}
 
-		EncryptionKeyStore keyStore = createEncryptionKeyStore()
-
 		if (!hasStoredLogin) {
-			keyStore.delete()
+			accountStore.delete()
 		}
 
-		keyStore.prepare()
-		EncryptedStringStore storedLoginStore = new EncryptedStringStore(keyStore)
-		StoredLogin storedLogin
+		accountStore.prepare()
+		MicrosoftAccountStore.Account account
 
 		if (hasStoredLogin) {
-			storedLogin = readStoredLogin(storedLoginStore)
+			account = accountStore.read()
 
-			if (requestedClientId && requestedClientId != storedLogin.clientId) {
+			if (requestedClientId && requestedClientId != account.clientId()) {
 				throw new IllegalArgumentException("The stored login uses a different Microsoft client ID; delete ${STORED_LOGIN_FILE} to authenticate again")
 			}
 
 			println "Loaded encrypted login from ${STORED_LOGIN_FILE.toAbsolutePath()}"
 		} else {
-			storedLogin = login(storedLoginStore, requestedClientId)
+			account = login(accountStore, requestedClientId)
 		}
 
-		String clientId = storedLogin.clientId
-		println "Profile: ${storedLogin.profileName} (${storedLogin.profileId})"
-		println "Can play Minecraft: ${storedLogin.canPlayMinecraft}"
-		println "Owns Minecraft: ${storedLogin.ownsMinecraft}"
+		String clientId = account.clientId()
+		println "Profile: ${account.profileName()} (${account.profileId()})"
 
 		MinecraftAccessTokenProvider tokenProvider = new MinecraftAccessTokenProviderImpl()
-		MinecraftAccessTokenProvider.AccessToken accessToken = tokenProvider.getAccessToken(clientId, storedLogin.refreshToken)
-		storedLogin = storedLogin.withRefreshToken(accessToken.refreshToken())
-		storedLoginStore.write(STORED_LOGIN_FILE, GSON.toJson(storedLogin))
+		MinecraftAccessTokenProvider.AccessToken accessToken = tokenProvider.getAccessToken(clientId, account.refreshToken()) { refreshToken ->
+			accountStore.write(account.withRefreshToken(refreshToken))
+			println "Rotated Microsoft refresh token: ${refreshToken}"
+			println "Updated encrypted login in ${STORED_LOGIN_FILE.toAbsolutePath()}"
+		}
 
-		println "Rotated Microsoft refresh token: ${accessToken.refreshToken()}"
 		println "Minecraft access token: ${accessToken.accessToken()}"
 		println "Minecraft access token expires in: ${accessToken.expiresIn()} seconds"
-		println "Updated encrypted login in ${STORED_LOGIN_FILE.toAbsolutePath()}"
 	}
 
-	private static EncryptionKeyStore createEncryptionKeyStore() {
-		def operatingSystem = Platform.CURRENT.getOperatingSystem()
-
-		if (operatingSystem.isWindows()) {
-			return new WindowsEncryptionKeyStore()
-		}
-
-		if (operatingSystem.isMacOS()) {
-			return new MacOSEncryptionKeyStore()
-		}
-
-		throw new UnsupportedOperationException("Microsoft authentication secure storage is not supported on ${operatingSystem}")
-	}
-
-	private static StoredLogin login(EncryptedStringStore storedLoginStore, String clientId) {
+	private static MicrosoftAccountStore.Account login(MicrosoftAccountStore accountStore, String clientId) {
 		MicrosoftLoginService loginService = new MicrosoftLoginServiceImpl()
 		MicrosoftLoginService.LoginResult login = loginService.login(clientId) { deviceCode ->
 			println deviceCode.message()
@@ -124,59 +101,14 @@ final class MicrosoftAuthManualTest {
 		println "Owns Minecraft: ${login.entitlements().ownsMinecraft()}"
 		println "Microsoft refresh token: ${login.refreshToken()}"
 
-		StoredLogin storedLogin = new StoredLogin(
-				STORED_LOGIN_VERSION,
+		MicrosoftAccountStore.Account account = new MicrosoftAccountStore.Account(
 				clientId,
 				login.refreshToken(),
 				login.profile().id(),
-				login.profile().name(),
-				login.entitlements().canPlayMinecraft(),
-				login.entitlements().ownsMinecraft()
+				login.profile().name()
 				)
-		storedLoginStore.write(STORED_LOGIN_FILE, GSON.toJson(storedLogin))
+		accountStore.write(account)
 		println "Stored encrypted login in ${STORED_LOGIN_FILE.toAbsolutePath()}"
-		return storedLogin
-	}
-
-	private static StoredLogin readStoredLogin(EncryptedStringStore storedLoginStore) {
-		StoredLogin storedLogin = GSON.fromJson(storedLoginStore.read(STORED_LOGIN_FILE), StoredLogin)
-
-		if (storedLogin == null || storedLogin.version != STORED_LOGIN_VERSION) {
-			throw new IllegalStateException("Unsupported stored login in ${STORED_LOGIN_FILE}")
-		}
-
-		if (!storedLogin.clientId || !storedLogin.refreshToken || !storedLogin.profileId || !storedLogin.profileName) {
-			throw new IllegalStateException("Stored login in ${STORED_LOGIN_FILE} is missing required fields")
-		}
-
-		return storedLogin
-	}
-
-	private static final class StoredLogin {
-		int version
-		String clientId
-		String refreshToken
-		String profileId
-		String profileName
-		boolean canPlayMinecraft
-		boolean ownsMinecraft
-
-		private StoredLogin() {
-		}
-
-		private StoredLogin(int version, String clientId, String refreshToken, String profileId, String profileName,
-		boolean canPlayMinecraft, boolean ownsMinecraft) {
-			this.version = version
-			this.clientId = clientId
-			this.refreshToken = refreshToken
-			this.profileId = profileId
-			this.profileName = profileName
-			this.canPlayMinecraft = canPlayMinecraft
-			this.ownsMinecraft = ownsMinecraft
-		}
-
-		private StoredLogin withRefreshToken(String refreshToken) {
-			return new StoredLogin(version, clientId, refreshToken, profileId, profileName, canPlayMinecraft, ownsMinecraft)
-		}
+		return account
 	}
 }

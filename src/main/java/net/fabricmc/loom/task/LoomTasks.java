@@ -45,6 +45,8 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.task.launch.GenerateDLIConfigTask;
 import net.fabricmc.loom.task.launch.GenerateLog4jConfigTask;
 import net.fabricmc.loom.task.launch.GenerateRemapClasspathTask;
+import net.fabricmc.loom.task.launch.auth.MicrosoftLoginTask;
+import net.fabricmc.loom.task.launch.auth.MicrosoftLogoutTask;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
@@ -116,6 +118,7 @@ public abstract class LoomTasks implements Runnable {
 		getTasks().named("check").configure(task -> task.dependsOn(validateAccessWidener));
 
 		registerIDETasks();
+		registerMicrosoftAuthTasks();
 		registerRunTasks();
 
 		// Must be done in afterEvaluate to allow time for the build script to configure the jar config.
@@ -176,6 +179,16 @@ public abstract class LoomTasks implements Runnable {
 		});
 	}
 
+	private void registerMicrosoftAuthTasks() {
+		getTasks().register("microsoftLogin", MicrosoftLoginTask.class, task -> {
+			task.setDescription("Logs in to Minecraft with a Microsoft account.");
+		});
+
+		getTasks().register("microsoftLogout", MicrosoftLogoutTask.class, task -> {
+			task.setDescription("Removes the stored Microsoft account.");
+		});
+	}
+
 	public static String getRunConfigTaskName(RunConfiguration config) {
 		String configName = config.getName();
 		return "run" + configName.substring(0, 1).toUpperCase() + configName.substring(1);
@@ -193,6 +206,7 @@ public abstract class LoomTasks implements Runnable {
 			runTask.configure(t -> {
 				t.setDescription("Starts the '" + config.getName() + "' run configuration");
 				t.dependsOn(config.getRuntimeEnvironment().map(env -> env.equals("client") ? "configureClientLaunch" : "configureLaunch"));
+				t.getMicrosoftAuthenticationEnabled().set(config.getName().equals("client"));
 			});
 
 			if (config.getName().equals("client") && renderDocSupported) {

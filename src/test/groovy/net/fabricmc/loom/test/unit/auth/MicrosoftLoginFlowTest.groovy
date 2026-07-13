@@ -78,9 +78,10 @@ class MicrosoftLoginFlowTest extends Specification {
 		def xsts = new MicrosoftAuthService.XboxToken("xsts", "user-hash")
 		def minecraftToken = new MicrosoftAuthService.MinecraftToken("minecraft-token", "Bearer", 86400)
 		def provider = new MinecraftAccessTokenProviderImpl(auth)
+		def rotatedRefreshTokens = []
 
 		when:
-		def result = provider.getAccessToken("client-id", "old-refresh-token")
+		def result = provider.getAccessToken("client-id", "old-refresh-token") { rotatedRefreshTokens.add(it) }
 
 		then:
 		1 * auth.refreshMicrosoftToken("client-id", "old-refresh-token") >> microsoftToken
@@ -91,24 +92,27 @@ class MicrosoftLoginFlowTest extends Specification {
 		result.accessToken() == "minecraft-token"
 		result.refreshToken() == "new-refresh-token"
 		result.expiresIn() == 86400
+		rotatedRefreshTokens == ["new-refresh-token"]
 	}
 
-	def "per-launch provider rejects an account that is no longer entitled to play"() {
+	def "per-launch provider reports the rotated token before a downstream entitlement failure"() {
 		given:
 		def auth = Stub(MicrosoftAuthService) {
-			refreshMicrosoftToken(_, _) >> new MicrosoftAuthService.MicrosoftToken.Success("microsoft-token", "refresh-token", "Bearer", 3600)
+			refreshMicrosoftToken(_, _) >> new MicrosoftAuthService.MicrosoftToken.Success("microsoft-token", "new-refresh-token", "Bearer", 3600)
 			authenticateXboxUser(_) >> new MicrosoftAuthService.XboxToken("xbox-user", "user-hash")
 			authorizeMinecraftServices(_) >> new MicrosoftAuthService.XboxToken("xsts", "user-hash")
 			loginToMinecraft(_, _) >> new MicrosoftAuthService.MinecraftToken("minecraft-token", "Bearer", 86400)
 			fetchMinecraftEntitlements(_) >> new MicrosoftAuthService.MinecraftEntitlements(false, false)
 		}
 		def provider = new MinecraftAccessTokenProviderImpl(auth)
+		def rotatedRefreshTokens = []
 
 		when:
-		provider.getAccessToken("client-id", "refresh-token")
+		provider.getAccessToken("client-id", "old-refresh-token") { rotatedRefreshTokens.add(it) }
 
 		then:
 		def exception = thrown IOException
 		exception.message == "The Microsoft account is not entitled to play Minecraft"
+		rotatedRefreshTokens == ["new-refresh-token"]
 	}
 }

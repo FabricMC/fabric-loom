@@ -24,27 +24,38 @@
 
 package net.fabricmc.loom.task.launch.auth;
 
-import java.io.IOException;
-import java.util.Objects;
-import java.util.function.Consumer;
+import java.nio.file.Path;
 
-public final class MinecraftAccessTokenProviderImpl implements MinecraftAccessTokenProvider {
-	private final MicrosoftAuthService authService;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.services.ServiceReference;
+import org.gradle.api.tasks.Internal;
+import org.gradle.work.DisableCachingByDefault;
 
-	public MinecraftAccessTokenProviderImpl() {
-		this(new MicrosoftAuthServiceImpl());
+import net.fabricmc.loom.extension.LoomFiles;
+import net.fabricmc.loom.task.AbstractLoomTask;
+import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory;
+
+/// Base task for operations on the globally stored Microsoft account.
+@DisableCachingByDefault
+public abstract class MicrosoftAuthTask extends AbstractLoomTask {
+	@ServiceReference(SyncTaskBuildService.NAME)
+	abstract Property<SyncTaskBuildService> getSyncTask();
+
+	@Internal
+	protected abstract RegularFileProperty getAccountFile();
+
+	public MicrosoftAuthTask() {
+		getAccountFile().fileValue(MicrosoftAccountStore.defaultPath(LoomFiles.create(getProject())).toFile());
 	}
 
-	public MinecraftAccessTokenProviderImpl(MicrosoftAuthService authService) {
-		this.authService = Objects.requireNonNull(authService, "authService");
+	@Internal
+	protected Path getAccountPath() {
+		return getAccountFile().get().getAsFile().toPath();
 	}
 
-	@Override
-	public AccessToken getAccessToken(String clientId, String refreshToken, Consumer<String> refreshTokenConsumer) throws IOException {
-		Objects.requireNonNull(refreshTokenConsumer, "refreshTokenConsumer");
-		MicrosoftAuthService.MicrosoftToken.Success microsoftToken = authService.refreshMicrosoftToken(clientId, refreshToken);
-		refreshTokenConsumer.accept(microsoftToken.refreshToken());
-		MinecraftAuthFlow.Result minecraft = MinecraftAuthFlow.authenticate(authService, microsoftToken.accessToken());
-		return new AccessToken(minecraft.token().accessToken(), microsoftToken.refreshToken(), minecraft.token().expiresIn());
+	protected MicrosoftAccountStore createAccountStore(Path accountPath) {
+		return new MicrosoftAccountStore(accountPath, EncryptionKeyStoreFactory.create(accountPath));
 	}
 }

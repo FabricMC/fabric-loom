@@ -31,6 +31,7 @@ import net.fabricmc.loom.task.launch.auth.MicrosoftLoginService
 import net.fabricmc.loom.task.launch.auth.MicrosoftLoginServiceImpl
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProvider
 import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProviderImpl
+import net.fabricmc.loom.util.Constants
 import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStore
 import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory
 
@@ -46,14 +47,10 @@ final class MicrosoftAuthManualTest {
 	}
 
 	static void main(String[] args) {
-		String requestedClientId = args.length > 0 ? args[0] : System.getenv("LOOM_MICROSOFT_CLIENT_ID")
+		String clientId = Constants.MICROSOFT_CLIENT_ID
 		EncryptionKeyStore keyStore = EncryptionKeyStoreFactory.create(KEY_NAME, EncryptionKeyStore.UserInteraction.REQUIRED)
 		MicrosoftAccountStore accountStore = new MicrosoftAccountStore(STORED_LOGIN_FILE, keyStore)
 		boolean hasStoredLogin = accountStore.exists()
-
-		if (!hasStoredLogin && !requestedClientId) {
-			throw new IllegalArgumentException("Pass the Microsoft client ID as the first argument or set LOOM_MICROSOFT_CLIENT_ID")
-		}
 
 		if (!hasStoredLogin) {
 			accountStore.delete()
@@ -65,16 +62,15 @@ final class MicrosoftAuthManualTest {
 		if (hasStoredLogin) {
 			account = accountStore.read()
 
-			if (requestedClientId && requestedClientId != account.clientId()) {
+			if (clientId != account.clientId()) {
 				throw new IllegalArgumentException("The stored login uses a different Microsoft client ID; delete ${STORED_LOGIN_FILE} to authenticate again")
 			}
 
 			println "Loaded encrypted login from ${STORED_LOGIN_FILE.toAbsolutePath()}"
 		} else {
-			account = login(accountStore, requestedClientId)
+			account = login(accountStore, clientId)
 		}
 
-		String clientId = account.clientId()
 		println "Profile: ${account.profileName()} (${account.profileId()})"
 
 		MinecraftAccessTokenProvider tokenProvider = new MinecraftAccessTokenProviderImpl()

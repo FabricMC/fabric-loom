@@ -39,11 +39,12 @@ import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
-import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jspecify.annotations.Nullable;
 
-import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
+import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.api.processor.MarkdownJavadocOption;
 import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.AsyncCache;
@@ -207,6 +208,11 @@ public record RemappedSpecContext(
 				.filter(modHolder -> !modHolder.common())
 				.map(ModHolder::mod)
 				.toList();
+	}
+
+	@Override
+	public MarkdownJavadocOption markdownJavadocOption() {
+		return MarkdownJavadocOption.UNSUPPORTED;
 	}
 
 	private record ModHolder(FabricModJson mod, boolean common) {

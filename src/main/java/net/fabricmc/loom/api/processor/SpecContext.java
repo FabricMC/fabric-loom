@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import org.gradle.api.Project;
 import org.gradle.api.plugins.JavaPlugin;
+import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.processors.speccontext.ProjectView;
@@ -54,6 +55,9 @@ public interface SpecContext {
 	List<FabricModJson> modDependenciesCompileRuntimeClient();
 
 	MappingsNamespace productionNamespace();
+
+	@ApiStatus.Experimental
+	MarkdownJavadocOption markdownJavadocOption();
 
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();

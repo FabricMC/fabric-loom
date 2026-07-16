@@ -45,9 +45,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.api.processor.MarkdownJavadocOption;
 import net.fabricmc.loom.api.processor.MinecraftJarProcessor;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.api.processor.SpecContext;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
@@ -81,7 +83,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		List<ModJavadoc> javadocs = new ArrayList<>();
 
 		for (FabricModJson fabricModJson : context.modDependenciesCompileRuntime()) {
-			ModJavadoc javadoc = ModJavadoc.create(fabricModJson, context.productionNamespace());
+			ModJavadoc javadoc = ModJavadoc.create(fabricModJson, context.productionNamespace(), context.markdownJavadocOption());
 
 			if (javadoc != null) {
 				javadocs.add(javadoc);
@@ -117,7 +119,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 	public record ModJavadoc(String modId, MemoryMappingTree mappingTree, String mappingsHash) {
 		@Nullable
-		public static ModJavadoc create(FabricModJson fabricModJson, MappingsNamespace productionNamespace) {
+		public static ModJavadoc create(FabricModJson fabricModJson, MappingsNamespace productionNamespace, MarkdownJavadocOption markdownJavadocOption) {
 			final String modId = fabricModJson.getId();
 			final JsonElement customElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.PROVIDED_JAVADOC);
 
@@ -151,6 +153,20 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 
 			if (!mappings.getSrcNamespace().equals(productionNamespace.toString())) {
 				throw new IllegalStateException("Javadoc provided by mod (%s) must have an %s source namespace".formatted(modId, productionNamespace.toString()));
+			}
+
+			switch (markdownJavadocOption) {
+			case REQUIRED -> {
+				if (mappings.getMetadata(MappingConfiguration.MARKDOWN_METADATA_KEY).isEmpty()) {
+					LOGGER.warn("Mod-provided javadoc from mod {} should have the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry", modId);
+				}
+			}
+
+			case UNSUPPORTED -> {
+				if (!mappings.getMetadata(MappingConfiguration.MARKDOWN_METADATA_KEY).isEmpty()) {
+					LOGGER.warn("Mod-provided javadoc from mod {} has the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry, but it is not supported with this project configuration", modId);
+				}
+			}
 			}
 
 			return new ModJavadoc(modId, mappings, mappingsHash);

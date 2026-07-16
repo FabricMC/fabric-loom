@@ -40,19 +40,20 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.loom.configuration.DependencyInfo;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 public abstract sealed class MappingConfiguration permits RemapMappingConfiguration, NoRemapMappingConfiguration {
+	public static final String MARKDOWN_METADATA_KEY = "markdown";
 	protected static final Logger LOGGER = LoggerFactory.getLogger(MappingConfiguration.class);
 
 	public final String mappingsIdentifier;

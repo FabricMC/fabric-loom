@@ -27,6 +27,7 @@ package net.fabricmc.loom.configuration.providers.mappings;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -42,12 +43,12 @@ import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.MappingsMerger;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.DeletingFileVisitor;
@@ -55,6 +56,7 @@ import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.stitch.Command;
 import net.fabricmc.stitch.commands.CommandProposeFieldNames;
 
@@ -139,6 +141,25 @@ public final class RemapMappingConfiguration extends MappingConfiguration {
 			LOGGER.info(":populating field names");
 			suggestFieldNames(minecraftJars.get(0), baseTinyMappings, tinyMappings);
 		}
+	}
+
+	private static void validateMappings(MemoryMappingTree mappingTree) throws IOException {
+		if (!mappingTree.getMetadata(MARKDOWN_METADATA_KEY).isEmpty()) {
+			LOGGER.warn("Markdown comments are currently not supported for remapped Minecraft. Reinterpreting comments as HTML.");
+		}
+	}
+
+	@Override
+	public TinyMappingsService getMappingsService(Project project, ServiceFactory serviceFactory) {
+		TinyMappingsService mappingsService = super.getMappingsService(project, serviceFactory);
+
+		try {
+			validateMappings(mappingsService.getMappingTree());
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to validate mappings", e);
+		}
+
+		return mappingsService;
 	}
 
 	@Override

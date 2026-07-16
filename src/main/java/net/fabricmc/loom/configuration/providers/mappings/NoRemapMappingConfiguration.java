@@ -31,19 +31,23 @@ import java.nio.file.Path;
 
 import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public final class NoRemapMappingConfiguration extends MappingConfiguration {
+	private static final Logger LOGGER = LoggerFactory.getLogger(NoRemapMappingConfiguration.class);
+
 	private NoRemapMappingConfiguration(String mappingsIdentifier, Path inputJar) {
 		super(mappingsIdentifier, inputJar);
 	}
@@ -84,6 +88,10 @@ public final class NoRemapMappingConfiguration extends MappingConfiguration {
 	private static void validateMappings(MemoryMappingTree mappingTree) throws IOException {
 		if (!MappingsNamespace.OFFICIAL.toString().equals(mappingTree.getSrcNamespace()) || !mappingTree.getDstNamespaces().isEmpty()) {
 			throw new IOException("Annotations mappings must contain only the official namespace");
+		}
+
+		if (mappingTree.getMetadata(MARKDOWN_METADATA_KEY).isEmpty()) {
+			LOGGER.warn("Annotations mappings should have the " + MARKDOWN_METADATA_KEY + " metadata entry. Comments are still assumed to be in Markdown.");
 		}
 	}
 

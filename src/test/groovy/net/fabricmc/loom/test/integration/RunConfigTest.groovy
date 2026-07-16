@@ -279,4 +279,23 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@IgnoreIf({ !os.linux })
+	def "XVFB forwards game JVM arguments"() {
+		given:
+		def gradle = gradleProject(project: "runconfigs", version: LoomTestConstants.DEFAULT_GRADLE)
+		gradle.buildGradle << '''
+
+tasks.named('runCustomMain') {
+	useXvfb.set(true)
+}
+ '''
+
+		when:
+		def result = gradle.run(task: "runCustomMain")
+
+		then:
+		result.task(":runCustomMain").outcome == SUCCESS
+		result.output.contains("This contains a space")
+	}
 }

@@ -90,6 +90,24 @@ class JarNesterTest extends Specification {
 		jars[1].asJsonObject.get("file").asString == "META-INF/jars/b-lib.jar"
 	}
 
+	def "nest 50 500 KiB jars"() {
+		given:
+		def target = makeModJar("mod.jar", '{"schemaVersion":1,"id":"mod","version":"1.0"}')
+		def payload = new byte[500 * 1024]
+		new Random(42).nextBytes(payload)
+		def nested = (0..<50).collect { i ->
+			def jar = makeModJar("lib-${i}.jar", """{"schemaVersion":1,"id":"lib-${i}","version":"1.0"}""")
+			ZipUtils.add(jar, "payload.bin", payload)
+			return jar.toFile()
+		}
+
+		when:
+		JarNester.nestJars(nested, target.toFile())
+
+		then:
+		readFmj(target).getAsJsonArray("jars").size() == 50
+	}
+
 	def "nest jar appends to existing jars array"() {
 		given:
 		def existingEntry = '{"file":"META-INF/jars/existing.jar"}'

@@ -33,6 +33,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
+import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -205,6 +206,45 @@ public class ZipReprocessorUtil {
 				var entry = new ZipEntry(path);
 				setConstantFileTime(entry);
 				copyZipEntry(zipOutputStream, entry, data);
+			}
+		}
+
+		Files.move(tempFile, file, StandardCopyOption.REPLACE_EXISTING);
+	}
+
+	/**
+	 * Appends files to a zip file, preserving the existing entry order and time stamps.
+	 * The new entries are appended in map iteration order with constant time stamps to ensure reproducibility.
+	 * This method should only be used when a reproducible output is required, use {@link ZipUtils#add(Path, Iterable)} normally.
+	 */
+	public static void appendZipEntries(Path file, Map<String, Path> paths) throws IOException {
+		if (paths.isEmpty()) {
+			return;
+		}
+
+		final Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
+
+		try (var zipFile = new ZipFile(file.toFile());
+				var fileOutputStream = Files.newOutputStream(tempFile)) {
+			ZipEntry[] entries = zipFile.stream().toArray(ZipEntry[]::new);
+
+			try (var zipOutputStream = new ZipOutputStream(fileOutputStream)) {
+				for (ZipEntry entry : entries) {
+					if (paths.containsKey(entry.getName())) {
+						throw new IllegalArgumentException("Zip file (%s) already contains entry (%s)".formatted(file.getFileName().toString(), entry.getName()));
+					}
+
+					copyZipEntry(zipOutputStream, entry, zipFile.getInputStream(entry));
+				}
+
+				for (Map.Entry<String, Path> path : paths.entrySet()) {
+					var entry = new ZipEntry(path.getKey());
+					setConstantFileTime(entry);
+
+					try (var inputStream = Files.newInputStream(path.getValue())) {
+						copyZipEntry(zipOutputStream, entry, inputStream);
+					}
+				}
 			}
 		}
 

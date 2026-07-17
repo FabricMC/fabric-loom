@@ -26,9 +26,11 @@ package net.fabricmc.loom.build.nesting;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -56,16 +58,16 @@ public class JarNester {
 		Collection<File> sortedJars = jars.stream().sorted(Comparator.comparing(File::getName)).toList();
 
 		try {
+			Map<String, Path> nestedJarPaths = new LinkedHashMap<>();
+
 			for (File file : sortedJars) {
 				String nestedJarPath = "META-INF/jars/" + file.getName();
 				Check.require(FabricModJsonFactory.isModJar(file), "Cannot nest none mod jar: " + file.getName());
-
-				try (var is = Files.newInputStream(file.toPath())) {
-					ZipReprocessorUtil.appendZipEntry(modJar.toPath(), nestedJarPath, is);
-				}
-
-				LOGGER.debug("Nested {} into {}", nestedJarPath, modJar.getName());
+				Check.require(nestedJarPaths.putIfAbsent(nestedJarPath, file.toPath()) == null, "Cannot nest multiple jars at " + nestedJarPath);
 			}
+
+			ZipReprocessorUtil.appendZipEntries(modJar.toPath(), nestedJarPaths);
+			nestedJarPaths.keySet().forEach(path -> LOGGER.debug("Nested {} into {}", path, modJar.getName()));
 
 			ZipReprocessorUtil.transformZipEntry(modJar.toPath(), "fabric.mod.json", bytes -> {
 				JsonObject json = GSON.fromJson(new String(bytes), JsonObject.class);

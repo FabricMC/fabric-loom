@@ -26,12 +26,17 @@ package net.fabricmc.loom.util;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.crypto.AEADBadTagException;
 import javax.crypto.Cipher;
@@ -56,6 +61,7 @@ public final class EncryptedStringStore {
 	private static final int GCM_TAG_BITS = 128;
 	private static final int INITIALIZATION_VECTOR_BYTES = 12;
 	private static final byte[] AAD = "fabric-loom-encrypted-string-v1".getBytes(StandardCharsets.UTF_8);
+	private static final Set<PosixFilePermission> OWNER_ONLY_PERMISSIONS = EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
 	private static final Gson GSON = new Gson();
 
 	private final EncryptionKeyStore keyStore;
@@ -96,10 +102,26 @@ public final class EncryptedStringStore {
 					encoder.encodeToString(initializationVector),
 					encoder.encodeToString(ciphertext)
 			);
-			Files.writeString(path, GSON.toJson(encrypted));
+			writeFile(path, GSON.toJson(encrypted));
 		} catch (GeneralSecurityException e) {
 			throw new IOException("Failed to encrypt string", e);
 		}
+	}
+
+	private static void writeFile(Path path, String value) throws IOException {
+		try {
+			try {
+				Files.createFile(path, PosixFilePermissions.asFileAttribute(OWNER_ONLY_PERMISSIONS));
+			} catch (FileAlreadyExistsException ignored) {
+				// Permissions are updated below.
+			}
+
+			Files.setPosixFilePermissions(path, OWNER_ONLY_PERMISSIONS);
+		} catch (UnsupportedOperationException ignored) {
+			// POSIX permissions are not supported on this filesystem.
+		}
+
+		Files.writeString(path, value);
 	}
 
 	public String read(Path path) throws IOException, LoomNativePlatformException {

@@ -26,6 +26,7 @@ package net.fabricmc.loom.util.nativeplatform;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
+import java.util.Arrays;
 import java.util.Objects;
 
 import javax.crypto.SecretKey;
@@ -64,7 +65,13 @@ public final class WindowsEncryptionKeyStore implements EncryptionKeyStore {
 	@Override
 	public void prepare() throws LoomNativePlatformException {
 		try (Arena arena = Arena.ofConfined(); NativeHandle provider = openProvider(arena); NativeHandle wrappingKey = openOrCreateKey(arena, provider)) {
-			Win32.ncryptEncrypt(arena, wrappingKey.segment(), new byte[] {0});
+			byte[] plaintext = new byte[] {0};
+			byte[] encrypted = Win32.ncryptEncrypt(arena, wrappingKey.segment(), plaintext);
+			byte[] decrypted = Win32.ncryptDecrypt(arena, wrappingKey.segment(), encrypted, nativeFlags());
+
+			if (!Arrays.equals(plaintext, decrypted)) {
+				throw new LoomNativePlatformException("Windows CNG key validation failed");
+			}
 		} catch (Throwable e) {
 			String message = userInteraction == UserInteraction.REQUIRED
 					? "Could not initialize TPM-backed secure storage. Microsoft login requires an enabled and provisioned TPM on Windows, and setup must be approved when prompted."

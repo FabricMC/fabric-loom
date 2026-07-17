@@ -27,12 +27,14 @@ package net.fabricmc.loom.test.unit
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
 
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
+import spock.lang.Requires
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -67,6 +69,18 @@ class EncryptedStringStoreTest extends Specification {
 
 		then:
 		store.read(file) == "new-token"
+	}
+
+	@Requires({ os.linux || os.macOs })
+	def "restricts encrypted files to the owner"() {
+		given:
+		Path file = directory.resolve("secret.bin")
+
+		when:
+		store.write(file, "refresh-token-value")
+
+		then:
+		Files.getPosixFilePermissions(file) == PosixFilePermissions.fromString("rw-------")
 	}
 
 	def "rejects modified ciphertext"() {

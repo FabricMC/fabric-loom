@@ -28,13 +28,50 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
-/// Stores a Java encryption key using protection supplied by the host operating system.
+/// Stores a Java encryption key for use by encrypted application data.
 ///
-/// The returned [StoredKey] is safe to persist, but can only be read while the corresponding
-/// platform key remains available. Encryption of application data remains independent of the
-/// platform because [#read(StoredKey)] returns a standard [SecretKey].
+/// Native implementations protect the returned [StoredKey] with facilities supplied by the host
+/// operating system. [#FALLBACK] stores the encoded key directly and relies on the permissions of
+/// the file containing it. It prevents casual plaintext disclosure, but does not protect against an
+/// attacker that can read that file.
+///
+/// Encryption of application data remains independent of the implementation because
+/// [#read(StoredKey)] returns a standard [SecretKey].
 public interface EncryptionKeyStore {
+	/// A portable fallback for platforms without a native secure-storage implementation.
+	///
+	/// The encoded key is stored directly in [StoredKey#data()], so callers must restrict access to
+	/// the file containing the stored key.
+	EncryptionKeyStore FALLBACK = new EncryptionKeyStore() {
+		@Override
+		public void prepare() {
+		}
+
+		@Override
+		public StoredKey store(SecretKey key) {
+			Objects.requireNonNull(key, "key");
+			byte[] encoded = key.getEncoded();
+
+			if (encoded == null || encoded.length == 0) {
+				throw new IllegalArgumentException("key must be encodable");
+			}
+
+			return new StoredKey(key.getAlgorithm(), encoded);
+		}
+
+		@Override
+		public SecretKey read(StoredKey key) {
+			Objects.requireNonNull(key, "key");
+			return new SecretKeySpec(key.data(), key.algorithm());
+		}
+
+		@Override
+		public void delete() {
+		}
+	};
+
 	/// Prepares and verifies the platform key before credentials are acquired.
 	void prepare() throws LoomNativePlatformException;
 

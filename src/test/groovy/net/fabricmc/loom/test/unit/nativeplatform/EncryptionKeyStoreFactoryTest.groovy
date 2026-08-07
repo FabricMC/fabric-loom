@@ -30,6 +30,7 @@ import spock.lang.Requires
 import spock.lang.Specification
 import spock.lang.TempDir
 
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStore
 import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory
 
 class EncryptionKeyStoreFactoryTest extends Specification {
@@ -46,6 +47,14 @@ class EncryptionKeyStoreFactoryTest extends Specification {
 		expect:
 		EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("first/caches/fabric-loom/microsoft-auth.json")) !=
 				EncryptionKeyStoreFactory.keyNameFor(tempDir.resolve("second/caches/fabric-loom/microsoft-auth.json"))
+	}
+
+	@Requires({
+		os.linux
+	})
+	def "uses the fallback key store on Linux"() {
+		expect:
+		EncryptionKeyStoreFactory.create(tempDir.resolve("microsoft-auth.json")).is(EncryptionKeyStore.FALLBACK)
 	}
 
 	@Requires({

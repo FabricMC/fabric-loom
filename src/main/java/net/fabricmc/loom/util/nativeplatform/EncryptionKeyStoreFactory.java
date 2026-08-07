@@ -48,7 +48,7 @@ public final class EncryptionKeyStoreFactory {
 		return switch (Platform.CURRENT.getOperatingSystem()) {
 		case WINDOWS -> new WindowsEncryptionKeyStore(keyName, userInteraction);
 		case MAC_OS -> new MacOSEncryptionKeyStore(keyName, userInteraction);
-		case LINUX -> throw unsupportedPlatform();
+		case LINUX -> EncryptionKeyStore.FALLBACK;
 		};
 	}
 
@@ -62,11 +62,5 @@ public final class EncryptionKeyStoreFactory {
 		}
 
 		return KEY_NAME_PREFIX + Checksum.of(normalizedPath).sha256().hex();
-	}
-
-	private static UnsupportedOperationException unsupportedPlatform() {
-		return new UnsupportedOperationException(
-				"Microsoft authentication secure storage is not supported on " + Platform.CURRENT.getOperatingSystem()
-		);
 	}
 }

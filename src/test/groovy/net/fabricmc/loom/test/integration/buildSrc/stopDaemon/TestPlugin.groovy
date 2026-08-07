@@ -39,7 +39,6 @@ import org.gradle.internal.remote.internal.inet.InetAddressFactory
 import org.gradle.internal.service.ServiceRegistry
 import org.gradle.invocation.DefaultGradle
 import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.launcher.daemon.configuration.DaemonPriority
 import org.gradle.launcher.daemon.context.DefaultDaemonContext
 import org.gradle.launcher.daemon.protocol.DaemonMessageSerializer
 import org.gradle.launcher.daemon.protocol.Finished
@@ -100,7 +99,11 @@ class TestPlugin implements Plugin<Project> {
 	}
 
 	static DefaultDaemonContext createDaemonContext() {
-		return new DefaultDaemonContext(
+		// DaemonPriority moved packages in Gradle 9.8. Obtain it from the constructor to support both locations.
+		def constructor = DefaultDaemonContext.constructors[0]
+		def daemonPriority = constructor.parameterTypes.last().enumConstants.find { it.name() == "NORMAL" }
+
+		return constructor.newInstance(
 				UUID.randomUUID().toString(),
 				new File("."),
 				JavaLanguageVersion.current(),
@@ -111,8 +114,8 @@ class TestPlugin implements Plugin<Project> {
 				List.of(),
 				false,
 				NativeServices.NativeServicesMode.NOT_SET,
-				DaemonPriority.NORMAL
-				)
+				daemonPriority
+				) as DefaultDaemonContext
 	}
 
 	class TestIncomingConnectionHandler implements IncomingConnectionHandler, Runnable, AutoCloseable {

@@ -114,18 +114,16 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			return;
 		}
 
-		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
-			// Remove -dev jars from the default jar task
-			for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
-				Configuration configuration = getConfigurations().getByName(configurationName);
-				final Jar jarTask = (Jar) getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
-				configuration.getArtifacts().removeIf(artifact -> {
-					// if the artifact is built by the jar task, and has the same output path.
-					return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath())
-							&& (extension.isProjectIsolationActive() || artifact.getBuildDependencies().getDependencies(null).contains(jarTask));
-				});
-			}
-		});
+		// Remove -dev jars from the default jar task before the variants can be observed by publishing plugins.
+		for (String configurationName : new String[] { JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME }) {
+			Configuration configuration = getConfigurations().getByName(configurationName);
+			final Jar jarTask = (Jar) getTasks().getByName(JavaPlugin.JAR_TASK_NAME);
+			configuration.getArtifacts().removeIf(artifact -> {
+				// if the artifact is built by the jar task, and has the same output path.
+				return artifact.getFile().getAbsolutePath().equals(jarTask.getArchiveFile().get().getAsFile().getAbsolutePath())
+						&& (extension.isProjectIsolationActive() || artifact.getBuildDependencies().getDependencies(null).contains(jarTask));
+			});
+		}
 	}
 
 	private void trySetupSourceRemapping() {
@@ -138,6 +136,23 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		});
 
 		getTasks().named(BasePlugin.ASSEMBLE_TASK_NAME).configure(task -> task.dependsOn(remapSourcesTask));
+
+		// withSourcesJar creates this configuration during project evaluation. Replace its artifact as soon as it is
+		// created, since publishing plugins may observe and lock the variant before afterEvaluate callbacks run.
+		getConfigurations().matching(configuration -> configuration.getName().equals(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)).all(configuration -> {
+			if (GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
+				return;
+			}
+
+			getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask.map(AbstractArchiveTask::getArchiveFile), artifact -> {
+				artifact.setClassifier("sources");
+			});
+			configuration.getArtifacts().whenObjectAdded(artifact -> {
+				if ("sources".equals(artifact.getClassifier())) {
+					configuration.getArtifacts().remove(artifact);
+				}
+			});
+		});
 
 		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
 			final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(getProject()).getSourcesJarTaskName();
@@ -173,20 +188,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 				task.getInputFile().convention(sourcesJarTask.getArchiveFile());
 			});
 
-			if (GradleUtils.getBooleanProperty(getProject(), "fabric.loom.disableRemappedVariants")) {
-				return;
-			}
-
-			if (getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME)) {
-				// Remove the dev sources artifact
-				Configuration configuration = getConfigurations().getByName(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME);
-				configuration.getArtifacts().removeIf(a -> "sources".equals(a.getClassifier()));
-
-				// Add the remapped sources artifact
-				getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask.map(AbstractArchiveTask::getArchiveFile), artifact -> {
-					artifact.setClassifier("sources");
-				});
-			} else if (canRemap) {
+			if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)
+					&& !getConfigurations().getNames().contains(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME) && canRemap) {
 				// Sources jar may not have been created with withSourcesJar
 				getProject().getLogger().warn("Not publishing sources jar as it was not created by the java plugin. Use java.withSourcesJar() to fix.");
 			}

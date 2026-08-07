@@ -127,7 +127,7 @@ public final class GradleUtils {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.isProjectIsolationActive()) {
-			return project.getProviders().gradleProperty(key).orElse((String) null);
+			return project.getProviders().gradleProperty(key).getOrNull();
 		}
 
 		return project.findProperty(key);

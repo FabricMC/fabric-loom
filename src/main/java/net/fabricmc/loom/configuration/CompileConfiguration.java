@@ -124,14 +124,18 @@ public abstract class CompileConfiguration implements Runnable {
 			}
 
 			try {
-				// Dont resolve depedencies under the global lock, as this can cause deadlocks when using isolated projects.
+				final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
+				extension.setMetadataProvider(metadataProvider);
+
+				synchronized (getGlobalLockObject()) {
+					prepareMinecraft(configContext, metadataProvider);
+				}
+
 				registerGameProcessors(configContext);
 				final MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
-				// Setting up loom across Gradle projects is not thread safe, synchronize it here to ensure that multiple projects cannot use it.
-				// There is no easy way around this, as we want to use the same global cache for downloaded or generated files.
 				synchronized (getGlobalLockObject()) {
-					setupMinecraft(configContext, minecraftJarProcessorManager);
+					provideMappedMinecraft(configContext, minecraftJarProcessorManager);
 				}
 
 				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
@@ -174,12 +178,9 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 	}
 
-	private void setupMinecraft(ConfigContext configContext, @Nullable MinecraftJarProcessorManager minecraftJarProcessorManager) throws Exception {
+	private void prepareMinecraft(ConfigContext configContext, MinecraftMetadataProvider metadataProvider) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
-
-		final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
-		extension.setMetadataProvider(metadataProvider);
 
 		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 
@@ -215,15 +216,27 @@ public abstract class CompileConfiguration implements Runnable {
 		IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : jarConfiguration.createIntermediaryMinecraftProvider(project);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
+		if (intermediaryMinecraftProvider != null) {
+			extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
+		}
+
+		extension.setNamedMinecraftProvider(namedMinecraftProvider);
+	}
+
+	private void provideMappedMinecraft(ConfigContext configContext, @Nullable MinecraftJarProcessorManager minecraftJarProcessorManager) throws Exception {
+		final LoomGradleExtension extension = configContext.extension();
+		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : extension.getIntermediaryMinecraftProvider();
+		NamedMinecraftProvider<?> namedMinecraftProvider = extension.getNamedMinecraftProvider();
+
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars
+			final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(namedMinecraftProvider, minecraftJarProcessorManager);
 		}
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
 
 		if (intermediaryMinecraftProvider != null) {
-			extension.setIntermediaryMinecraftProvider(intermediaryMinecraftProvider);
 			intermediaryMinecraftProvider.provide(provideContext);
 		}
 

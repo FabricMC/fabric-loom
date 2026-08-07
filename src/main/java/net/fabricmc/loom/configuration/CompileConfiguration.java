@@ -52,6 +52,7 @@ import org.gradle.api.tasks.TaskContainer;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.api.tasks.testing.Test;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
@@ -123,10 +124,14 @@ public abstract class CompileConfiguration implements Runnable {
 			}
 
 			try {
+				// Dont resolve depedencies under the global lock, as this can cause deadlocks when using isolated projects.
+				registerGameProcessors(configContext);
+				final MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
+
 				// Setting up loom across Gradle projects is not thread safe, synchronize it here to ensure that multiple projects cannot use it.
 				// There is no easy way around this, as we want to use the same global cache for downloaded or generated files.
 				synchronized (getGlobalLockObject()) {
-					setupMinecraft(configContext);
+					setupMinecraft(configContext, minecraftJarProcessorManager);
 				}
 
 				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
@@ -169,7 +174,7 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 	}
 
-	private void setupMinecraft(ConfigContext configContext) throws Exception {
+	private void setupMinecraft(ConfigContext configContext, @Nullable MinecraftJarProcessorManager minecraftJarProcessorManager) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
 
@@ -209,9 +214,6 @@ public abstract class CompileConfiguration implements Runnable {
 		// Provide the remapped mc jars
 		IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : jarConfiguration.createIntermediaryMinecraftProvider(project);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
-
-		registerGameProcessors(configContext);
-		MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 
 		if (minecraftJarProcessorManager != null) {
 			// Wrap the named MC provider for one that will provide the processed jars

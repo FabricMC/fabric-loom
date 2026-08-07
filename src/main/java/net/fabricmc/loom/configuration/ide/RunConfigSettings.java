@@ -91,7 +91,9 @@ public abstract class RunConfigSettings implements Named, RunConfiguration, RunC
 	 * a convenient way to remove it if wanted.
 	 */
 	public void serverWithGui() {
-		getProgramArgs().removeIf("nogui"::equals);
+		getProgramArguments().set(getProgramArguments().get().stream()
+				.filter(argument -> !argument.equals("nogui"))
+				.toList());
 	}
 
 	// Note: Overridden for backwards compatibility

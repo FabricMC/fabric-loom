@@ -126,16 +126,26 @@ public abstract class CompileConfiguration implements Runnable {
 			try {
 				final MinecraftMetadataProvider metadataProvider = MinecraftMetadataProvider.create(configContext);
 				extension.setMetadataProvider(metadataProvider);
+				final MinecraftProvider minecraftProvider;
+				final MappingConfigurationSetup mappingConfigurationSetup;
 
 				synchronized (getGlobalLockObject()) {
-					prepareMinecraft(configContext, metadataProvider);
+					minecraftProvider = createMinecraftProvider(configContext, metadataProvider);
+					mappingConfigurationSetup = provideMinecraft(configContext, minecraftProvider);
 				}
 
+				if (mappingConfigurationSetup != null) {
+					extension.setMappingConfiguration(mappingConfigurationSetup.mappingConfiguration());
+					mappingConfigurationSetup.mappingConfiguration().applyToProject(getProject(), mappingConfigurationSetup.dependencyInfo());
+				}
+
+				createMappedMinecraftProviders(configContext);
 				registerGameProcessors(configContext);
 				final MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
+				createProcessedNamedMinecraftProvider(configContext, minecraftJarProcessorManager);
 
 				synchronized (getGlobalLockObject()) {
-					provideMappedMinecraft(configContext, minecraftJarProcessorManager);
+					provideMappedMinecraft(configContext);
 				}
 
 				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
@@ -178,15 +188,19 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 	}
 
-	private void prepareMinecraft(ConfigContext configContext, MinecraftMetadataProvider metadataProvider) throws Exception {
+	private MinecraftProvider createMinecraftProvider(ConfigContext configContext, MinecraftMetadataProvider metadataProvider) {
+		final LoomGradleExtension extension = configContext.extension();
+		final MinecraftProvider minecraftProvider = extension.getMinecraftJarConfiguration().get().createMinecraftProvider(metadataProvider, configContext);
+		extension.setMinecraftProvider(minecraftProvider);
+		return minecraftProvider;
+	}
+
+	@Nullable
+	private MappingConfigurationSetup provideMinecraft(ConfigContext configContext, MinecraftProvider minecraftProvider) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
 
-		var jarConfiguration = extension.getMinecraftJarConfiguration().get();
-
 		// Provide the vanilla mc jars
-		final MinecraftProvider minecraftProvider = jarConfiguration.createMinecraftProvider(metadataProvider, configContext);
-		extension.setMinecraftProvider(minecraftProvider);
 		minecraftProvider.provide();
 
 		if (!extension.disableObfuscation()) {
@@ -199,20 +213,27 @@ public abstract class CompileConfiguration implements Runnable {
 			// Resolve the mapping files from the configuration
 			final DependencyInfo mappingsDep = DependencyInfo.create(getProject(), Configurations.MAPPINGS);
 			final MappingConfiguration mappingConfiguration = RemapMappingConfiguration.create(getProject(), configContext.serviceFactory(), mappingsDep, minecraftProvider);
-			extension.setMappingConfiguration(mappingConfiguration);
-			mappingConfiguration.applyToProject(getProject(), mappingsDep);
+			return new MappingConfigurationSetup(mappingConfiguration, mappingsDep);
 		} else {
 			var annotations = project.getConfigurations().getByName(Configurations.ANNOTATIONS);
 
 			if (!annotations.getDependencies().isEmpty()) {
 				final DependencyInfo annotationsDep = DependencyInfo.create(getProject(), annotations);
 				final MappingConfiguration mappingConfiguration = NoRemapMappingConfiguration.create(getProject(), annotationsDep, minecraftProvider);
-				extension.setMappingConfiguration(mappingConfiguration);
-				mappingConfiguration.applyToProject(getProject(), annotationsDep);
+				return new MappingConfigurationSetup(mappingConfiguration, annotationsDep);
 			}
 		}
 
-		// Provide the remapped mc jars
+		return null;
+	}
+
+	private record MappingConfigurationSetup(MappingConfiguration mappingConfiguration, DependencyInfo dependencyInfo) {
+	}
+
+	private void createMappedMinecraftProviders(ConfigContext configContext) {
+		final Project project = configContext.project();
+		final LoomGradleExtension extension = configContext.extension();
+		final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
 		IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : jarConfiguration.createIntermediaryMinecraftProvider(project);
 		NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createNamedMinecraftProvider(project);
 
@@ -223,16 +244,21 @@ public abstract class CompileConfiguration implements Runnable {
 		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 	}
 
-	private void provideMappedMinecraft(ConfigContext configContext, @Nullable MinecraftJarProcessorManager minecraftJarProcessorManager) throws Exception {
+	private void createProcessedNamedMinecraftProvider(ConfigContext configContext, @Nullable MinecraftJarProcessorManager minecraftJarProcessorManager) {
+		if (minecraftJarProcessorManager == null) {
+			return;
+		}
+
+		final LoomGradleExtension extension = configContext.extension();
+		final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
+		final NamedMinecraftProvider<?> namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(extension.getNamedMinecraftProvider(), minecraftJarProcessorManager);
+		extension.setNamedMinecraftProvider(namedMinecraftProvider);
+	}
+
+	private void provideMappedMinecraft(ConfigContext configContext) throws Exception {
 		final LoomGradleExtension extension = configContext.extension();
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : extension.getIntermediaryMinecraftProvider();
-		NamedMinecraftProvider<?> namedMinecraftProvider = extension.getNamedMinecraftProvider();
-
-		if (minecraftJarProcessorManager != null) {
-			// Wrap the named MC provider for one that will provide the processed jars
-			final var jarConfiguration = extension.getMinecraftJarConfiguration().get();
-			namedMinecraftProvider = jarConfiguration.createProcessedNamedMinecraftProvider(namedMinecraftProvider, minecraftJarProcessorManager);
-		}
+		final NamedMinecraftProvider<?> namedMinecraftProvider = extension.getNamedMinecraftProvider();
 
 		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
 
@@ -240,7 +266,6 @@ public abstract class CompileConfiguration implements Runnable {
 			intermediaryMinecraftProvider.provide(provideContext);
 		}
 
-		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 		namedMinecraftProvider.provide(provideContext);
 	}
 

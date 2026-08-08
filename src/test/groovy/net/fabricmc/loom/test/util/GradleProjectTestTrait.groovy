@@ -148,6 +148,7 @@ trait GradleProjectTestTrait {
 		private String gradleHomeDir
 		private String warningMode
 		private boolean useBuildSrc
+		private boolean hasWrittenBuildSrc
 
 		BuildResult run(Map options) {
 			// Setup the system props to tell loom that its running in a test env
@@ -192,8 +193,9 @@ trait GradleProjectTestTrait {
 
 			runner.withArguments(args as String[])
 
-			if (useBuildSrc) {
+			if (useBuildSrc && !hasWrittenBuildSrc) {
 				writeBuildSrcDeps(runner)
+				hasWrittenBuildSrc = true
 			}
 
 			return options.expectFailure ? runner.buildAndFail() : runner.build()

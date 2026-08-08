@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -88,7 +87,7 @@ import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 public abstract class CompileConfiguration implements Runnable {
-	private static final String LOCK_PROPERTY_KEY = "fabric.loom.internal.global.lock";
+	private static final Object GLOBAL_LOCK = "fabric.loom.internal.global.lock".intern();
 
 	@Inject
 	protected abstract Project getProject();
@@ -542,17 +541,9 @@ public abstract class CompileConfiguration implements Runnable {
 		});
 	}
 
-	// This is a nasty piece of work, but seems to work quite nicely.
 	// We need a lock that works across classloaders, a regular synchronized method will not work here.
-	// We can abuse system properties as a shared object store that we know for sure will be on the same classloader regardless of what Gradle does to loom.
-	// This allows us to ensure that all instances of loom regardless of classloader get the same object to lock on.
+	// Interned strings are shared across classloaders, ensuring that all instances of loom use the same lock.
 	private static Object getGlobalLockObject() {
-		if (!System.getProperties().contains(LOCK_PROPERTY_KEY)) {
-			// The .intern resolves a possible race where two difference value objects (remember not the same classloader) are set.
-			//noinspection StringOperationCanBeSimplified
-			System.getProperties().setProperty(LOCK_PROPERTY_KEY, LOCK_PROPERTY_KEY.intern());
-		}
-
-		return Objects.requireNonNull(System.getProperty(LOCK_PROPERTY_KEY));
+		return GLOBAL_LOCK;
 	}
 }

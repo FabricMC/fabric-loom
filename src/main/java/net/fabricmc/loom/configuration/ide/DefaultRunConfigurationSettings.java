@@ -63,7 +63,7 @@ public class DefaultRunConfigurationSettings {
 		}));
 		run.getRunDirectory().set(project.file("run"));
 		run.getGenerateRunConfig().convention(GradleUtils.isRootProject(project));
-		run.getPreferGradleTask().convention(false);
+		run.getPreferGradleTask().convention(true);
 	}
 
 	// Apply any additional configuration after the user has modified the settings, but before the run config is generated.

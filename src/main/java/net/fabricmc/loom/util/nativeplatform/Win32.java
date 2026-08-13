@@ -66,6 +66,7 @@ final class Win32 {
 	static final String NCRYPT_LENGTH_PROPERTY = "Length";
 	static final String NCRYPT_KEY_USAGE_PROPERTY = "Key Usage";
 	static final String NCRYPT_UI_POLICY_PROPERTY = "UI Policy";
+	static final String NCRYPT_WINDOW_HANDLE_PROPERTY = "HWND Handle";
 
 	static final ValueLayout.OfInt DWORD = ValueLayout.JAVA_INT;
 	static final ValueLayout.OfInt BOOL = ValueLayout.JAVA_INT;
@@ -127,6 +128,8 @@ final class Win32 {
 			FunctionDescriptor.of(DWORD, DWORD, ValueLayout.ADDRESS, DWORD, DWORD, ValueLayout.ADDRESS, DWORD, ValueLayout.ADDRESS));
 	private static final MethodHandle LOCAL_FREE = downcall(KERNEL32, "LocalFree",
 			FunctionDescriptor.of(HANDLE, HANDLE));
+	private static final MethodHandle GET_FOREGROUND_WINDOW = downcall(USER32, "GetForegroundWindow",
+			FunctionDescriptor.of(HWND));
 	private static final MethodHandle ENUM_WINDOWS = downcall(USER32, "EnumWindows",
 			FunctionDescriptor.of(BOOL, ValueLayout.ADDRESS, LONG_PTR));
 	private static final MethodHandle GET_WINDOW_THREAD_PROCESS_ID = downcall(USER32, "GetWindowThreadProcessId",
@@ -231,6 +234,10 @@ final class Win32 {
 		return true;
 	}
 
+	static MemorySegment getForegroundWindow() throws Throwable {
+		return (MemorySegment) GET_FOREGROUND_WINDOW.invokeExact();
+	}
+
 	static long getWindowThreadProcessId(MemorySegment hwnd) throws Throwable {
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment pid = arena.allocate(DWORD);
@@ -313,6 +320,12 @@ final class Win32 {
 		policy.set(ValueLayout.ADDRESS, NCRYPT_UI_POLICY.byteOffset(MemoryLayout.PathElement.groupElement("pszFriendlyName")), allocateWideString(arena, friendlyName));
 		policy.set(ValueLayout.ADDRESS, NCRYPT_UI_POLICY.byteOffset(MemoryLayout.PathElement.groupElement("pszDescription")), allocateWideString(arena, description));
 		ncryptSetProperty(arena, key, NCRYPT_UI_POLICY_PROPERTY, policy);
+	}
+
+	static void ncryptSetWindowHandle(Arena arena, MemorySegment key, MemorySegment window) throws Throwable {
+		MemorySegment value = arena.allocate(HWND);
+		value.set(HWND, 0, window);
+		ncryptSetProperty(arena, key, NCRYPT_WINDOW_HANDLE_PROPERTY, value);
 	}
 
 	static void ncryptFinalizeKey(MemorySegment key, int flags) throws Throwable {

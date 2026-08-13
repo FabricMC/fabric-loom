@@ -150,14 +150,14 @@ public final class WindowsEncryptionKeyStore implements EncryptionKeyStore {
 			throw new LoomNativePlatformException("Windows CNG key does not exist: " + keyName);
 		}
 
-		return new NativeHandle(key);
+		return configureOpenedKey(arena, key);
 	}
 
 	private NativeHandle openOrCreateKey(Arena arena, NativeHandle provider) throws Throwable {
 		MemorySegment existing = Win32.ncryptOpenKey(arena, provider.segment(), keyName, nativeFlags());
 
 		if (!existing.equals(MemorySegment.NULL)) {
-			return new NativeHandle(existing);
+			return configureOpenedKey(arena, existing);
 		}
 
 		MemorySegment created = Win32.ncryptCreatePersistedKey(arena, provider.segment(), keyName, 0);
@@ -169,6 +169,7 @@ public final class WindowsEncryptionKeyStore implements EncryptionKeyStore {
 		NativeHandle key = new NativeHandle(created);
 
 		try {
+			setWindowHandle(arena, key.segment());
 			Win32.ncryptSetDwordProperty(arena, key.segment(), Win32.NCRYPT_LENGTH_PROPERTY, RSA_KEY_BITS);
 			Win32.ncryptSetDwordProperty(arena, key.segment(), Win32.NCRYPT_KEY_USAGE_PROPERTY, Win32.NCRYPT_ALLOW_DECRYPT_FLAG);
 
@@ -184,6 +185,35 @@ public final class WindowsEncryptionKeyStore implements EncryptionKeyStore {
 		} catch (Throwable e) {
 			discardCreatedKey(key, e);
 			throw e;
+		}
+	}
+
+	private NativeHandle configureOpenedKey(Arena arena, MemorySegment key) throws Throwable {
+		NativeHandle keyHandle = new NativeHandle(key);
+
+		try {
+			setWindowHandle(arena, key);
+			return keyHandle;
+		} catch (Throwable e) {
+			try {
+				keyHandle.close();
+			} catch (Throwable closeException) {
+				e.addSuppressed(closeException);
+			}
+
+			throw e;
+		}
+	}
+
+	private void setWindowHandle(Arena arena, MemorySegment key) throws Throwable {
+		if (userInteraction != UserInteraction.REQUIRED) {
+			return;
+		}
+
+		MemorySegment window = Win32.getForegroundWindow();
+
+		if (!window.equals(MemorySegment.NULL)) {
+			Win32.ncryptSetWindowHandle(arena, key, window);
 		}
 	}
 

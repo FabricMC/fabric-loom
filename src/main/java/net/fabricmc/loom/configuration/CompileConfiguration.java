@@ -55,10 +55,6 @@ import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
-import net.fabricmc.loom.build.mixin.GroovyApInvoker;
-import net.fabricmc.loom.build.mixin.JavaApInvoker;
-import net.fabricmc.loom.build.mixin.KaptApInvoker;
-import net.fabricmc.loom.build.mixin.ScalaApInvoker;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
 import net.fabricmc.loom.configuration.processors.JsrAnnotationRemapperProcessor;
@@ -75,7 +71,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.AbstractMappedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
-import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.ClasspathGroupService;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ExceptionUtil;
@@ -158,12 +153,6 @@ public abstract class CompileConfiguration implements Runnable {
 			releaseLock();
 			extension.setRefreshDeps(previousRefreshDeps);
 
-			MixinExtension mixin = LoomGradleExtension.get(getProject()).getMixin();
-
-			if (mixin.getUseLegacyMixinAp().get()) {
-				setupMixinAp(mixin);
-			}
-
 			configureDecompileTasks(configContext);
 			configureTestTask();
 		});
@@ -180,11 +169,6 @@ public abstract class CompileConfiguration implements Runnable {
 		// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
 		getTasks().withType(AbstractCopyTask.class).configureEach(abstractCopyTask -> abstractCopyTask.setFilteringCharset(StandardCharsets.UTF_8.name()));
 		getTasks().withType(JavaCompile.class).configureEach(javaCompile -> javaCompile.getOptions().setEncoding(StandardCharsets.UTF_8.name()));
-
-		if (getProject().getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-			// If loom is applied after kapt, then kapt will use the AP arguments too early for loom to pass the arguments we need for mixin.
-			throw new IllegalArgumentException("fabric-loom must be applied BEFORE kapt in the plugins { } block.");
-		}
 	}
 
 	private MinecraftProvider createMinecraftProvider(ConfigContext configContext, MinecraftMetadataProvider metadataProvider) {
@@ -286,34 +270,6 @@ public abstract class CompileConfiguration implements Runnable {
 
 		if (!extension.getRemapJsrAnnotationsToJetBrains().get()) {
 			extension.addMinecraftJarProcessor(JsrAnnotationRemapperProcessor.class, "fabric-loom:jsr-annotations");
-		}
-	}
-
-	private void setupMixinAp(MixinExtension mixin) {
-		mixin.init();
-
-		// Disable some things used by log4j via the mixin AP that prevent it from being garbage collected
-		System.setProperty("log4j2.disable.jmx", "true");
-		System.setProperty("log4j.shutdownHookEnabled", "false");
-		System.setProperty("log4j.skipJansi", "true");
-
-		getProject().getLogger().info("Configuring compiler arguments for Java");
-
-		new JavaApInvoker(getProject()).configureMixin();
-
-		if (getProject().getPluginManager().hasPlugin("scala")) {
-			getProject().getLogger().info("Configuring compiler arguments for Scala");
-			new ScalaApInvoker(getProject()).configureMixin();
-		}
-
-		if (getProject().getPluginManager().hasPlugin("org.jetbrains.kotlin.kapt")) {
-			getProject().getLogger().info("Configuring compiler arguments for Kapt plugin");
-			new KaptApInvoker(getProject()).configureMixin();
-		}
-
-		if (getProject().getPluginManager().hasPlugin("groovy")) {
-			getProject().getLogger().info("Configuring compiler arguments for Groovy");
-			new GroovyApInvoker(getProject()).configureMixin();
 		}
 	}
 

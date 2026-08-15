@@ -6,12 +6,6 @@ plugins {
 version = project.mod_version
 group = project.maven_group
 
-loom {
-	mixin {
-		useLegacyMixinAp = true
-	}
-}
-
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"

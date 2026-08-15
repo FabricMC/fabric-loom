@@ -38,7 +38,6 @@ import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.CacheableTask;
@@ -48,7 +47,6 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SourceSet;
-import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +59,6 @@ import net.fabricmc.loom.build.nesting.JarNester;
 import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.task.service.ClientEntriesService;
-import net.fabricmc.loom.task.service.MixinRefmapService;
 import net.fabricmc.loom.task.service.TinyRemapperService;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Pair;
@@ -70,7 +67,6 @@ import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.fmj.FabricModJsonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
-import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -91,13 +87,8 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 	@Input
 	public abstract Property<Boolean> getOptimizeFabricModJson();
 
-	@Input
-	@ApiStatus.Internal
-	public abstract Property<Boolean> getUseMixinAP();
 	@Nested
 	public abstract Property<TinyRemapperService.Options> getTinyRemapperServiceOptions();
-	@Nested
-	public abstract ListProperty<MixinRefmapService.Options> getMixinRefmapServiceOptions();
 
 	@Inject
 	public RemapJarTask() {
@@ -110,8 +101,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 		getTargetNamespace().set(extension.getProductionNamespace());
 
-		getUseMixinAP().set(extension.getMixin().getUseLegacyMixinAp());
-
 		// Make outputs reproducible by default
 		setReproducibleFileOrder(true);
 		setPreserveFileTimestamps(false);
@@ -119,7 +108,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		getJarType().set("classes");
 
 		getTinyRemapperServiceOptions().set(TinyRemapperService.createOptions(this));
-		getMixinRefmapServiceOptions().set(MixinRefmapService.createOptions(this));
 	}
 
 	@Override
@@ -133,18 +121,11 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 
 			if (!params.namespacesMatch()) {
 				params.getTinyRemapperServiceOptions().set(getTinyRemapperServiceOptions());
-				params.getMixinRefmapServiceOptions().set(getMixinRefmapServiceOptions());
-
 				params.getRemapClasspath().from(getClasspath());
-
-				final boolean mixinAp = getUseMixinAP().get();
-				params.getUseMixinExtension().set(!mixinAp);
-
 				// Add the mixin refmap remap type to the manifest
 				// This is used by the mod dependency remapper to determine if it should remap the refmap
 				// or if the refmap should be remapped by mixin at runtime.
-				final var refmapRemapType = mixinAp ? ArtifactMetadata.MixinRemapType.MIXIN : ArtifactMetadata.MixinRemapType.STATIC;
-				params.getManifestAttributes().put(Constants.Manifest.MIXIN_REMAP_TYPE, refmapRemapType.manifestValue());
+				params.getManifestAttributes().put(Constants.Manifest.MIXIN_REMAP_TYPE, ArtifactMetadata.MixinRemapType.STATIC.manifestValue());
 			}
 
 			params.getOptimizeFmj().set(getOptimizeFabricModJson().get());
@@ -155,11 +136,9 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 		ConfigurableFileCollection getNestedJars();
 		ConfigurableFileCollection getRemapClasspath();
 
-		Property<Boolean> getUseMixinExtension();
 		Property<Boolean> getOptimizeFmj();
 
 		Property<TinyRemapperService.Options> getTinyRemapperServiceOptions();
-		ListProperty<MixinRefmapService.Options> getMixinRefmapServiceOptions();
 	}
 
 	public abstract static class RemapAction extends AbstractRemapAction<RemapParams> {
@@ -197,7 +176,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 				}
 
 				remapAccessWidener();
-				addRefmaps(serviceFactory);
 				addNestedJars();
 				modifyJarManifest();
 				rewriteJar();
@@ -286,17 +264,6 @@ public abstract class RemapJarTask extends AbstractRemapJarTask {
 			}
 
 			JarNester.nestJars(nestedJars.getFiles(), outputFile.toFile());
-		}
-
-		private void addRefmaps(ServiceFactory serviceFactory) throws IOException {
-			if (getParameters().getUseMixinExtension().getOrElse(false)) {
-				return;
-			}
-
-			for (MixinRefmapService.Options options : getParameters().getMixinRefmapServiceOptions().get()) {
-				MixinRefmapService mixinRefmapService = serviceFactory.get(options);
-				mixinRefmapService.applyToJar(outputFile);
-			}
 		}
 
 		private void optimizeFMJ() throws IOException {

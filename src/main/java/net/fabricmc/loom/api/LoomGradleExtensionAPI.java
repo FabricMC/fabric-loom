@@ -119,8 +119,6 @@ public interface LoomGradleExtensionAPI {
 		return getRunConfigs();
 	}
 
-	void mixin(Action<MixinExtensionAPI> action);
-
 	/**
 	 * Optionally register and configure a {@link ModSettings} object. The name should match the modid.
 	 * This is generally only required when the mod spans across multiple classpath directories, such as when using split sourcesets.
@@ -142,10 +140,6 @@ public interface LoomGradleExtensionAPI {
 	default List<RemapConfigurationSettings> getRuntimeRemapConfigurations() {
 		return getRemapConfigurations().stream().filter(element -> element.getOnRuntimeClasspath().get()).toList();
 	}
-
-	@ApiStatus.Experimental
-	// TODO: move this from LoomGradleExtensionAPI to LoomGradleExtension once getRefmapName & setRefmapName is removed.
-	MixinExtensionAPI getMixin();
 
 	default void interfaceInjection(Action<InterfaceInjectionExtensionAPI> action) {
 		action.execute(getInterfaceInjection());
@@ -299,6 +293,16 @@ public interface LoomGradleExtensionAPI {
 	Property<Boolean> getRuntimeOnlyLwjglGraphics();
 
 	Property<Boolean> getSplitModDependencies();
+
+	/**
+	 * Whether to inline dependency refmaps while remapping mods.
+	 *
+	 * <p>Default: false
+	 *
+	 * @return the property controlling dependency refmap inlining
+	 */
+	@ApiStatus.Experimental
+	Property<Boolean> getInlineDependencyRefmaps();
 
 	/**
 	 * Whether to transform zip entries within nested jars to be using STORED compression.

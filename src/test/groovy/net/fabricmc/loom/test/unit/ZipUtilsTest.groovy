@@ -216,6 +216,37 @@ class ZipUtilsTest extends Specification {
 		transformed.get("test").asString == "THIS IS A TEST OF TRANSFORMING"
 	}
 
+	def "accept invalid json input"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "test.json").text = '{"test": "invalid\nstring"}'
+		ZipUtils.pack(dir.toPath(), zip)
+
+		when:
+		def json = ZipUtils.unpackJson(zip, "test.json", JsonObject.class)
+
+		then:
+		json.get("test").asString == "invalid\nstring"
+	}
+
+	def "reject invalid json output"() {
+		given:
+		def dir = File.createTempDir()
+		def zip = File.createTempFile("loom-zip-test", ".zip").toPath()
+		new File(dir, "test.json").text = '{}'
+		ZipUtils.pack(dir.toPath(), zip)
+
+		when:
+		ZipUtils.transformJson(JsonObject.class, zip, "test.json") { json ->
+			json.addProperty("invalid", Double.NaN)
+			json
+		}
+
+		then:
+		thrown IllegalArgumentException
+	}
+
 	// Also see: ClosedZipFSReproducer
 	def "unrecoverable error"() {
 		given:

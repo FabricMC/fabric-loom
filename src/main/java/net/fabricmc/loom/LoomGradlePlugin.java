@@ -30,6 +30,7 @@ import java.util.Objects;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.Strictness;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.plugins.PluginAware;
@@ -53,6 +54,9 @@ import net.fabricmc.loom.util.OneDrive;
 public class LoomGradlePlugin implements Plugin<PluginAware> {
 	public static final String NAME = "fabric-loom";
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	public static final Gson STRICT_GSON = GSON.newBuilder()
+			.setStrictness(Strictness.STRICT)
+			.create();
 	public static final String LOOM_VERSION = Objects.requireNonNullElse(LoomGradlePlugin.class.getPackage().getImplementationVersion(), "0.0.0+unknown");
 
 	/**

@@ -511,6 +511,18 @@ class FabricModJsonV1GeneratorTest extends Specification {
 		tryParse(json) == 1
 	}
 
+	def "invalid custom data"() {
+		given:
+		def spec = baseSpec()
+		spec.customData.put("invalid", Double.NaN)
+
+		when:
+		FabricModJsonV1Generator.INSTANCE.generate(spec)
+
+		then:
+		thrown IllegalArgumentException
+	}
+
 	def "complete"() {
 		given:
 		def spec = objectFactory.newInstance(FabricModJsonV1Spec.class)

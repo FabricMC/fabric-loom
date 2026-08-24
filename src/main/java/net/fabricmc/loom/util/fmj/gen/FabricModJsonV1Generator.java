@@ -85,7 +85,7 @@ public final class FabricModJsonV1Generator implements FabricModJsonGenerator<Fa
 		add(fmj, "languageAdapters", spec.getLanguageAdapters());
 		add(fmj, "custom", spec.getCustomData(), this::generateCustomData);
 
-		return LoomGradlePlugin.GSON.toJson(fmj);
+		return LoomGradlePlugin.STRICT_GSON.toJson(fmj);
 	}
 
 	private JsonElement generatePerson(FabricModJsonV1Spec.Person person) {

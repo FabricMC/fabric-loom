@@ -76,8 +76,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		Action<RemapJarTask> remapJarTaskAction = task -> {
 			final TaskProvider<AbstractArchiveTask> jarTask = getTasks().named(JavaPlugin.JAR_TASK_NAME, AbstractArchiveTask.class);
 
-			// Basic task setup
-			task.dependsOn(jarTask);
+			// Basic task setup. The input provider carries the dependency on whichever
+			// archive task produces it (normally jar, or shadowJar when Shadow is used).
 			task.setDescription("Remaps the built project jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
 			getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
@@ -85,7 +85,6 @@ public abstract class RemapTaskConfiguration implements Runnable {
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));
-			task.dependsOn(getTasks().named(JavaPlugin.JAR_TASK_NAME));
 			task.getIncludesClientOnlyClasses().set(getProject().provider(extension::areEnvironmentSourceSetsSplit));
 		};
 

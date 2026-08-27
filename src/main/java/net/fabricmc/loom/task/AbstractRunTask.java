@@ -190,6 +190,7 @@ public abstract class AbstractRunTask extends JavaExec {
 	public void exec() {
 		if (getUseArgFile().get()) {
 			LOGGER.debug("Using arg file for {}", getName());
+			writeArgFile();
 			// We're using an arg file, pass an empty classpath to the super JavaExec.
 			super.setClasspath(getObjectFactory().fileCollection());
 		} else {
@@ -275,23 +276,26 @@ public abstract class AbstractRunTask extends JavaExec {
 		final List<String> args = new ArrayList<>();
 
 		if (getUseArgFile().get()) {
-			final String content = "-classpath\n" + this.getInternalClasspath().getFiles().stream()
-					.map(File::getAbsolutePath)
-					.map(AbstractRunTask::quoteArg)
-					.collect(Collectors.joining(File.pathSeparator));
-
-			try {
-				final Path argsFile = Paths.get(getArgFilePath().get());
-				Files.createDirectories(argsFile.getParent());
-				Files.writeString(argsFile, content, StandardCharsets.UTF_8);
-				args.add("@" + argsFile.toAbsolutePath());
-			} catch (IOException e) {
-				throw new UncheckedIOException("Failed to create classpath file", e);
-			}
+			args.add("@" + Paths.get(getArgFilePath().get()).toAbsolutePath());
 		}
 
 		args.addAll(getInternalJvmArgs().get());
 		return args;
+	}
+
+	private void writeArgFile() {
+		final String content = "-classpath\n" + this.getInternalClasspath().getFiles().stream()
+				.map(File::getAbsolutePath)
+				.map(AbstractRunTask::quoteArg)
+				.collect(Collectors.joining(File.pathSeparator));
+
+		try {
+			final Path argsFile = Paths.get(getArgFilePath().get());
+			Files.createDirectories(argsFile.getParent());
+			Files.writeString(argsFile, content, StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Failed to create classpath file", e);
+		}
 	}
 
 	// Based off https://github.com/JetBrains/intellij-community/blob/295dd68385a458bdfde638152e36d19bed18b666/platform/util/src/com/intellij/execution/CommandLineWrapperUtil.java#L87

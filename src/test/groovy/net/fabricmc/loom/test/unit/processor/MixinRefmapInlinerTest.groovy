@@ -89,7 +89,7 @@ class MixinRefmapInlinerTest extends Specification {
 	@Mixin(targets = "MixinRefmapInlinerClassVisitor")
 	@CompileStatic
 	class ExampleClass {
-		@Inject(method = "injectExample", at = @At("HEAD"))
+		@Inject(method = " i n j e c t E x a m p l e ", at = @At("HEAD"))
 		void injectExample() {
 		}
 	}

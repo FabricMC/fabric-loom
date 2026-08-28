@@ -78,7 +78,7 @@ public class MixinRefmapInlinerClassVisitor extends ClassVisitor {
 		@Override
 		public void visit(String name, Object value) {
 			if (value instanceof String strValue) {
-				value = remapper.remapReference(className, strValue);
+				value = remapper.remapReference(className, strValue.replaceAll("\\s", ""));
 			}
 
 			super.visit(name, value);

@@ -40,7 +40,7 @@ import net.fabricmc.loom.util.gradle.SourceSetHelper;
  * A mod may be a zip, directory or Gradle {@link SourceSet}
  * This abstraction allows easily reading a contained file from the mod.
  */
-public interface FabricModJsonSource {
+public sealed interface FabricModJsonSource permits FabricModJsonSource.ZipSource, FabricModJsonSource.DirectorySource, FabricModJsonSource.SourceSetSource {
 	byte[] read(String path) throws IOException;
 
 	record ZipSource(Path zipPath) implements FabricModJsonSource {

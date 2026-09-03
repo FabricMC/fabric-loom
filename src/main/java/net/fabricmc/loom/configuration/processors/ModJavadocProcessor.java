@@ -43,6 +43,7 @@ import com.google.gson.JsonElement;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MarkdownJavadocOption;
@@ -53,6 +54,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.fmj.FabricModJson;
+import net.fabricmc.loom.util.fmj.FabricModJsonSource;
 import net.fabricmc.mappingio.MappedElementKind;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.MappingUtil;
@@ -121,6 +123,7 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 		@Nullable
 		public static ModJavadoc create(FabricModJson fabricModJson, MappingsNamespace productionNamespace, MarkdownJavadocOption markdownJavadocOption) {
 			final String modId = fabricModJson.getId();
+			final boolean remoteMod = fabricModJson.getSource() instanceof FabricModJsonSource.ZipSource;
 			final JsonElement customElement = fabricModJson.getCustom(Constants.CustomModJsonKeys.PROVIDED_JAVADOC);
 
 			if (customElement == null) {
@@ -158,13 +161,13 @@ public abstract class ModJavadocProcessor implements MinecraftJarProcessor<ModJa
 			switch (markdownJavadocOption) {
 			case REQUIRED -> {
 				if (mappings.getMetadata(MappingConfiguration.MARKDOWN_METADATA_KEY).isEmpty()) {
-					LOGGER.warn("Mod-provided javadoc from mod {} should have the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry", modId);
+					LOGGER.atLevel(remoteMod ? Level.INFO : Level.WARN).log("Mod-provided javadoc from mod {} should have the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry", modId);
 				}
 			}
 
 			case UNSUPPORTED -> {
 				if (!mappings.getMetadata(MappingConfiguration.MARKDOWN_METADATA_KEY).isEmpty()) {
-					LOGGER.warn("Mod-provided javadoc from mod {} has the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry, but it is not supported with this project configuration", modId);
+					LOGGER.atLevel(remoteMod ? Level.INFO : Level.WARN).log("Mod-provided javadoc from mod {} has the " + MappingConfiguration.MARKDOWN_METADATA_KEY + " metadata entry, but it is not supported with this project configuration", modId);
 				}
 			}
 			}

@@ -46,6 +46,7 @@ import net.fabricmc.loom.util.nativeplatform.LoomNativePlatformException;
 public final class MicrosoftAccountStore {
 	private static final int VERSION = 1;
 	private static final Gson GSON = new Gson();
+	private static final String PROFILE_PATTERN = "[A-Za-z0-9][A-Za-z0-9._-]*";
 
 	private final Path path;
 	private final EncryptionKeyStore keyStore;
@@ -60,6 +61,17 @@ public final class MicrosoftAccountStore {
 	public static Path defaultPath(LoomFiles files) {
 		Objects.requireNonNull(files, "files");
 		return files.getUserCache().toPath().resolve("microsoft-auth.json");
+	}
+
+	public static Path profilePath(Path defaultPath, String profile) {
+		Objects.requireNonNull(defaultPath, "defaultPath");
+		Objects.requireNonNull(profile, "profile");
+
+		if (!profile.matches(PROFILE_PATTERN)) {
+			throw new IllegalArgumentException("Microsoft account profile must contain only letters, numbers, '.', '_' or '-', and start with a letter or number");
+		}
+
+		return defaultPath.resolveSibling("microsoft-auth-" + profile + ".json");
 	}
 
 	public boolean exists() {

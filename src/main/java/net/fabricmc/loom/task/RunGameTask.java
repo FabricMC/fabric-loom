@@ -24,65 +24,20 @@
 
 package net.fabricmc.loom.task;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import javax.inject.Inject;
 
-import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.Internal;
 import org.gradle.work.DisableCachingByDefault;
 
-import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings;
-import net.fabricmc.loom.task.launch.auth.MicrosoftAccountStore;
-import net.fabricmc.loom.task.launch.auth.MicrosoftGameAuthentication;
-import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProviderImpl;
-import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory;
 
 @DisableCachingByDefault
 public abstract class RunGameTask extends AbstractRunTask {
-	@Input
-	public abstract Property<Boolean> getMicrosoftAuthenticationEnabled();
-	@Internal
-	protected abstract RegularFileProperty getMicrosoftAccountFile();
-
 	@Inject
 	public RunGameTask(RunConfiguration settings) {
 		super(proj -> DefaultRunConfigurationSettings.finialise(settings, proj));
-		getMicrosoftAuthenticationEnabled().convention(false);
-		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		getMicrosoftAccountFile().fileValue(MicrosoftAccountStore.defaultPath(extension.getFiles()).toFile());
 
 		// Defaults to empty, forwards stdin to mc.
 		setStandardInput(System.in);
-	}
-
-	@Override
-	public void exec() {
-		if (getMicrosoftAuthenticationEnabled().get()) {
-			addMicrosoftAuthenticationArguments();
-		}
-
-		super.exec();
-	}
-
-	private void addMicrosoftAuthenticationArguments() {
-		Path accountPath = getMicrosoftAccountFile().get().getAsFile().toPath();
-
-		if (!Files.exists(accountPath)) {
-			return;
-		}
-
-		try {
-			MicrosoftAccountStore accountStore = new MicrosoftAccountStore(accountPath, EncryptionKeyStoreFactory.create(accountPath));
-			MicrosoftGameAuthentication authentication = new MicrosoftGameAuthentication(accountStore, new MinecraftAccessTokenProviderImpl(), getLogger());
-			args(authentication.getLaunchArguments());
-		} catch (Exception e) {
-			getLogger().error("Failed to initialize Microsoft authentication; starting Minecraft without Microsoft authentication", e);
-		}
 	}
 }

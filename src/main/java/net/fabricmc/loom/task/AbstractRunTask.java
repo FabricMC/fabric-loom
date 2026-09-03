@@ -44,6 +44,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -52,11 +53,13 @@ import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.process.CommandLineArgumentProvider;
 import org.gradle.process.ExecOperations;
 import org.gradle.work.DisableCachingByDefault;
@@ -67,11 +70,15 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.ide.RunConfigUtils;
 import net.fabricmc.loom.configuration.ide.RuntimeLibraries;
+import net.fabricmc.loom.task.launch.auth.MicrosoftAccountStore;
+import net.fabricmc.loom.task.launch.auth.MicrosoftGameAuthentication;
+import net.fabricmc.loom.task.launch.auth.MinecraftAccessTokenProviderImpl;
 import net.fabricmc.loom.task.prod.TracyCapture;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.XVFBExistsValueSource;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
+import net.fabricmc.loom.util.nativeplatform.EncryptionKeyStoreFactory;
 
 @DisableCachingByDefault
 public abstract class AbstractRunTask extends JavaExec {
@@ -97,6 +104,17 @@ public abstract class AbstractRunTask extends JavaExec {
 	protected abstract Property<String> getArgFilePath();
 	@Input
 	public abstract Property<Boolean> getUseXvfb();
+	@Input
+	public abstract Property<Boolean> getMicrosoftAuthenticationEnabled();
+	@Input
+	@Option(option = "offline", description = "Run Minecraft without Microsoft authentication")
+	public abstract Property<Boolean> getOffline();
+	@Input
+	@Optional
+	@Option(option = "profile", description = "Use a named Microsoft authentication profile")
+	public abstract Property<String> getProfile();
+	@Internal
+	protected abstract RegularFileProperty getMicrosoftAccountFile();
 
 	@Nested
 	@Optional
@@ -121,6 +139,10 @@ public abstract class AbstractRunTask extends JavaExec {
 	public AbstractRunTask(Function<Project, RunConfiguration> configProvider) {
 		super();
 		setGroup(Constants.TaskGroup.FABRIC);
+		getMicrosoftAuthenticationEnabled().convention(false);
+		getOffline().convention(getProject().getGradle().getStartParameter().isOffline());
+		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+		getMicrosoftAccountFile().fileValue(MicrosoftAccountStore.defaultPath(extension.getFiles()).toFile());
 
 		final Provider<RunConfiguration> config = getProject().provider(() -> configProvider.apply(getProject()));
 
@@ -188,6 +210,10 @@ public abstract class AbstractRunTask extends JavaExec {
 
 	@Override
 	public void exec() {
+		if (getMicrosoftAuthenticationEnabled().get() && !getOffline().get()) {
+			addMicrosoftAuthenticationArguments();
+		}
+
 		if (getUseArgFile().get()) {
 			LOGGER.debug("Using arg file for {}", getName());
 			writeArgFile();
@@ -226,6 +252,26 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		execInternal();
+	}
+
+	private void addMicrosoftAuthenticationArguments() {
+		Path accountPath = getMicrosoftAccountFile().get().getAsFile().toPath();
+
+		if (getProfile().isPresent()) {
+			accountPath = MicrosoftAccountStore.profilePath(accountPath, getProfile().get());
+		}
+
+		if (!Files.exists(accountPath)) {
+			return;
+		}
+
+		try {
+			MicrosoftAccountStore accountStore = new MicrosoftAccountStore(accountPath, EncryptionKeyStoreFactory.create(accountPath));
+			MicrosoftGameAuthentication authentication = new MicrosoftGameAuthentication(accountStore, new MinecraftAccessTokenProviderImpl(), getLogger());
+			args(authentication.getLaunchArguments());
+		} catch (Exception e) {
+			getLogger().error("Failed to initialize Microsoft authentication; starting Minecraft without Microsoft authentication", e);
+		}
 	}
 
 	private void execInternal() {

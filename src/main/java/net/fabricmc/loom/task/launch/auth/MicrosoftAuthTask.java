@@ -29,7 +29,10 @@ import java.nio.file.Path;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.services.ServiceReference;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
+import org.gradle.api.tasks.Optional;
+import org.gradle.api.tasks.options.Option;
 import org.gradle.work.DisableCachingByDefault;
 
 import net.fabricmc.loom.extension.LoomFiles;
@@ -46,13 +49,19 @@ public abstract class MicrosoftAuthTask extends AbstractLoomTask {
 	@Internal
 	protected abstract RegularFileProperty getAccountFile();
 
+	@Input
+	@Optional
+	@Option(option = "profile", description = "Use a named Microsoft authentication profile")
+	public abstract Property<String> getProfile();
+
 	public MicrosoftAuthTask() {
 		getAccountFile().fileValue(MicrosoftAccountStore.defaultPath(LoomFiles.create(getProject())).toFile());
 	}
 
 	@Internal
 	protected Path getAccountPath() {
-		return getAccountFile().get().getAsFile().toPath();
+		Path defaultPath = getAccountFile().get().getAsFile().toPath();
+		return getProfile().isPresent() ? MicrosoftAccountStore.profilePath(defaultPath, getProfile().get()) : defaultPath;
 	}
 
 	protected MicrosoftAccountStore createAccountStore(Path accountPath) {

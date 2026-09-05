@@ -50,7 +50,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProces
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
 import net.fabricmc.loom.extension.LoomFiles;
-import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.extension.RemapperExtensionHolder;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 
@@ -104,9 +103,6 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace);
-
-	@Override
-	MixinExtension getMixin();
 
 	List<AccessWidenerFile> getTransitiveAccessWideners();
 

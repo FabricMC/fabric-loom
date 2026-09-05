@@ -62,7 +62,6 @@ import net.fabricmc.loom.util.kotlin.KotlinRemapperClassloader;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
 import net.fabricmc.loom.util.service.ServiceType;
-import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
@@ -77,10 +76,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		Property<String> getTo();
 		@Nested
 		ListProperty<MappingsService.Options> getMappings();
-		@Input
-		Property<Boolean> getUselegacyMixinAP();
-		@Nested
-		ListProperty<MixinAPMappingService.Options> getMixinApMappings();
 		@Nested
 		@Optional
 		Property<KotlinClasspathService.Options> getKotlinClasspathService();
@@ -97,7 +92,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		return TYPE.create(project, options -> {
 			final LoomGradleExtension extension = LoomGradleExtension.get(project);
 			final ConfigurationContainer configurations = project.getConfigurations();
-			final boolean legacyMixin = extension.getMixin().getUseLegacyMixinAp().get();
 			final FileCollection classpath = remapJarTask.getClasspath()
 					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES))
 					.minus(configurations.getByName(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES));
@@ -106,11 +100,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getTo().set(remapJarTask.getTargetNamespace());
 			options.getMappings().add(MappingsService.createForRemapTask(remapJarTask));
 
-			if (legacyMixin) {
-				options.getMixinApMappings().set(MixinAPMappingService.createOptions(project, options.getFrom(), options.getTo()));
-			}
-
-			options.getUselegacyMixinAP().set(legacyMixin);
 			options.getKotlinClasspathService().set(KotlinClasspathService.createOptions(project));
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
@@ -126,7 +115,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			options.getFrom().set(from);
 			options.getTo().set(to);
 			options.getMappings().add(MappingsService.createOptionsWithProjectMappings(project, options.getFrom(), options.getTo()));
-			options.getUselegacyMixinAP().set(true);
 			options.getClasspath().from(classpath);
 			options.getKnownIndyBsms().set(extension.getKnownIndyBsms().get().stream().sorted().toList());
 			options.getRemapperExtensions().set(extension.getRemapperExtensions());
@@ -191,9 +179,7 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 			builder.withMappings(mappingsService.getMappingsProvider());
 		}
 
-		if (!getOptions().getUselegacyMixinAP().get()) {
-			builder.extension(new MixinExtension());
-		}
+		builder.extension(new MixinExtension());
 
 		if (getOptions().getKotlinClasspathService().isPresent()) {
 			KotlinClasspathService kotlinClasspathService = getServiceFactory().get(getOptions().getKotlinClasspathService());
@@ -203,17 +189,6 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 
 		for (RemapperExtensionHolder holder : getOptions().getRemapperExtensions().get()) {
 			holder.apply(builder, getOptions().getFrom().get(), getOptions().getTo().get());
-		}
-
-		if (getOptions().getUselegacyMixinAP().get()) {
-			for (MixinAPMappingService.Options options : getOptions().getMixinApMappings().get()) {
-				MixinAPMappingService mixinAPMappingService = getServiceFactory().get(options);
-				IMappingProvider provider = mixinAPMappingService.getMappingsProvider();
-
-				if (provider != null) {
-					builder.withMappings(provider);
-				}
-			}
 		}
 
 		return builder.build();

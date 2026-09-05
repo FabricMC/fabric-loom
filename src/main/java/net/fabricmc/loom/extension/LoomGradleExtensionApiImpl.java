@@ -53,7 +53,6 @@ import org.gradle.jvm.tasks.Jar;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.InterfaceInjectionExtensionAPI;
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
-import net.fabricmc.loom.api.MixinExtensionAPI;
 import net.fabricmc.loom.api.ModSettings;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.decompilers.DecompilerOptions;
@@ -108,6 +107,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final Property<Boolean> runtimeOnlyLog4j;
 	private final Property<Boolean> runtimeOnlyLwjglGraphics;
 	private final Property<Boolean> splitModDependencies;
+	private final Property<Boolean> inlineDependencyRefmaps;
 	private final Property<Boolean> uncompressNestedJars;
 	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
@@ -209,6 +209,8 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		this.splitModDependencies = project.getObjects().property(Boolean.class).convention(true);
 		this.splitModDependencies.finalizeValueOnRead();
+		this.inlineDependencyRefmaps = project.getObjects().property(Boolean.class).convention(false);
+		this.inlineDependencyRefmaps.finalizeValueOnRead();
 
 		this.uncompressNestedJars = project.getObjects().property(Boolean.class).convention(false);
 		this.uncompressNestedJars.finalizeValueOnRead();
@@ -315,11 +317,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public ConfigurableFileCollection getLog4jConfigs() {
 		return log4jConfigs;
-	}
-
-	@Override
-	public void mixin(Action<MixinExtensionAPI> action) {
-		action.execute(getMixin());
 	}
 
 	@Override
@@ -461,6 +458,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	@Override
 	public Property<Boolean> getSplitModDependencies() {
 		return splitModDependencies;
+	}
+
+	@Override
+	public Property<Boolean> getInlineDependencyRefmaps() {
+		return inlineDependencyRefmaps;
 	}
 
 	@Override
@@ -621,11 +623,6 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 		@Override
 		protected <T extends IntermediateMappingsProvider> void configureIntermediateMappingsProviderInternal(T provider) {
-			throw new RuntimeException("Yeah... something is really wrong");
-		}
-
-		@Override
-		public MixinExtension getMixin() {
 			throw new RuntimeException("Yeah... something is really wrong");
 		}
 	}

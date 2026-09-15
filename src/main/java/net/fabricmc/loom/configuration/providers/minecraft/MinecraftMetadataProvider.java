@@ -55,9 +55,7 @@ public final class MinecraftMetadataProvider {
 		this.download = download;
 	}
 
-	public static MinecraftMetadataProvider create(ConfigContext configContext) {
-		final String minecraftVersion = resolveMinecraftVersion(configContext.project());
-
+	public static MinecraftMetadataProvider create(ConfigContext configContext, String minecraftVersion) {
 		return new MinecraftMetadataProvider(
 				MinecraftMetadataProvider.Options.create(
 						minecraftVersion,
@@ -65,6 +63,10 @@ public final class MinecraftMetadataProvider {
 				),
 				configContext.extension()::download
 		);
+	}
+
+	public static MinecraftMetadataProvider create(ConfigContext configContext) {
+		return create(configContext, resolveMinecraftVersion(configContext.project()));
 	}
 
 	private static String resolveMinecraftVersion(Project project) {

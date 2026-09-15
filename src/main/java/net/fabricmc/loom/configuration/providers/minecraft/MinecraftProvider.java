@@ -79,6 +79,13 @@ public abstract class MinecraftProvider {
 	}
 
 	public void provide() throws Exception {
+		provideJars();
+
+		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
+		libraryProvider.provide();
+	}
+
+	public void provideJars() throws Exception {
 		initFiles();
 
 		verifyJavaVersion();
@@ -96,9 +103,6 @@ public abstract class MinecraftProvider {
 		if (didDownload) {
 			verifyJars();
 		}
-
-		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
-		libraryProvider.provide();
 	}
 
 	private void verifyJavaVersion() {

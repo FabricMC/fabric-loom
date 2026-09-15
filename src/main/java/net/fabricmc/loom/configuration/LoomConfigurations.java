@@ -31,6 +31,8 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
+import org.gradle.api.attributes.Attribute;
+import org.gradle.api.attributes.AttributeContainer;
 import org.gradle.api.plugins.JavaPlugin;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -51,6 +53,17 @@ public abstract class LoomConfigurations implements Runnable {
 	@Override
 	public void run() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+
+		// Keep this separate from runtimeClasspath: Loom adds the game, mappings and
+		// development-only dependencies to runtimeClasspath below.
+		register(Constants.Configurations.SHADOW_RUNTIME_CLASSPATH, Role.RESOLVABLE).configure(configuration -> {
+			configuration.extendsFrom(
+					getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME),
+					getConfigurations().getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
+			);
+			final var runtimeAttributes = getConfigurations().getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME).getAttributes();
+			runtimeAttributes.keySet().forEach(attribute -> copyAttribute(configuration, runtimeAttributes, attribute));
+		});
 
 		register(Constants.Configurations.MOD_COMPILE_CLASSPATH, Role.RESOLVABLE);
 		registerNonTransitive(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, Role.RESOLVABLE);
@@ -119,6 +132,11 @@ public abstract class LoomConfigurations implements Runnable {
 		extendsFrom(Constants.Configurations.MINECRAFT_TEST_CLIENT_RUNTIME_LIBRARIES, Constants.Configurations.LOADER_DEPENDENCIES);
 
 		register(Constants.Configurations.PRODUCTION_RUNTIME_MODS, Role.RESOLVABLE);
+	}
+
+	private static <T> void copyAttribute(Configuration target, AttributeContainer source, Attribute<T> attribute) {
+		final var value = source.getAttribute(attribute);
+		if (value != null) target.getAttributes().attribute(attribute, value);
 	}
 
 	private NamedDomainObjectProvider<Configuration> register(String name, Role role) {

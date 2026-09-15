@@ -1,0 +1,27 @@
+package projects.shadowIntegration
+
+plugins {
+	id 'java-library'
+	id 'fabric-loom'
+	id 'com.gradleup.shadow' version '9.6.1'
+}
+
+version = '1.0.0'
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	minecraft 'com.mojang:minecraft:1.18.2'
+	mappings 'net.fabricmc:yarn:1.18.2+build.1:v2'
+	modImplementation 'net.fabricmc:fabric-loader:0.13.3'
+
+	api 'org.apache.commons:commons-lang3:3.14.0'
+	implementation 'com.google.code.gson:gson:2.10.1'
+	runtimeOnly 'org.slf4j:slf4j-api:2.0.12'
+	compileOnly 'commons-io:commons-io:2.15.1'
+	compileOnlyApi 'com.google.code.findbugs:jsr305:3.0.2'
+	testImplementation 'junit:junit:4.13.2'
+	localRuntime 'org.apache.logging.log4j:log4j-core:2.22.0'
+}

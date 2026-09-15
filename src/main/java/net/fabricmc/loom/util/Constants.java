@@ -83,6 +83,10 @@ public class Constants {
 		 * {@code testRuntimeOnly}, but for mods.
 		 */
 		public static final String LOCAL_RUNTIME = "localRuntime";
+		/**
+		 * The unmodified Java runtime dependency scope used by the Shadow plugin.
+		 */
+		public static final String SHADOW_RUNTIME_CLASSPATH = "loomShadowRuntimeClasspath";
 		public static final String NAMED_ELEMENTS = "namedElements";
 		/**
 		 * The configuration that contains the Minecraft client and loader runtime libraries, as used by the production run tasks.

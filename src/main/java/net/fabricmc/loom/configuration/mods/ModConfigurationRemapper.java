@@ -147,7 +147,7 @@ public class ModConfigurationRemapper {
 
 		final ModDependencyOptions modDependencyOptions = ModDependencyOptions.create(project, ModDependencyOptions.class, options -> {
 			options.getMappings().set(mappingsSuffix);
-			options.getInlineRefmap().set(extension.getMixin().getInlineDependencyRefmaps());
+			options.getInlineRefmap().set(extension.getInlineDependencyRefmaps());
 		});
 
 		if (LOGGER.isInfoEnabled()) {

@@ -67,7 +67,6 @@ import net.fabricmc.loom.util.gradle.GradleUtils;
 
 public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
-	private final MixinExtension mixinApExtension;
 	private final LoomFiles loomFiles;
 	private final ConfigurableFileCollection unmappedMods;
 
@@ -95,8 +94,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	public LoomGradleExtensionImpl(Project project, LoomFiles files) {
 		super(project, files);
 		this.project = project;
-		// Initiate with newInstance to allow gradle to decorate our extension
-		this.mixinApExtension = project.getObjects().newInstance(MixinExtensionImpl.class, project);
 		this.loomFiles = files;
 		this.unmappedMods = project.files();
 
@@ -232,11 +229,6 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	public InstallerData getInstallerData() {
 		return installerData;
-	}
-
-	@Override
-	public MixinExtension getMixin() {
-		return this.mixinApExtension;
 	}
 
 	@Override

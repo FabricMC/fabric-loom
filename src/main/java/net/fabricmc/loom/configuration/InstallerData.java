@@ -33,14 +33,12 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.plugins.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.LoomGradlePlugin;
 import net.fabricmc.loom.LoomRepositoryPlugin;
-import net.fabricmc.loom.configuration.ide.idea.IdeaUtils;
 import net.fabricmc.loom.util.Constants;
 
 public record InstallerData(String version, JsonObject installerJson) {
@@ -71,9 +69,7 @@ public record InstallerData(String version, JsonObject installerJson) {
 	}
 
 	private void applyDependendencies(JsonArray jsonArray, Project project) {
-		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);
-		Configuration annotationProcessor = project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
 
 		for (JsonElement jsonElement : jsonArray) {
 			final JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -84,11 +80,6 @@ public record InstallerData(String version, JsonObject installerJson) {
 			ExternalModuleDependency modDep = (ExternalModuleDependency) project.getDependencies().create(name);
 			modDep.setTransitive(false); // Match the launcher in not being transitive
 			loaderDepsConfig.getDependencies().add(modDep);
-
-			// Work around https://github.com/FabricMC/Mixin/pull/60 and https://github.com/FabricMC/fabric-mixin-compile-extensions/issues/14.
-			if (!IdeaUtils.isIdeaSync() && extension.getMixin().getUseLegacyMixinAp().get()) {
-				annotationProcessor.getDependencies().add(modDep);
-			}
 
 			// If user choose to use dependencyResolutionManagement, then they should declare
 			// these repositories manually in the settings file.

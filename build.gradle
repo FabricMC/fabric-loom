@@ -131,9 +131,6 @@ dependencies {
 		transitive = false
 	}
 
-	// Kapt integration
-	compileOnly libs.kotlin.gradle.plugin
-
 	// Testing
 	testImplementation(gradleTestKit())
 	testImplementation(testLibs.spock) {

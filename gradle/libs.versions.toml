@@ -39,7 +39,6 @@ fabric-unpick = { module = "net.fabricmc.unpick:unpick", version.ref = "unpick" 
 fabric-unpick-utils = { module = "net.fabricmc.unpick:unpick-format-utils", version.ref = "unpick" }
 
 # Misc
-kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-metadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 
 [plugins]

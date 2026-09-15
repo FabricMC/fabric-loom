@@ -98,7 +98,6 @@ public final class MigrateClassTweakerMappingsService extends Service<MigrateCla
 					o3.getTo().set(MIGRATION_TARGET_NS);
 					o3.getRemapLocals().set(false);
 				}));
-				o2.getUselegacyMixinAP().set(false);
 			}));
 		});
 	}

@@ -40,7 +40,7 @@ import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 @Timeout(value = 30, unit = TimeUnit.MINUTES)
 class FabricAPITest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build and run (gradle #version, mixin ap disabled: #disableMixinAp)"() {
+	def "build and run (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
@@ -49,15 +49,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 				patch: "fabric_api",
 				warningMode: "all"
 				)
-
-		// Disable the mixin ap if needed. Fabric API is a large enough test project to see if something breaks.
-		if (!disableMixinAp) {
-			gradle.buildGradle << """
-				allprojects {
-					loom.mixin.useLegacyMixinAp = true
-				}
-				""".stripIndent()
-		}
 
 		def minecraftVersion = "1.21.6-pre3"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
@@ -68,10 +59,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		dependentMod.buildGradle << """
 				repositories {
 					mavenLocal()
-				}
-
-				loom {
-					loom.mixin.useLegacyMixinAp = ${!disableMixinAp}
 				}
 
 				dependencies {
@@ -107,11 +94,7 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0-sources.jar").exists()
 		def manifest = ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF").toString()
 
-		if (disableMixinAp) {
-			manifest.contains("Fabric-Loom-Mixin-Remap-Type=static")
-		} else {
-			manifest.contains("Fabric-Loom-Mixin-Remap-Type=mixin")
-		}
+		manifest.contains("Fabric-Loom-Mixin-Remap-Type=static")
 
 		// Check that a client mixin exists
 		def blockViewApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-block-view-api-v2/999.0.0/fabric-block-view-api-v2-999.0.0.jar")
@@ -123,9 +106,6 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 		dependentModResult.task(":build").outcome == SUCCESS
 
 		where:
-		[version, disableMixinAp] << [
-			[PRE_RELEASE_GRADLE],
-			[false, true].shuffled()
-		].combinations()
+		version << [PRE_RELEASE_GRADLE]
 	}
 }

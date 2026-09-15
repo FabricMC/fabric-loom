@@ -75,22 +75,23 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 	private static final Pattern SEMVER_PATTERN = Pattern.compile(SEMVER_REGEX);
 
 	@InputFiles
-	@PathSensitive(PathSensitivity.NAME_ONLY)
+	@PathSensitive(PathSensitivity.ABSOLUTE)
 	protected abstract ConfigurableFileCollection getJars();
 
 	@OutputDirectory
 	public abstract DirectoryProperty getOutputDirectory();
 
 	@Input
-	protected abstract MapProperty<String, Metadata> getJarIds();
+	protected abstract MapProperty<File, Metadata> getJarIds();
 
 	@Input
 	public abstract Property<Boolean> getUncompressNestedJars();
 
 	@TaskAction
 	void makeNestableJars() {
-		Map<String, String> fabricModJsons = new HashMap<>();
-		getJarIds().get().forEach((fileName, metadata) -> {
+		Map<File, Metadata> metadataMap = getJarIds().get();
+		Map<File, String> fabricModJsons = new HashMap<>();
+		metadataMap.forEach((fileName, metadata) -> {
 			fabricModJsons.put(fileName, generateModForDependency(metadata));
 		});
 
@@ -103,9 +104,9 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 		}
 
 		getJars().forEach(file -> {
-			File targetFile = getOutputDirectory().file(file.getName()).get().getAsFile();
+			File targetFile = getOutputDirectory().file(getIdForDependency(metadataMap.get(file)) + ".jar").get().getAsFile();
 			targetFile.delete();
-			String fabricModJson = Objects.requireNonNull(fabricModJsons.get(file.getName()), "Could not generate fabric.mod.json for included dependency "+file.getName());
+			String fabricModJson = Objects.requireNonNull(fabricModJsons.get(file), "Could not generate fabric.mod.json for included dependency "+file.getName());
 			makeNestableJar(file, targetFile, fabricModJson);
 		});
 	}
@@ -119,7 +120,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 		getJars().from(artifacts.getFiles());
 		dependsOn(configuration);
 		getJarIds().putAll(artifacts.getArtifacts().getResolvedArtifacts().map(set -> {
-			Map<String, Metadata> map = new HashMap<>();
+			Map<File, Metadata> map = new HashMap<>();
 			set.forEach(artifact -> {
 				ResolvedVariantResult variant = artifact.getVariant();
 
@@ -140,7 +141,7 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 						.toList();
 
 				if (!capabilityLocations.isEmpty() && (moduleLocation == null || !capabilityLocations.contains(moduleLocation))) {
-					moduleLocation = capabilityLocations.get(0);
+					moduleLocation = capabilityLocations.getFirst();
 				}
 
 				if (moduleLocation == null) {
@@ -164,14 +165,13 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 				}
 
 				Metadata metadata = new Metadata(group, name, version, classifier);
-				map.put(artifact.getFile().getName(), metadata);
+				map.put(artifact.getFile(), metadata);
 			});
 			return map;
 		}));
 	}
 
-	// Generates a barebones mod for a dependency
-	private static String generateModForDependency(Metadata metadata) {
+	private static String getIdForDependency(Metadata metadata) {
 		String modId = (metadata.group() + "_" + metadata.name() + metadata.classifier())
 				.replaceAll("\\.", "_")
 				.toLowerCase(Locale.ENGLISH);
@@ -181,6 +181,13 @@ public abstract class NestableJarGenerationTask extends AbstractLoomTask {
 			String hash = Checksum.of(modId).sha256().hex();
 			modId = modId.substring(0, 50) + hash.substring(0, 14);
 		}
+
+		return modId;
+	}
+
+	// Generates a barebones mod for a dependency
+	private static String generateModForDependency(Metadata metadata) {
+		String modId = getIdForDependency(metadata);
 
 		final JsonObject jsonObject = new JsonObject();
 		jsonObject.addProperty("schemaVersion", 1);

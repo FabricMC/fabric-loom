@@ -44,6 +44,7 @@ import org.benf.cfr.reader.mapping.NullMapping;
 import org.benf.cfr.reader.util.output.DelegatingDumper;
 import org.benf.cfr.reader.util.output.Dumper;
 
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MappingTree;
@@ -51,9 +52,11 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class CFRObfuscationMapping extends NullMapping {
 	private final MappingTree mappingTree;
+	private final JavadocStyle javadocStyle;
 
-	public CFRObfuscationMapping(Path mappings, String runtimeNamespace) {
+	public CFRObfuscationMapping(Path mappings, String runtimeNamespace, JavadocStyle javadocStyle) {
 		mappingTree = readMappings(mappings, runtimeNamespace);
+		this.javadocStyle = javadocStyle;
 	}
 
 	@Override
@@ -74,6 +77,8 @@ public class CFRObfuscationMapping extends NullMapping {
 	}
 
 	private class JavadocProvidingDumper extends DelegatingDumper {
+		private final DocPrinter docPrinter = DocPrinter.of(this, javadocStyle);
+
 		JavadocProvidingDumper(Dumper delegate) {
 			super(delegate);
 		}
@@ -113,27 +118,23 @@ public class CFRObfuscationMapping extends NullMapping {
 			String comment = mapping.getComment();
 
 			if (comment != null || !recordComponentDocs.isEmpty()) {
-				print("/**").newln();
+				docPrinter.printHeader();
 
 				if (comment != null) {
 					for (String line : comment.split("\\R")) {
-						print(" * ").print(line).newln();
+						docPrinter.printLine(line);
 					}
 
 					if (!recordComponentDocs.isEmpty()) {
-						print(" * ").newln();
+						docPrinter.printEmptyLine();
 					}
 				}
 
-				if (comment != null && !recordComponentDocs.isEmpty()) {
-					print(" * ");
-				}
-
 				for (String componentDoc : recordComponentDocs) {
-					print(" * ").print(componentDoc).newln();
+					docPrinter.printLine(componentDoc);
 				}
 
-				print(" */").newln();
+				docPrinter.printFooter();
 			}
 
 			return this;
@@ -177,13 +178,7 @@ public class CFRObfuscationMapping extends NullMapping {
 			}
 
 			if (!lines.isEmpty()) {
-				print("/**").newln();
-
-				for (String line : lines) {
-					print(" * ").print(line).newln();
-				}
-
-				print(" */").newln();
+				docPrinter.printComment(lines);
 			}
 
 			return this;
@@ -205,7 +200,7 @@ public class CFRObfuscationMapping extends NullMapping {
 			MappingTree.FieldMapping fieldMapping = classMapping.getField(field.getFieldName(), field.getDescriptor());
 
 			if (fieldMapping != null) {
-				dumpComment(fieldMapping.getComment());
+				docPrinter.printComment(fieldMapping.getComment());
 			}
 
 			return this;
@@ -227,20 +222,6 @@ public class CFRObfuscationMapping extends NullMapping {
 
 		private boolean isStatic(Field field) {
 			return field.testAccessFlag(AccessFlag.ACC_STATIC);
-		}
-
-		private void dumpComment(String comment) {
-			if (comment == null || comment.isBlank()) {
-				return;
-			}
-
-			print("/**").newln();
-
-			for (String line : comment.split("\n")) {
-				print(" * ").print(line).newln();
-			}
-
-			print(" */").newln();
 		}
 	}
 }

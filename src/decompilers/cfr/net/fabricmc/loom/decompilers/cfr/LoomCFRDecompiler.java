@@ -45,7 +45,6 @@ import org.benf.cfr.reader.util.getopt.Options;
 import org.benf.cfr.reader.util.getopt.OptionsImpl;
 import org.benf.cfr.reader.util.output.SinkDumperFactory;
 
-import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.decompilers.LoomInternalDecompiler;
 
 public final class LoomCFRDecompiler implements LoomInternalDecompiler {
@@ -57,10 +56,6 @@ public final class LoomCFRDecompiler implements LoomInternalDecompiler {
 
 	@Override
 	public void decompile(LoomInternalDecompiler.Context context) {
-		if (context.javadocStyle() == JavadocStyle.MARKDOWN) {
-			throw new UnsupportedOperationException("CFR does not support Markdown Javadocs");
-		}
-
 		Path compiledJar = context.compiledJar();
 
 		final String path = compiledJar.toAbsolutePath().toString();
@@ -80,7 +75,7 @@ public final class LoomCFRDecompiler implements LoomInternalDecompiler {
 		DCCommonState state = new DCCommonState(options, classFileSource);
 
 		if (context.javaDocs() != null) {
-			state = new DCCommonState(state, new CFRObfuscationMapping(context.javaDocs(), context.runtimeNamespace()));
+			state = new DCCommonState(state, new CFRObfuscationMapping(context.javaDocs(), context.runtimeNamespace(), context.javadocStyle()));
 		}
 
 		final Manifest manifest = new Manifest();

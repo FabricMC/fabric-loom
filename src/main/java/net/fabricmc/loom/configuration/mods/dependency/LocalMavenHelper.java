@@ -49,7 +49,7 @@ public record LocalMavenHelper(String group, String name, String version, @Nulla
 		return Files.copy(artifact, getOutputFile(classifier), StandardCopyOption.REPLACE_EXISTING);
 	}
 
-	public boolean exists(String classifier) {
+	public boolean exists(@Nullable String classifier) {
 		return Files.exists(getOutputFile(classifier)) && Files.exists(getPomPath());
 	}
 

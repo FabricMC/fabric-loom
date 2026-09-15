@@ -81,8 +81,14 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 
 		final Path mavenRepoDir = configContext.extension().getFiles().getGlobalMinecraftRepo().toPath();
 		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec().getVersion(), null, mavenRepoDir);
-		final Path jar = resolve(configContext.project());
-		maven.copyToMaven(jar, null);
+
+		LoomGradleExtension extension = LoomGradleExtension.get(configContext.project());
+
+		// If we have not generated these mappings already, regenerate them
+		if (!maven.exists(null) || extension.refreshDeps()) {
+			final Path jar = resolve(configContext.project());
+			maven.copyToMaven(jar, null);
+		}
 	}
 
 	public Path resolve(Project project) throws IOException {

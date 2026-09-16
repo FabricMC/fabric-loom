@@ -10,7 +10,7 @@
 				<RegexFilter regex="^Failed to fetch user properties$" onMatch="DENY" onMismatch="NEUTRAL"/>
 				<RegexFilter regex="^Couldn't connect to realms$" onMatch="DENY" onMismatch="NEUTRAL"/>
 				<RegexFilter regex="^Failed to fetch Realms feature flags$" onMatch="DENY" onMismatch="NEUTRAL"/>
-                <SystemPropertyArbiter propertyName="fabric.suppressNarratorError">
+                <SystemPropertyArbiter propertyName="fabric.loom.suppressNarratorError">
                     <RegexFilter regex="^Error while loading the narrator$" onMatch="DENY" onMismatch="NEUTRAL"/>
                 </SystemPropertyArbiter>
 			</Filters>

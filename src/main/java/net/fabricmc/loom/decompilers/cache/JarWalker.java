@@ -112,15 +112,16 @@ public final class JarWalker {
 		List<CompletableFuture<ClassEntry>> classEntries = new ArrayList<>();
 
 		for (String outerClass : outerClasses) {
-			List<String> innerClasList = innerClasses.get(outerClass);
+			List<String> innerClassList = new ArrayList<>(innerClasses.getOrDefault(outerClass, List.of()));
 
-			if (innerClasList == null) {
-				innerClasList = Collections.emptyList();
-			} else {
-				Collections.sort(innerClasList);
+			// Include every descendant so nested classes are copied and hashed with their top-level class.
+			for (int i = 0; i < innerClassList.size(); i++) {
+				String innerClass = innerClassList.get(i);
+				innerClassList.addAll(innerClasses.getOrDefault(innerClass, List.of()));
 			}
 
-			classEntries.add(getClassEntry(outerClass, innerClasList, fs, executor));
+			Collections.sort(innerClassList);
+			classEntries.add(getClassEntry(outerClass, innerClassList, fs, executor));
 		}
 
 		try {

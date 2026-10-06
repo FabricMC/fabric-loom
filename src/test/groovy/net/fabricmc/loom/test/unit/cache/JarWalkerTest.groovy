@@ -86,7 +86,7 @@ class JarWalkerTest extends Specification {
 		"b055df8d9503b60050f6d0db387c84c47fedb4d9ed82c4f8174b4e465a9c479b" | [
 			"net/fabricmc/Test.class": newClass("net/fabricmc/Test"),
 		]
-		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
+		"e69f59a4e1c105a5c57e4b71c3f8e736bf02d8aef5a384aee1b39c5620e7c363" | [
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
 				"net/fabricmc/other/Test\$Inner",
 				"net/fabricmc/other/Test\$Inner\$2",
@@ -98,7 +98,7 @@ class JarWalkerTest extends Specification {
 			"net/fabricmc/other/Test\$Inner\$2.class": newInnerClass("net/fabricmc/other/Test\$Inner\$2", "net/fabricmc/other/Test\$Inner", "Inner"),
 			"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 		]
-		"8b295701fa90f0220840226a397cf4e96f255ef4f0b9eb2c19b1d84fe99ce855" | [
+		"e69f59a4e1c105a5c57e4b71c3f8e736bf02d8aef5a384aee1b39c5620e7c363" | [
 			"net/fabricmc/other/Test.class": newClass("net/fabricmc/other/Test", [] as String[], [
 				"net/fabricmc/other/Test\$Inner",
 				"net/fabricmc/other/Test\$Inner\$2",

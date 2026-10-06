@@ -28,8 +28,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 
-import javax.tools.ToolProvider
-
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.tree.ClassNode
+import org.objectweb.asm.tree.LdcInsnNode
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -39,20 +41,25 @@ import net.fabricmc.loom.decompilers.cache.CachedData
 import net.fabricmc.loom.decompilers.cache.CachedFileStoreImpl
 import net.fabricmc.loom.decompilers.cache.CachedJarProcessor
 import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler
+import net.fabricmc.loom.test.unit.DecompileCacheSource
+import net.fabricmc.loom.test.unit.LineNumberSource
 import net.fabricmc.loom.util.FileSystemUtil
 
 class CachedDecompileTest extends Specification {
+	private static final String OUTER_CLASS = DecompileCacheSource.name.replace('.', '/')
+	private static final String UNRELATED_CLASS = LineNumberSource.name.replace('.', '/')
+
 	@TempDir
 	Path testPath
 
 	def "partial decompile includes anonymous classes inside nested classes"() {
 		given:
-		def input = compileFixture("original", "original")
+		def input = createFixture("original")
 		def cache = newProcessor()
 		def seed = testPath.resolve("seed.jar")
 		FileSystemUtil.getJarFileSystem(seed, true).withCloseable { fs ->
-			Files.createDirectories(fs.getPath("example"))
-			Files.write(fs.getPath("example/Unrelated.class"), inputClass(input, "example/Unrelated.class"))
+			Files.createDirectories(fs.getPath(UNRELATED_CLASS).parent)
+			Files.write(fs.getPath(UNRELATED_CLASS + ".class"), inputClass(input, UNRELATED_CLASS + ".class"))
 		}
 		complete(cache, cache.prepareJob(seed), "seed-sources")
 		def fullOutput = testPath.resolve("full.jar")
@@ -66,7 +73,7 @@ class CachedDecompileTest extends Specification {
 		request.stats() == new CachedJarProcessor.CacheStats(1, 1)
 		request.job() instanceof CachedJarProcessor.PartialWorkJob
 		sources(output) == sources(fullOutput)
-		sources(output)["example/Outer.java"].contains('System.out.println("original")')
+		sources(output)[OUTER_CLASS + ".java"].contains('System.out.println("original")')
 
 		when:
 		def cachedRequest = cache.prepareJob(input)
@@ -79,17 +86,18 @@ class CachedDecompileTest extends Specification {
 
 	def "changing only a nested anonymous class invalidates its enclosing source"() {
 		given:
-		def original = compileFixture("original", "original")
-		def changed = compileFixture("changed", "changed")
+		def original = createFixture("original")
+		def changed = createFixture("changed", true)
 		def cache = newProcessor()
 		complete(cache, cache.prepareJob(original), "original-sources")
 		def fullOutput = testPath.resolve("full.jar")
 		decompile(changed, fullOutput)
 
 		expect:
-		inputClass(original, "example/Outer.class") == inputClass(changed, "example/Outer.class")
-		inputClass(original, "example/Outer\$Nested.class") == inputClass(changed, "example/Outer\$Nested.class")
-		inputClass(original, "example/Outer\$Nested\$1.class") != inputClass(changed, "example/Outer\$Nested\$1.class")
+		inputClass(original, OUTER_CLASS + ".class") == inputClass(changed, OUTER_CLASS + ".class")
+		inputClass(original, OUTER_CLASS + '$Nested.class') == inputClass(changed, OUTER_CLASS + '$Nested.class')
+		inputClass(original, OUTER_CLASS + '$Nested$1.class') != inputClass(changed, OUTER_CLASS + '$Nested$1.class')
+		sources(fullOutput)[OUTER_CLASS + ".java"].contains('System.out.println("changed")')
 
 		when:
 		def request = cache.prepareJob(changed)
@@ -107,38 +115,42 @@ class CachedDecompileTest extends Specification {
 		return new CachedJarProcessor(store, "test")
 	}
 
-	private Path compileFixture(String directory, String message) {
-		def root = Files.createDirectories(testPath.resolve(directory))
-		def source = root.resolve("Outer.java")
-		Files.writeString(source, """
-			package example;
-			public class Outer {
-				public static class Nested {
-					public Runnable create() {
-						return new Runnable() {
-							public void run() {
-								System.out.println("${message}");
-							}
-						};
-					}
-				}
-			}
-			class Unrelated {}
-		""")
-		def classes = Files.createDirectories(root.resolve("classes"))
-		def result = ToolProvider.systemJavaCompiler.run(null, null, null, "--release", "17", "-d", classes.toString(), source.toString())
-		assert result == 0
-		def jar = root.resolve("input.jar")
+	private Path createFixture(String name, boolean changed = false) {
+		def jar = testPath.resolve(name + ".jar")
+		def classNames = [
+			OUTER_CLASS,
+			OUTER_CLASS + '$Nested',
+			OUTER_CLASS + '$Nested$1',
+			UNRELATED_CLASS
+		]
 		FileSystemUtil.getJarFileSystem(jar, true).withCloseable { fs ->
-			Files.walk(classes).withCloseable { paths ->
-				for (Path path : paths.filter { Files.isRegularFile(it) }.toList()) {
-					def target = fs.getPath(classes.relativize(path).toString())
-					Files.createDirectories(target.parent)
-					Files.copy(path, target)
+			for (String className : classNames) {
+				def resource = className + ".class"
+				def bytes = getClass().classLoader.getResourceAsStream(resource).withCloseable { it.readAllBytes() }
+				if (changed && className == OUTER_CLASS + '$Nested$1') {
+					bytes = changeAnonymousClass(bytes)
 				}
+				def target = fs.getPath(resource)
+				Files.createDirectories(target.parent)
+				Files.write(target, bytes)
 			}
 		}
 		return jar
+	}
+
+	private static byte[] changeAnonymousClass(byte[] bytes) {
+		def classNode = new ClassNode()
+		new ClassReader(bytes).accept(classNode, 0)
+		for (def method : classNode.methods) {
+			for (def instruction : method.instructions) {
+				if (instruction instanceof LdcInsnNode && instruction.cst == "original") {
+					instruction.cst = "changed"
+				}
+			}
+		}
+		def writer = new ClassWriter(0)
+		classNode.accept(writer)
+		return writer.toByteArray()
 	}
 
 	private Path complete(CachedJarProcessor processor, CachedJarProcessor.WorkRequest request, String name) {

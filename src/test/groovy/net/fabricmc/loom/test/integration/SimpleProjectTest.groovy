@@ -199,7 +199,7 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		gradle.buildGradle.text = gradle.buildGradle.text.replace(
 				"id 'net.fabricmc.fabric-loom-remap'",
 				"id 'java-library'\n\tid 'net.fabricmc.fabric-loom-remap' apply false"
-		)
+				)
 		gradle.buildGradle << """
 			java.withSourcesJar()
 			apply plugin: 'net.fabricmc.fabric-loom-remap'
@@ -212,8 +212,8 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 
 		when:
 		def result = gradle.run(task: "outgoingVariants", args: [
-				"--variant",
-				"sourcesElements"
+			"--variant",
+			"sourcesElements"
 		])
 
 		then:

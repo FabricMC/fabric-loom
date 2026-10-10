@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit.providers
 
 import java.nio.file.Path
 
+import groovy.transform.ImmutableOptions
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
@@ -158,8 +159,7 @@ class MinecraftJarMergerTest extends Specification {
 		return jarPath
 	}
 
-	static class Jars {
-		Path clientJar
-		Path serverJar
+	@ImmutableOptions(knownImmutableClasses = [Path])
+	static record Jars(Path clientJar, Path serverJar) {
 	}
 }

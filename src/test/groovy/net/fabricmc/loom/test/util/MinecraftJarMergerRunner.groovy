@@ -27,6 +27,8 @@ package net.fabricmc.loom.test.util
 import java.nio.file.Files
 import java.nio.file.Path
 
+import groovy.transform.ImmutableOptions
+
 import net.fabricmc.loom.LoomGradlePlugin
 import net.fabricmc.loom.configuration.providers.BundleMetadata
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarMerger
@@ -117,9 +119,7 @@ class MinecraftJarMergerRunner {
 		return jarPath
 	}
 
-	static class VersionInfo {
-		String id
-		Path clientJar
-		Path serverJar
+	@ImmutableOptions(knownImmutableClasses = [Path])
+	static record VersionInfo(String id, Path clientJar, Path serverJar) {
 	}
 }

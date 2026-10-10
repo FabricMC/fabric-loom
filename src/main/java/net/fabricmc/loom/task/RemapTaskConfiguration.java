@@ -144,6 +144,8 @@ public abstract class RemapTaskConfiguration implements Runnable {
 				return;
 			}
 
+			configuration.getArtifacts().removeIf(artifact -> "sources".equals(artifact.getClassifier()));
+
 			getArtifacts().add(JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME, remapSourcesTask.map(AbstractArchiveTask::getArchiveFile), artifact -> {
 				artifact.setClassifier("sources");
 			});

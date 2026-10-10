@@ -45,9 +45,9 @@ class DecompileTest extends Specification implements GradleProjectTestTrait {
 		result.task(":${task}").outcome == SUCCESS
 
 		where:
-		decompiler 		| task								| version
-		'cfr' 			| "genSourcesWithCfr"				| PRE_RELEASE_GRADLE
-		'vineflower' 	| "genSourcesWithVineflower"		| PRE_RELEASE_GRADLE
+		decompiler | task | version
+		'cfr' | "genSourcesWithCfr" | PRE_RELEASE_GRADLE
+		'vineflower' | "genSourcesWithVineflower" | PRE_RELEASE_GRADLE
 	}
 
 	@Unroll

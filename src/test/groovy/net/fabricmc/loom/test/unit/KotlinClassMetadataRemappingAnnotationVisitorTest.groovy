@@ -150,7 +150,9 @@ class KotlinClassMetadataRemappingAnnotationVisitorTest extends Specification {
 	private List<String> d2(String bytecode) {
 		def d2Regex = ~/d2=\{(.*)}/
 		def match = d2Regex.matcher(bytecode)
-		return match.find() ? match.group(1).split(",").collect { it.trim().replace('"', '') } : []
+		return match.find() ? match.group(1).split(",").collect {
+			it.trim().replace('"', '')
+		} : []
 	}
 
 	private static class TextifierImpl extends Textifier {

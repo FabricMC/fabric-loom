@@ -46,9 +46,9 @@ class ArtifactMetadataTest extends Specification {
 		then:
 		isMod == metadata.isFabricMod()
 		where:
-		isMod 		| entries
-		false       | ["hello.json": "{}"] 		// None Mod jar
-		true        | ["fabric.mod.json": "{}"] // Fabric mod
+		isMod | entries
+		false | ["hello.json": "{}"] // None Mod jar
+		true | ["fabric.mod.json": "{}"] // Fabric mod
 	}
 
 	def "remap requirements"() {
@@ -60,9 +60,9 @@ class ArtifactMetadataTest extends Specification {
 		requirements == metadata.remapRequirements()
 		where:
 		requirements | entries
-		DEFAULT      | ["fabric.mod.json": "{}"] 										// Default
-		OPT_OUT      | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // opt-out
-		OPT_IN       | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// opt-in
+		DEFAULT | ["fabric.mod.json": "{}"] // Default
+		OPT_OUT | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // opt-out
+		OPT_IN | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")] // opt-in
 	}
 
 	def "Should Remap" () {
@@ -75,20 +75,20 @@ class ArtifactMetadataTest extends Specification {
 		result == shouldRemap
 		where:
 		shouldRemap | entries
-		false       | ["hello.json": "{}"] 												// None Mod jar
-		true        | ["fabric.mod.json": "{}"] 										// Fabric mod
-		false       | ["fabric.mod.json": "{}",
-			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] 	// Fabric mod opt-out
-		true        | ["fabric.mod.json": "{}",
-			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// Fabric mod opt-in
-		false       | ["hello.json": "{}",
-			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")]	// None opt-out
-		true        | ["hello.json": "{}",
-			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]	// None opt-int
-		false        | ["hello.json": "{}",
+		false | ["hello.json": "{}"] // None Mod jar
+		true | ["fabric.mod.json": "{}"] // Fabric mod
+		false | ["fabric.mod.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // Fabric mod opt-out
+		true | ["fabric.mod.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")] // Fabric mod opt-in
+		false | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "false")] // None opt-out
+		true | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")] // None opt-int
+		false | ["hello.json": "{}",
 			"META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "broken")]// Invalid format
-		false        | ["hello.json": "{}",
-			"META-INF/MANIFEST.MF": manifest("Something", "Hello")]			// Invalid format
+		false | ["hello.json": "{}",
+			"META-INF/MANIFEST.MF": manifest("Something", "Hello")] // Invalid format
 	}
 
 	def "Installer data"() {
@@ -99,9 +99,9 @@ class ArtifactMetadataTest extends Specification {
 		then:
 		isLoader == (metadata.installerData() != null)
 		where:
-		isLoader   | entries
-		true       | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
-		false      | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
+		isLoader | entries
+		true | ["fabric.mod.json": "{}", "fabric-installer.json": "{}"] // Fabric mod, with installer data
+		false | ["fabric.mod.json": "{}"] // Fabric mod, no installer data
 	}
 
 	def "Refmap remap type" () {
@@ -114,11 +114,11 @@ class ArtifactMetadataTest extends Specification {
 		result == type
 		where:
 		type | entries
-		MIXIN       | ["hello.json": "{}"]       // None Mod jar
-		MIXIN       | ["fabric.mod.json": "{}"]  // Fabric mod without manfiest file
-		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")]              // Fabric mod without remap type entry
-		MIXIN       | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")]  // Fabric mod with remap type entry "mixin"
-		STATIC      | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")] // Fabric mod with remap type entry "static"
+		MIXIN | ["hello.json": "{}"] // None Mod jar
+		MIXIN | ["fabric.mod.json": "{}"] // Fabric mod without manfiest file
+		MIXIN | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Remap", "true")] // Fabric mod without remap type entry
+		MIXIN | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "mixin")] // Fabric mod with remap type entry "mixin"
+		STATIC | ["fabric.mod.json": "{}", "META-INF/MANIFEST.MF": manifest("Fabric-Loom-Mixin-Remap-Type", "static")] // Fabric mod with remap type entry "static"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
@@ -131,15 +131,15 @@ class ArtifactMetadataTest extends Specification {
 		metadata != null
 		where:
 		loomVersion | modLoomVersion
-		"1.4"       | "1.0.1"
-		"1.4"       | "1.0.99"
-		"1.4"       | "1.4"
-		"1.4"       | "1.4.0"
-		"1.4"       | "1.4.1"
-		"1.4"       | "1.4.99"
-		"1.4"       | "1.4.local"
-		"1.5"       | "1.4.99"
-		"2.0"       | "1.4.99"
+		"1.4" | "1.0.1"
+		"1.4" | "1.0.99"
+		"1.4" | "1.4"
+		"1.4" | "1.4.0"
+		"1.4" | "1.4.1"
+		"1.4" | "1.4.99"
+		"1.4" | "1.4.local"
+		"1.5" | "1.4.99"
+		"2.0" | "1.4.99"
 	}
 
 	// Test that a mod with the same or older version of loom can be read
@@ -153,10 +153,10 @@ class ArtifactMetadataTest extends Specification {
 		e.message == "Mod was built with a newer version of Loom ($modLoomVersion), you are using Loom ($loomVersion)"
 		where:
 		loomVersion | modLoomVersion
-		"1.4"       | "1.5"
-		"1.4"       | "1.5.00"
-		"1.4"       | "2.0"
-		"1.4"       | "2.4"
+		"1.4" | "1.5"
+		"1.4" | "1.5.00"
+		"1.4" | "2.0"
+		"1.4" | "2.4"
 	}
 
 	def "Accepts all Loom versions for remap 'false'"() {
@@ -169,20 +169,20 @@ class ArtifactMetadataTest extends Specification {
 		where:
 		loomVersion | modLoomVersion
 		// Valid
-		"1.4"       | "1.0.1"
-		"1.4"       | "1.0.99"
-		"1.4"       | "1.4"
-		"1.4"       | "1.4.0"
-		"1.4"       | "1.4.1"
-		"1.4"       | "1.4.99"
-		"1.4"       | "1.4.local"
-		"1.5"       | "1.4.99"
-		"2.0"       | "1.4.99"
+		"1.4" | "1.0.1"
+		"1.4" | "1.0.99"
+		"1.4" | "1.4"
+		"1.4" | "1.4.0"
+		"1.4" | "1.4.1"
+		"1.4" | "1.4.99"
+		"1.4" | "1.4.local"
+		"1.5" | "1.4.99"
+		"2.0" | "1.4.99"
 		// Usually invalid
-		"1.4"       | "1.5"
-		"1.4"       | "1.5.00"
-		"1.4"       | "2.0"
-		"1.4"       | "2.4"
+		"1.4" | "1.5"
+		"1.4" | "1.5.00"
+		"1.4" | "2.0"
+		"1.4" | "2.4"
 	}
 
 	def "Accepts all Loom versions for remap 'true'"() {
@@ -195,20 +195,20 @@ class ArtifactMetadataTest extends Specification {
 		where:
 		loomVersion | modLoomVersion
 		// Valid
-		"1.4"       | "1.0.1"
-		"1.4"       | "1.0.99"
-		"1.4"       | "1.4"
-		"1.4"       | "1.4.0"
-		"1.4"       | "1.4.1"
-		"1.4"       | "1.4.99"
-		"1.4"       | "1.4.local"
-		"1.5"       | "1.4.99"
-		"2.0"       | "1.4.99"
+		"1.4" | "1.0.1"
+		"1.4" | "1.0.99"
+		"1.4" | "1.4"
+		"1.4" | "1.4.0"
+		"1.4" | "1.4.1"
+		"1.4" | "1.4.99"
+		"1.4" | "1.4.local"
+		"1.5" | "1.4.99"
+		"2.0" | "1.4.99"
 		// Usually invalid
-		"1.4"       | "1.5"
-		"1.4"       | "1.5.00"
-		"1.4"       | "2.0"
-		"1.4"       | "2.4"
+		"1.4" | "1.5"
+		"1.4" | "1.5.00"
+		"1.4" | "2.0"
+		"1.4" | "2.4"
 	}
 
 	def "known indy BSMs"() {
@@ -220,7 +220,7 @@ class ArtifactMetadataTest extends Specification {
 		knownBSMs == metadata.knownIdyBsms()
 		where:
 		knownBSMs | entries
-		[]                    | ["fabric.mod.json": "{}"] // Default
+		[] | ["fabric.mod.json": "{}"] // Default
 		["com/example/Class"] | ["META-INF/MANIFEST.MF": manifest("Fabric-Loom-Known-Indy-BSMS", "com/example/Class")] // single bsm
 		[
 			"com/example/Class",

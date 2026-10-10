@@ -139,10 +139,10 @@ class MicrosoftAccountStoreTest extends Specification {
 		thrown IllegalArgumentException
 
 		where:
-		field          | clientId   | refreshToken    | profileId    | profileName
-		"client ID"    | ""         | "refresh-token" | "profile-id" | "Player"
-		"refresh token" | "client-id" | ""              | "profile-id" | "Player"
-		"profile ID"   | "client-id" | "refresh-token" | ""           | "Player"
+		field | clientId | refreshToken | profileId | profileName
+		"client ID" | "" | "refresh-token" | "profile-id" | "Player"
+		"refresh token" | "client-id" | "" | "profile-id" | "Player"
+		"profile ID" | "client-id" | "refresh-token" | "" | "Player"
 		"profile name" | "client-id" | "refresh-token" | "profile-id" | ""
 	}
 

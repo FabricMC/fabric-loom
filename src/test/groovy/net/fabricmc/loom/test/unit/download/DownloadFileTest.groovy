@@ -359,11 +359,11 @@ class DownloadFileTest extends DownloadTest {
 		def dir = File.createTempDir().toPath()
 
 		when:
-		new DownloadExecutor(2).withCloseable {
-			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("1.txt"), it)
-			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("2.txt"), it)
-			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("3.txt"), it)
-			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("4.txt"), it)
+		try (def downloadExecutor = new DownloadExecutor(2)) {
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("1.txt"), downloadExecutor)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("2.txt"), downloadExecutor)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("3.txt"), downloadExecutor)
+			Download.create("$PATH/async1").downloadPathAsync(dir.resolve("4.txt"), downloadExecutor)
 		}
 
 		then:
@@ -380,9 +380,9 @@ class DownloadFileTest extends DownloadTest {
 
 		when:
 		boolean didDownload = false
-		new DownloadExecutor(2).withCloseable {
+		try (def downloadExecutor = new DownloadExecutor(2)) {
 			Download.create("$PATH/async1")
-					.downloadPathAsync(dir.resolve("1.txt"), it)
+					.downloadPathAsync(dir.resolve("1.txt"), downloadExecutor)
 					.thenAccept {
 						didDownload = it.didDownload()
 					}
@@ -401,14 +401,14 @@ class DownloadFileTest extends DownloadTest {
 		def dir = File.createTempDir().toPath()
 
 		when:
-		new DownloadExecutor(2).withCloseable {
-			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("1.txt"), it)
-			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("2.txt"), it)
-			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("3.txt"), it)
-			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("4.txt"), it)
+		try (def downloadExecutor = new DownloadExecutor(2)) {
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("1.txt"), downloadExecutor)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("2.txt"), downloadExecutor)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("3.txt"), downloadExecutor)
+			Download.create("$PATH/async2").downloadPathAsync(dir.resolve("4.txt"), downloadExecutor)
 
-			Download.create("$PATH/asyncError").downloadPathAsync(dir.resolve("5.txt"), it)
-			Download.create("$PATH/asyncError2").downloadPathAsync(dir.resolve("6.txt"), it)
+			Download.create("$PATH/asyncError").downloadPathAsync(dir.resolve("5.txt"), downloadExecutor)
+			Download.create("$PATH/asyncError2").downloadPathAsync(dir.resolve("6.txt"), downloadExecutor)
 		}
 
 		then:

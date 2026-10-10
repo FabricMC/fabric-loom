@@ -82,8 +82,8 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 		File dst = new File(tempDir, name)
 		dst.parentFile.mkdirs()
 
-		new ZipFile(zipFile).withCloseable {
-			dst << it.getInputStream(it.getEntry(name))
+		try (def zip = new ZipFile(zipFile)) {
+			dst << zip.getInputStream(zip.getEntry(name))
 		}
 		return dst
 	}
@@ -117,7 +117,9 @@ abstract class LayeredMappingsSpecification extends Specification implements Lay
 	}
 
 	private static LayeredMappingsProcessor createLayeredMappingsProcessor(MappingsSpec<? extends MappingLayer>... specs) {
-		boolean noIntermediateMappings = !specs.any { it instanceof IntermediaryMappingsSpec }
+		boolean noIntermediateMappings = !specs.any {
+			it instanceof IntermediaryMappingsSpec
+		}
 		LayeredMappingSpec spec = new LayeredMappingSpec(specs.toList())
 		return new LayeredMappingsProcessor(spec, noIntermediateMappings)
 	}

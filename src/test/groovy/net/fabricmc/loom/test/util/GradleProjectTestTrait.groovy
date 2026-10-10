@@ -67,10 +67,10 @@ trait GradleProjectTestTrait {
 		}
 
 		if (options.repo) {
-			String repo  = options.repo
+			String repo = options.repo
 			String commit = options.commit
 
-			if (options.allowExistingRepo && projectDir.listFiles()?.length > 0) {
+			if (options.allowExistingRepo && projectDir.listFiles()) {
 				return
 			}
 

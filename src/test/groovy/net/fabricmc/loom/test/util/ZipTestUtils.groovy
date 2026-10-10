@@ -46,7 +46,7 @@ class ZipTestUtils {
 		def file = Files.createTempFile("loom-test", suffix)
 		Files.delete(file)
 
-		FileSystemUtil.getJarFileSystem(file, true).withCloseable { zip ->
+		try (def zip = FileSystemUtil.getJarFileSystem(file, true)) {
 			entries.forEach { path, value ->
 				def fsPath = zip.getPath(path)
 				def fsPathParent = fsPath.getParent()

@@ -44,15 +44,11 @@ class MixinRefmapInlinerTest extends Specification {
 		given:
 		def remapper = [
 			remapReference: { String mixinClassName, String reference ->
-				switch (reference) {
-					case "MixinRefmapInlinerClassVisitor":
-						return "RemappedClassName"
-					case "injectExample":
-						return "remappedInjectExample"
-					case "HEAD":
-						return "INJECT"
-					default:
-						return reference
+				return switch (reference) {
+					case "MixinRefmapInlinerClassVisitor" -> "RemappedClassName"
+					case "injectExample" -> "remappedInjectExample"
+					case "HEAD" -> "INJECT"
+					default -> reference
 				}
 			}
 		] as MixinReferenceRemapper
@@ -72,8 +68,8 @@ class MixinRefmapInlinerTest extends Specification {
 	}
 
 	static byte[] getClassBytes(Class<?> clazz) {
-		return clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class").withCloseable {
-			it.bytes
+		try (def input = clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class")) {
+			return input.bytes
 		}
 	}
 

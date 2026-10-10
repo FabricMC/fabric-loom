@@ -73,15 +73,21 @@ class TestPlugin implements Plugin<Project> {
 		// Start a dummy daemon process
 		def handler = new TestIncomingConnectionHandler()
 		def server = new DaemonTcpServerConnector(executorFactory, new InetAddressFactory(), DaemonMessageSerializer.create(null))
-		def address = server.start(handler, handler)
+		byte[] token = "token".bytes
+		// Gradle 9.9 requires the token when starting the daemon server.
+		def address = server.metaClass.respondsTo(server, "start", handler, handler, token)
+				? server.start(handler, handler, token)
+				: server.start(handler, handler)
 
 		// Write it in the registry
 		def registry = new PersistentDaemonRegistry(registryBin.toFile(), services.get(FileLockManager.class), services.get(Chmod.class))
-		def daemonInfo = new DaemonInfo(address, createDaemonContext(), "token".bytes, DaemonState.Busy)
+		def daemonInfo = new DaemonInfo(address, createDaemonContext(), token, DaemonState.Busy)
 		registry.store(daemonInfo)
 
 		// When we get a connection, wait for a stop message and process it by responding with a success message
-		def future = handler.daemonConnection.thenAccept { it.waitForAndProcessStop() }
+		def future = handler.daemonConnection.thenAccept {
+			it.waitForAndProcessStop()
+		}
 
 		// Stop the daemon
 		def result = DaemonUtils.stopWhenIdle(DaemonUtils.Context.fromProject(project))
@@ -101,7 +107,9 @@ class TestPlugin implements Plugin<Project> {
 	static DefaultDaemonContext createDaemonContext() {
 		// DaemonPriority moved packages in Gradle 9.8. Obtain it from the constructor to support both locations.
 		def constructor = DefaultDaemonContext.constructors[0]
-		def daemonPriority = constructor.parameterTypes.last().enumConstants.find { it.name() == "NORMAL" }
+		def daemonPriority = constructor.parameterTypes.last().enumConstants.find {
+			it.name() == "NORMAL"
+		}
 
 		return constructor.newInstance(
 				UUID.randomUUID().toString(),

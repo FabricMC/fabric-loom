@@ -185,8 +185,8 @@ class InterfaceInjectionProcessorTest extends Specification {
 
 	static MemoryMappingTree createMappings() {
 		def mappings = new MemoryMappingTree()
-		new StringReader(MAPPINGS).withCloseable {
-			MappingReader.read(it, mappings)
+		try (def reader = new StringReader(MAPPINGS)) {
+			MappingReader.read(reader, mappings)
 		}
 		return mappings
 	}
@@ -209,15 +209,15 @@ class InterfaceInjectionProcessorTest extends Specification {
 			GroovyObject.class.protectionDomain.codeSource.location
 		]
 
-		new URLClassLoader("InterfaceInjectionTest", urls, null).withCloseable {
-			def loadedClass = Class.forName(clazz.name, true, it)
+		try (def classLoader = new URLClassLoader("InterfaceInjectionTest", urls, null)) {
+			def loadedClass = Class.forName(clazz.name, true, classLoader)
 			closure(loadedClass)
 		}
 	}
 
 	static byte[] getClassBytes(Class<?> clazz) {
-		return clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class").withCloseable {
-			it.bytes
+		try (def input = clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class")) {
+			return input.bytes
 		}
 	}
 

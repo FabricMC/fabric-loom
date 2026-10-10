@@ -69,7 +69,7 @@ class NoRemapMappingConfigurationTest extends Specification {
 		exception.message == "Annotations mappings must contain only the official namespace"
 
 		where:
-		description             | header
+		description | header
 		"a non-official source" | "tiny\t2\t0\tnamed\n"
 		"a destination namespace" | "tiny\t2\t0\tofficial\tnamed\n"
 	}

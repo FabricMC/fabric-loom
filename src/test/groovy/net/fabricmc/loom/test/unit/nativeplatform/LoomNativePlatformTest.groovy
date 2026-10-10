@@ -53,7 +53,7 @@ class LoomNativePlatformTest extends Specification {
 
 		when:
 		def processes = []
-		Files.newOutputStream(path).withCloseable {
+		try (def output = Files.newOutputStream(path)) {
 			processes = LoomNativePlatform.getProcessesWithLockOn(path)
 		}
 
@@ -119,9 +119,9 @@ class LoomNativePlatformTest extends Specification {
 	private static void waitForReady(Process process) {
 		def reader = process.inputReader()
 		def output = new StringBuilder()
-		long timeout = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
 
-		while (System.nanoTime() < timeout) {
+		while (deadline - System.nanoTime() > 0) {
 			if (reader.ready()) {
 				def line = reader.readLine()
 

@@ -41,11 +41,11 @@ class LibraryContextTest extends Specification {
 		context.supportsArm64(Platform.OperatingSystem.MAC_OS) == supported
 
 		where:
-		id       || supported
+		id || supported
 		"1.19.4" || true
 		"1.18.2" || false
 		"1.16.5" || false
-		"1.4.7"  || false
+		"1.4.7" || false
 	}
 
 	def "Supports ARM64 windows"() {
@@ -56,12 +56,12 @@ class LibraryContextTest extends Specification {
 		context.supportsArm64(Platform.OperatingSystem.WINDOWS) == supported
 
 		where:
-		id       || supported
+		id || supported
 		"23w16a" || true
 		"1.19.4" || true
 		"1.18.2" || false
 		"1.16.5" || false
-		"1.4.7"  || false
+		"1.4.7" || false
 	}
 
 	def "Uses LWJGL 3"() {
@@ -72,13 +72,13 @@ class LibraryContextTest extends Specification {
 		context.usesLWJGL3() == lwjgl3
 
 		where:
-		id       || lwjgl3
+		id || lwjgl3
 		"1.19.4" || true
 		"1.18.2" || true
 		"1.16.5" || true
 		"1.12.2" || false
-		"1.8.9"  || false
-		"1.4.7"  || false
+		"1.8.9" || false
+		"1.4.7" || false
 	}
 
 	def "Has classpath natives"() {
@@ -89,13 +89,13 @@ class LibraryContextTest extends Specification {
 		context.hasClasspathNatives() == hasClasspathNatives
 
 		where:
-		id       || hasClasspathNatives
+		id || hasClasspathNatives
 		"1.19.4" || true
 		"1.18.2" || false
 		"1.16.5" || false
 		"1.12.2" || false
-		"1.8.9"  || false
-		"1.4.7"  || false
+		"1.8.9" || false
+		"1.4.7" || false
 	}
 
 	def "Has library"() {
@@ -115,7 +115,7 @@ class LibraryContextTest extends Specification {
 		context.isJava19OrLater() == isJava19OrLater
 
 		where:
-		javaVersion       	   || isJava19OrLater
+		javaVersion || isJava19OrLater
 		JavaVersion.VERSION_17 || false
 		JavaVersion.VERSION_19 || true
 		JavaVersion.VERSION_20 || true
@@ -138,14 +138,14 @@ class LibraryContextTest extends Specification {
 
 		where:
 		lwjglVersion || supportsJava19OrLater
-		"2.1.2"      || false
-		"3.0.0"      || false
-		"3.0.5"      || false
-		"3.1.5"      || false
-		"3.3.1"      || false
-		"3.3.2"      || true
-		"3.3.3"      || true
-		"3.4.0"      || true
-		"4.0.0"      || true
+		"2.1.2" || false
+		"3.0.0" || false
+		"3.0.5" || false
+		"3.1.5" || false
+		"3.3.1" || false
+		"3.3.2" || true
+		"3.3.3" || true
+		"3.4.0" || true
+		"4.0.0" || true
 	}
 }

@@ -80,10 +80,10 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		then:
 		result.task(":${ide}").outcome == SUCCESS
 		where:
-		ide 				| _
-		'ideaSyncTask' 		| _
-		'genEclipseRuns'	| _
-		'vscode'			| _
+		ide | _
+		'ideaSyncTask' | _
+		'genEclipseRuns' | _
+		'vscode' | _
 	}
 
 	@Unroll

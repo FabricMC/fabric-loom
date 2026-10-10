@@ -81,7 +81,9 @@ class MicrosoftLoginFlowTest extends Specification {
 		def rotatedRefreshTokens = []
 
 		when:
-		def result = provider.getAccessToken("client-id", "old-refresh-token") { rotatedRefreshTokens.add(it) }
+		def result = provider.getAccessToken("client-id", "old-refresh-token") {
+			rotatedRefreshTokens.add(it)
+		}
 
 		then:
 		1 * auth.refreshMicrosoftToken("client-id", "old-refresh-token") >> microsoftToken
@@ -108,7 +110,9 @@ class MicrosoftLoginFlowTest extends Specification {
 		def rotatedRefreshTokens = []
 
 		when:
-		provider.getAccessToken("client-id", "old-refresh-token") { rotatedRefreshTokens.add(it) }
+		provider.getAccessToken("client-id", "old-refresh-token") {
+			rotatedRefreshTokens.add(it)
+		}
 
 		then:
 		def exception = thrown IOException

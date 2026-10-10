@@ -48,9 +48,10 @@ class ValidateModProvidedJavadocTest extends Specification {
 
 		def targetClass = JavadocTestTarget.class
 		def classFilePath = targetClass.name.replace('.', '/') + ".class"
-		def classBytes = targetClass.classLoader
-				.getResourceAsStream(classFilePath)
-				.withCloseable { it.readAllBytes() }
+		byte[] classBytes
+		try (def input = targetClass.classLoader.getResourceAsStream(classFilePath)) {
+			classBytes = input.readAllBytes()
+		}
 		def jarPath = tempDir.resolve('target.jar')
 		ZipUtils.add(jarPath, classFilePath, classBytes)
 

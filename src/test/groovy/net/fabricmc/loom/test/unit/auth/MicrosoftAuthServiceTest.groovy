@@ -138,13 +138,13 @@ class MicrosoftAuthServiceTest extends Specification {
 		result.ownsMinecraft() == owns
 
 		where:
-		items                                   | canPlay | owns
+		items | canPlay | owns
 		[
 			"game_minecraft",
 			"product_minecraft"
-		] | true    | true
-		["game_minecraft"]                      | true    | false
-		[]                                        | false   | false
+		] | true | true
+		["game_minecraft"] | true | false
+		[] | false | false
 	}
 
 	def "returns an empty profile for an account without a Java profile"() {

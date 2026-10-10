@@ -229,7 +229,9 @@ class DataGenerationTest extends Specification implements GradleProjectTestTrait
 	}
 
 	@Unroll
-	@IgnoreIf({ System.getenv("CI") != null }) // This test is disabled on CI because it launches a real client and cannot run headless.
+	@IgnoreIf({
+		System.getenv("CI") != null
+	}) // This test is disabled on CI because it launches a real client and cannot run headless.
 	def "client game tests (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)

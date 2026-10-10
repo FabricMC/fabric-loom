@@ -34,7 +34,7 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE
 
-class NativesTest extends Specification implements GradleProjectTestTrait  {
+class NativesTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
 	def "Default natives for 1.18 (gradle #version)"() {
 		setup:

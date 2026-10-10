@@ -48,7 +48,7 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 		"""
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
+		@Language("JAVA") String src = """
 		package example;
 
 		import net.minecraft.resources.Identifier;
@@ -90,7 +90,7 @@ class SimpleDebofTest extends Specification implements GradleProjectTestTrait {
 		"""
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
+		@Language("JAVA") String src = """
 		package example;
 
 		import net.minecraft.resources.Identifier;

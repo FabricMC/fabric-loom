@@ -201,8 +201,8 @@ class IdeaSyncTaskTest extends Specification {
 	private String fromDummy() {
 		String dummyConfig
 
-		IdeaSyncTask.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml").withCloseable {
-			dummyConfig = new String(it.readAllBytes(), StandardCharsets.UTF_8)
+		try (def input = IdeaSyncTask.class.getClassLoader().getResourceAsStream("idea_run_config_template.xml")) {
+			dummyConfig = new String(input.readAllBytes(), StandardCharsets.UTF_8)
 		}
 
 		dummyConfig = dummyConfig.replace("%NAME%", "Minecraft Client")

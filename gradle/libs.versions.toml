@@ -1,10 +1,10 @@
 [versions]
-kotlin = "2.4.0"
-asm = "9.10.1"
+kotlin = "2.4.10"
+asm = "9.11"
 gson = "2.14.0"
 
 stitch = "0.6.2"
-tiny-remapper = "0.14.1"
+tiny-remapper = "0.15.0"
 clazz-tweaker = "0.3.0"
 mapping-io = "0.8.0"
 lorenz-tiny = "4.0.2"
@@ -13,10 +13,10 @@ mercury-mixin = "0.2.2"
 unpick = "3.0.0-beta.13"
 
 # Plugins
-spotless = "8.6.0"
+spotless = "8.10.3"
 test-retry = "1.6.5"
 checkstyle = "13.4.1"
-codenarc = "3.7.0"
+codenarc = "3.7.0-groovy-4.0"
 
 [libraries]
 # Loom compile libraries

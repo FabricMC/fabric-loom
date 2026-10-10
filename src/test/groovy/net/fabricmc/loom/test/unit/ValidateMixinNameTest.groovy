@@ -69,8 +69,8 @@ class ValidateMixinNameTest extends Specification {
 	}
 
 	static ValidateMixinNameTask.Mixin getMixin(Class<?> clazz) {
-		return getInput(clazz).withCloseable {
-			return ValidateMixinNameTask.getMixin(it)
+		try (def input = getInput(clazz)) {
+			return ValidateMixinNameTask.getMixin(input)
 		}
 	}
 

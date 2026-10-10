@@ -56,7 +56,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		gradle.buildSrc("devOnlyRemapIntermediary")
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
+		@Language("JAVA") String src = """
 		package example;
 
 		import net.minecraft.util.Identifier;
@@ -107,7 +107,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		gradle.buildSrc("devOnlyRemapIntermediary")
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
+		@Language("JAVA") String src = """
 		package example;
 
 		import net.minecraft.util.Identifier;
@@ -154,7 +154,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 		"""
 		def sourceFile = new File(gradle.projectDir, "src/main/java/example/Test.java")
 		sourceFile.parentFile.mkdirs()
-		@Language("JAVA") String src =  """
+		@Language("JAVA") String src = """
 		package example;
 
 		import net.minecraft.util.Identifier;

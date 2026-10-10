@@ -82,10 +82,10 @@ class AnnotationsDataValidatorTest extends Specification {
 					break
 				}
 				sb.append(message.substring(last, idx))
-				if (argIdx < args.length) {
-					sb.append(String.valueOf(args[argIdx++]))
-				} else {
+				if (argIdx >= args.length) {
 					sb.append("{}")
+				} else {
+					sb.append(String.valueOf(args[argIdx++]))
 				}
 				last = idx + 2
 			}

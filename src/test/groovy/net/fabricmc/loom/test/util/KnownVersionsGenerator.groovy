@@ -54,9 +54,9 @@ class KnownVersionsGenerator {
 		final VersionsManifest manifest = LoomGradlePlugin.GSON.fromJson(versionManifest, VersionsManifest.class)
 
 		// Download all the minecraft jars
-		new DownloadExecutor(10).withCloseable {
+		try (def downloadExecutor = new DownloadExecutor(10)) {
 			for (def version in manifest.versions()) {
-				downloadVersion(version, it)
+				downloadVersion(version, downloadExecutor)
 			}
 		}
 

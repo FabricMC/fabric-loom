@@ -53,8 +53,8 @@ class MinecraftJarSplitterTest extends Specification {
 		clientOnlyJar.delete()
 		commonJar.delete()
 
-		new MinecraftJarSplitter(clientJar.toPath(), serverJar.toPath()).withCloseable {
-			it.split(clientOnlyJar.toPath(), commonJar.toPath())
+		try (def splitter = new MinecraftJarSplitter(clientJar.toPath(), serverJar.toPath())) {
+			splitter.split(clientOnlyJar.toPath(), commonJar.toPath())
 		}
 		then:
 		serverBundleMetadata.versions().size() == 1

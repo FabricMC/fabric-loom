@@ -91,8 +91,8 @@ class LineNumberRemapperTests extends Specification {
 	}
 
 	static byte[] getClassBytes(Class<?> clazz) {
-		return clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class").withCloseable {
-			it.bytes
+		try (def input = clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class")) {
+			return input.bytes
 		}
 	}
 

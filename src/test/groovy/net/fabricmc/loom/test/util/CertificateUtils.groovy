@@ -121,11 +121,13 @@ class CertificateUtils {
 		return CRLDistPoint
 				.getInstance(JcaX509ExtensionUtils.parseExtensionValue(crlDistributionPointsValue))
 				.getDistributionPoints()
-				.findAll { it.getDistributionPoint().type == DistributionPointName.FULL_NAME }
+				.findAll {
+					it.getDistributionPoint().type == DistributionPointName.FULL_NAME
+				}
 				.collectMany { distPoint ->
 					GeneralNames.getInstance(distPoint.getDistributionPoint().getName()).getNames()
-							.findAll { it.tagNo == GeneralName.uniformResourceIdentifier }
-							.collect { DERIA5String.getInstance(it.name).getString() }
+					.findAll { it.tagNo == GeneralName.uniformResourceIdentifier }
+					.collect { DERIA5String.getInstance(it.name).getString() }
 				}
 	}
 }

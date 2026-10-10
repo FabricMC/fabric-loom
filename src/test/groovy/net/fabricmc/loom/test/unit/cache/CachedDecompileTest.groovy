@@ -57,7 +57,7 @@ class CachedDecompileTest extends Specification {
 		def input = createFixture("original")
 		def cache = newProcessor()
 		def seed = testPath.resolve("seed.jar")
-		FileSystemUtil.getJarFileSystem(seed, true).withCloseable { fs ->
+		try (def fs = FileSystemUtil.getJarFileSystem(seed, true)) {
 			Files.createDirectories(fs.getPath(UNRELATED_CLASS).parent)
 			Files.write(fs.getPath(UNRELATED_CLASS + ".class"), inputClass(input, UNRELATED_CLASS + ".class"))
 		}
@@ -123,10 +123,13 @@ class CachedDecompileTest extends Specification {
 			OUTER_CLASS + '$Nested$1',
 			UNRELATED_CLASS
 		]
-		FileSystemUtil.getJarFileSystem(jar, true).withCloseable { fs ->
+		try (def fs = FileSystemUtil.getJarFileSystem(jar, true)) {
 			for (String className : classNames) {
 				def resource = className + ".class"
-				def bytes = getClass().classLoader.getResourceAsStream(resource).withCloseable { it.readAllBytes() }
+				byte[] bytes
+				try (def input = getClass().classLoader.getResourceAsStream(resource)) {
+					bytes = input.readAllBytes()
+				}
 				if (changed && className == OUTER_CLASS + '$Nested$1') {
 					bytes = changeAnonymousClass(bytes)
 				}
@@ -177,20 +180,23 @@ class CachedDecompileTest extends Specification {
 			logger() >> Stub(LoomInternalDecompiler.Logger)
 		}
 		new VineflowerDecompiler().decompile(context)
-		return Files.newBufferedReader(lineMap).withCloseable { ClassLineNumbers.readMappings(it) }
+		try (def reader = Files.newBufferedReader(lineMap)) {
+			return ClassLineNumbers.readMappings(reader)
+		}
 	}
 
 	private static byte[] inputClass(Path jar, String name) {
-		return FileSystemUtil.getJarFileSystem(jar).withCloseable { fs -> Files.readAllBytes(fs.getPath(name)) }
+		try (def fs = FileSystemUtil.getJarFileSystem(jar)) {
+			return Files.readAllBytes(fs.getPath(name))
+		}
 	}
 
 	private static Map<String, String> sources(Path jar) {
 		Map<String, String> result = [:]
-		FileSystemUtil.getJarFileSystem(jar).withCloseable { fs ->
-			Files.walk(fs.root).withCloseable { paths ->
-				for (Path path : paths.filter { it.toString().endsWith(".java") }.toList()) {
-					result[path.toString().substring(1)] = Files.readString(path)
-				}
+		try (def fs = FileSystemUtil.getJarFileSystem(jar); def paths = Files.walk(fs.root)) {
+			def javaPaths = paths.filter { it.toString().endsWith(".java") }.toList()
+			for (Path path : javaPaths) {
+				result[path.toString().substring(1)] = Files.readString(path)
 			}
 		}
 		return result

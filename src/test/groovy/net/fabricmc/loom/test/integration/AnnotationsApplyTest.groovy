@@ -58,7 +58,9 @@ class AnnotationsApplyTest extends Specification implements GradleProjectTestTra
 				return false
 			}
 
-			method.invisibleAnnotations.any { it.desc == "Lorg/jetbrains/annotations/Contract;" }
+			method.invisibleAnnotations.any {
+				it.desc == "Lorg/jetbrains/annotations/Contract;"
+			}
 		}
 
 		where:

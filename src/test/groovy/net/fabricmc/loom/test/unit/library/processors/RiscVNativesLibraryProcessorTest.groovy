@@ -38,7 +38,7 @@ class RiscVNativesLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
+		id || result
 		"1.21" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.20.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.14.4" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not using classpath natives
@@ -53,7 +53,7 @@ class RiscVNativesLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == LibraryProcessor.ApplicationResult.DONT_APPLY
 
 		where:
-		id       | platform
+		id | platform
 		"1.21" | PlatformTestUtils.LINUX_ARM64
 		"1.21" | PlatformTestUtils.LINUX_X64
 		"1.19.4" | PlatformTestUtils.MAC_OS_X64
@@ -73,11 +73,15 @@ class RiscVNativesLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test that the riscv64 natives are added alongside the existing ones
-		def originalNatives = original.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		def originalNatives = original.findAll {
+			it.is("org.lwjgl") && it.target() == Library.Target.NATIVES
+		}
 		originalNatives.count { it.classifier() == "natives-linux-riscv64" } == 0
 		originalNatives.count { it.classifier() == "natives-linux" } > 0
 
-		def processedNatives = processed.findAll { it.is("org.lwjgl") && it.target() == Library.Target.NATIVES }
+		def processedNatives = processed.findAll {
+			it.is("org.lwjgl") && it.target() == Library.Target.NATIVES
+		}
 		processedNatives.count { it.classifier() == "natives-linux-riscv64" } > 0
 		processedNatives.count { it.classifier() == "natives-linux" } > 0
 	}

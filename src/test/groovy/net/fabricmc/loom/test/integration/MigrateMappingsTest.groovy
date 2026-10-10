@@ -283,6 +283,6 @@ class MigrateMappingsTest extends Specification implements GradleProjectTestTrai
 		'accessWidener\tv1\tnamed' | false
 		'accessWidener\tv1\tnamed' | true // the code is the same so we only need one case for in place remapping
 		'accessWidener\tv2\tnamed' | false
-		'classTweaker\tv1\tnamed'  | false
+		'classTweaker\tv1\tnamed' | false
 	}
 }

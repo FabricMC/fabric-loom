@@ -129,8 +129,8 @@ class ServerRunner {
 							sleep(5000)
 
 							println("Sending stop command")
-							process.outputStream.withCloseable {
-								it.write("stop\n".bytes)
+							try (def output = process.outputStream) {
+								output.write("stop\n".bytes)
 							}
 						}
 					}

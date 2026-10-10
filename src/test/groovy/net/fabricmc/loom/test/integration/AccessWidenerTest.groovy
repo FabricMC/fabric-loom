@@ -112,9 +112,9 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 		result.output.contains(error)
 
 		where:
-		awLine 																					| error																											| version
-		'accessible\tclass\tnet/minecraft/DoesntExists'											| "Could not find class (net/minecraft/DoesntExists) on line 10"												| DEFAULT_GRADLE
-		'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI'								| "Could not find field (abc:I) in class (net/minecraft/screen/slot/Slot) on line 10"							| DEFAULT_GRADLE
-		'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V'	| "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main) on line 10"	| DEFAULT_GRADLE
+		awLine | error | version
+		'accessible\tclass\tnet/minecraft/DoesntExists' | "Could not find class (net/minecraft/DoesntExists) on line 10" | DEFAULT_GRADLE
+		'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI' | "Could not find field (abc:I) in class (net/minecraft/screen/slot/Slot) on line 10" | DEFAULT_GRADLE
+		'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V' | "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main) on line 10" | DEFAULT_GRADLE
 	}
 }

@@ -61,6 +61,8 @@ class RemapJarContentsTest extends Specification implements GradleProjectTestTra
 	}
 
 	private static Manifest readManifest(File file) {
-		return new JarFile(file).withCloseable { it.manifest }
+		try (def jar = new JarFile(file)) {
+			return jar.manifest
+		}
 	}
 }

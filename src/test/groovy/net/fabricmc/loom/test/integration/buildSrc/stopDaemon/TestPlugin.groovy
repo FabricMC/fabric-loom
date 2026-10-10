@@ -81,7 +81,9 @@ class TestPlugin implements Plugin<Project> {
 		registry.store(daemonInfo)
 
 		// When we get a connection, wait for a stop message and process it by responding with a success message
-		def future = handler.daemonConnection.thenAccept { it.waitForAndProcessStop() }
+		def future = handler.daemonConnection.thenAccept {
+			it.waitForAndProcessStop()
+		}
 
 		// Stop the daemon
 		def result = DaemonUtils.stopWhenIdle(DaemonUtils.Context.fromProject(project))
@@ -101,7 +103,9 @@ class TestPlugin implements Plugin<Project> {
 	static DefaultDaemonContext createDaemonContext() {
 		// DaemonPriority moved packages in Gradle 9.8. Obtain it from the constructor to support both locations.
 		def constructor = DefaultDaemonContext.constructors[0]
-		def daemonPriority = constructor.parameterTypes.last().enumConstants.find { it.name() == "NORMAL" }
+		def daemonPriority = constructor.parameterTypes.last().enumConstants.find {
+			it.name() == "NORMAL"
+		}
 
 		return constructor.newInstance(
 				UUID.randomUUID().toString(),

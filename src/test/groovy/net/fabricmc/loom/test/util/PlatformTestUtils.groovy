@@ -29,7 +29,7 @@ import groovy.transform.Immutable
 import net.fabricmc.loom.util.Platform
 
 @Immutable
-class PlatformTestUtils implements Platform  {
+class PlatformTestUtils implements Platform {
 	public static final Platform WINDOWS_X64 = platform(OperatingSystem.WINDOWS, false)
 	public static final Platform WINDOWS_ARM64 = platform(OperatingSystem.WINDOWS, true)
 	public static final Platform LINUX_X64 = platform(OperatingSystem.LINUX, false)

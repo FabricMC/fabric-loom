@@ -107,8 +107,8 @@ c\t${V2_NAME}
 	private static StructClass readStructClass(Class<?> clazz) {
 		String classFile = "/${clazz.name.replace('.', '/')}.class"
 
-		clazz.getResourceAsStream(classFile).withCloseable {
-			return StructClass.create(new DataInputFullStream(it.bytes), true)
+		try (def input = clazz.getResourceAsStream(classFile)) {
+			return StructClass.create(new DataInputFullStream(input.bytes), true)
 		}
 	}
 }

@@ -75,8 +75,9 @@ class JarWalkerTest extends Specification {
 		def jar = ZipTestUtils.createZipFromBytes(zipEntries)
 		when:
 		def entries = JarWalker.findClasses(jar)
-		def hash = FileSystemUtil.getJarFileSystem(jar).withCloseable { fs ->
-			return entries[0].hash(fs.root)
+		String hash
+		try (def fs = FileSystemUtil.getJarFileSystem(jar)) {
+			hash = entries[0].hash(fs.root)
 		}
 		then:
 		entries.size() == 1

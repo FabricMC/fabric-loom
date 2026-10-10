@@ -64,8 +64,12 @@ class MinecraftLibraryHelperTest extends Specification {
 		def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, PlatformTestUtils.MAC_OS_X64)
 
 		then:
-		libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
-		libraries.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
+		libraries.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES
+		} != null
+		libraries.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-macos"
 	}
 
 	def "dont find macos natives"() {
@@ -74,7 +78,9 @@ class MinecraftLibraryHelperTest extends Specification {
 		def libraries = MinecraftLibraryHelper.getLibrariesForPlatform(meta, PlatformTestUtils.WINDOWS_X64)
 
 		then:
-		libraries.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
+		libraries.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES
+		} == null
 	}
 
 	def "get all libraries"() {

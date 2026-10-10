@@ -38,8 +38,8 @@ if (ENV.BUILD_NUMBER) {
 
 // We must build against the version of Kotlin Gradle ships with.
 def props = new Properties()
-Project.class.getClassLoader().getResource("gradle-kotlin-dsl-versions.properties").openStream().withCloseable {
-	props.load(it)
+try (def input = Project.class.getClassLoader().getResource("gradle-kotlin-dsl-versions.properties").openStream()) {
+	props.load(input)
 }
 def kotlinVersion = props.getProperty("kotlin")
 if (libs.versions.kotlin.get() != kotlinVersion) {
@@ -92,7 +92,7 @@ dependencies {
 	implementation libs.bundles.asm
 
 	// game handling utils
-	implementation (libs.fabric.stitch) {
+	implementation(libs.fabric.stitch) {
 		exclude module: 'enigma'
 		exclude module: 'guava'
 	}
@@ -101,7 +101,7 @@ dependencies {
 	implementation libs.fabric.tiny.remapper
 	implementation libs.fabric.clazz.tweaker
 	implementation libs.fabric.mapping.io
-	implementation (libs.fabric.lorenz.tiny) {
+	implementation(libs.fabric.lorenz.tiny) {
 		transitive = false
 	}
 
@@ -141,7 +141,7 @@ dependencies {
 	}
 	testImplementation testLibs.junit.jupiter.engine
 	testRuntimeOnly testLibs.junit.platform.launcher
-	testImplementation (testLibs.javalin) {
+	testImplementation(testLibs.javalin) {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation testLibs.mockito
@@ -156,7 +156,7 @@ dependencies {
 	compileOnly runtimeLibs.jetbrains.annotations
 	testCompileOnly runtimeLibs.jetbrains.annotations
 
-	testCompileOnly (testLibs.mixin) {
+	testCompileOnly(testLibs.mixin) {
 		transitive = false
 	}
 }
@@ -351,7 +351,9 @@ publishing {
 
 // The publish tasks appear to write to the same files, so we need to ensure they don't run in parallel.
 tasks.withType(PublishToMavenLocal).configureEach { publishTask ->
-	mustRunAfter(tasks.withType(PublishToMavenLocal).matching { it.name < publishTask.name })
+	mustRunAfter(tasks.withType(PublishToMavenLocal).matching {
+		it.name <publishTask.name
+	})
 }
 
 tasks.register('writeActionsTestMatrix', WriteActionsTestMatrix) {

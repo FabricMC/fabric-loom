@@ -120,7 +120,9 @@ class MicrosoftGameAuthenticationTest extends Specification {
 		def arguments = authentication.getLaunchArguments()
 
 		then:
-		1 * provider.getAccessToken("client-id", "old-refresh-token", _) >> { throw new IOException("refresh failed") }
+		1 * provider.getAccessToken("client-id", "old-refresh-token", _) >> {
+			throw new IOException("refresh failed")
+		}
 		arguments.empty
 	}
 
@@ -171,8 +173,8 @@ class MicrosoftGameAuthenticationTest extends Specification {
 
 	private void writeAccount() {
 		accountStore.write(new MicrosoftAccountStore.Account(
-				"client-id", "old-refresh-token", "0123456789abcdef0123456789abcdef", "Player"
-				))
+						"client-id", "old-refresh-token", "0123456789abcdef0123456789abcdef", "Player"
+						))
 	}
 
 	private static final class ReversibleTestKeyStore implements EncryptionKeyStore {

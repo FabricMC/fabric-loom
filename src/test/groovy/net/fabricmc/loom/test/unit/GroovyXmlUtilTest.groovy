@@ -41,9 +41,9 @@ class GroovyXmlUtilTest extends Specification {
 		existingNode.text() == actualNode.text()
 
 		where:
-		innerName          | text
-		"bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
-		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
+		innerName | text
+		"bar" | "<foo><bar>inner content to ensure correct</bar></foo>"
+		"dependencies" | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
 	}
 
 	def "getOrCreateNode creates a node if needed"() {
@@ -55,9 +55,9 @@ class GroovyXmlUtilTest extends Specification {
 		xmlTree[QName.valueOf(actualNode.name().toString())] != null
 
 		where:
-		innerName          | text
-		"bar"              | "<foo></foo>"
-		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"></project>"
+		innerName | text
+		"bar" | "<foo></foo>"
+		"dependencies" | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"></project>"
 	}
 
 	def "getNode finds existing node"() {
@@ -69,8 +69,8 @@ class GroovyXmlUtilTest extends Specification {
 		actualNode.isPresent()
 
 		where:
-		innerName          | text
-		"bar"              | "<foo><bar>inner content to ensure correct</bar></foo>"
-		"dependencies"     | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
+		innerName | text
+		"bar" | "<foo><bar>inner content to ensure correct</bar></foo>"
+		"dependencies" | "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"><dependencies>inner content to ensure correct</dependencies></project>"
 	}
 }

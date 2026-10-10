@@ -40,7 +40,7 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
+		id || result
 		"1.19.2" || LibraryProcessor.ApplicationResult.CAN_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.CAN_APPLY
 		"1.17.1" || LibraryProcessor.ApplicationResult.CAN_APPLY
@@ -58,10 +58,10 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		version                 || result
-		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.MUST_APPLY
-		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.MUST_APPLY
-		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		version || result
+		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.MUST_APPLY
+		JavaVersion.VERSION_19 || LibraryProcessor.ApplicationResult.MUST_APPLY
+		JavaVersion.VERSION_17 || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
@@ -73,10 +73,10 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		version                 || result
-		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		version || result
+		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17 || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
@@ -88,7 +88,7 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
+		id || result
 		"1.19.2" || LibraryProcessor.ApplicationResult.CAN_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
@@ -106,8 +106,8 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
-		"1.21"   || LibraryProcessor.ApplicationResult.MUST_APPLY
+		id || result
+		"1.21" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.19.4" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.DONT_APPLY // Not using classpath natives.
 		"1.16.5" || LibraryProcessor.ApplicationResult.DONT_APPLY
@@ -123,14 +123,24 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.1"
 		// And at runtime we have the new version.
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.2"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		}.version() == "3.3.2"
 
 		// Test to make sure that the natives were replaced.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.2"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.2"
 	}
 
 	def "Upgrade LWJGL extracted natives"() {
@@ -141,14 +151,24 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
 		// And at runtime we have the new version.
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.2"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		}.version() == "3.3.2"
 
 		// Test to make sure that the natives were replaced.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.2"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.2"
 	}
 
 	def "Upgrade LWJGL classpath natives Linux riscv"() {
@@ -159,13 +179,23 @@ class LWJGL3UpgradeLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.1"
 		// And at runtime we have the new version.
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.4"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		}.version() == "3.3.4"
 
 		// Test to make sure that the natives were replaced.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.4"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.4"
 	}
 }

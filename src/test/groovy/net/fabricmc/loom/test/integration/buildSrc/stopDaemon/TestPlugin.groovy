@@ -73,11 +73,15 @@ class TestPlugin implements Plugin<Project> {
 		// Start a dummy daemon process
 		def handler = new TestIncomingConnectionHandler()
 		def server = new DaemonTcpServerConnector(executorFactory, new InetAddressFactory(), DaemonMessageSerializer.create(null))
-		def address = server.start(handler, handler)
+		byte[] token = "token".bytes
+		// Gradle 9.9 requires the token when starting the daemon server.
+		def address = server.metaClass.respondsTo(server, "start", handler, handler, token)
+				? server.start(handler, handler, token)
+				: server.start(handler, handler)
 
 		// Write it in the registry
 		def registry = new PersistentDaemonRegistry(registryBin.toFile(), services.get(FileLockManager.class), services.get(Chmod.class))
-		def daemonInfo = new DaemonInfo(address, createDaemonContext(), "token".bytes, DaemonState.Busy)
+		def daemonInfo = new DaemonInfo(address, createDaemonContext(), token, DaemonState.Busy)
 		registry.store(daemonInfo)
 
 		// When we get a connection, wait for a stop message and process it by responding with a success message

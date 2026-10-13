@@ -34,7 +34,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.commons.Remapper;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -56,7 +56,7 @@ public record SignatureFixerApplyVisitor(Map<String, String> signatureFixes) imp
 		};
 	}
 
-	public static Map<String, String> getRemappedSignatures(boolean toIntermediary, MappingConfiguration mappingConfiguration, Project project, ServiceFactory serviceFactory, String targetNamespace) throws IOException {
+	public static Map<String, String> getRemappedSignatures(boolean toIntermediary, RemapMappingConfiguration mappingConfiguration, Project project, ServiceFactory serviceFactory, String targetNamespace) throws IOException {
 		if (mappingConfiguration.getSignatureFixes() == null) {
 			// No fixes
 			return Collections.emptyMap();

@@ -36,7 +36,9 @@ import org.jetbrains.java.decompiler.struct.StructField;
 import org.jetbrains.java.decompiler.struct.StructMethod;
 import org.jetbrains.java.decompiler.struct.StructRecordComponent;
 
+import net.fabricmc.fernflower.api.FabricJavadocStyle;
 import net.fabricmc.fernflower.api.IFabricJavadocProvider;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.tree.MappingTree;
@@ -44,12 +46,21 @@ import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
 public class TinyJavadocProvider implements IFabricJavadocProvider {
 	private static final int ACC_STATIC = 0x0008;
-	private static final int ACC_RECORD = 0x10000;
 
 	private final MappingTree mappingTree;
+	private final FabricJavadocStyle javadocStyle;
 
-	public TinyJavadocProvider(File tinyFile, String runtimeNamespace) {
+	public TinyJavadocProvider(File tinyFile, String runtimeNamespace, JavadocStyle javadocStyle) {
 		mappingTree = readMappings(tinyFile, runtimeNamespace);
+		this.javadocStyle = switch (javadocStyle) {
+		case HTML -> FabricJavadocStyle.HTML;
+		case MARKDOWN -> FabricJavadocStyle.MARKDOWN;
+		};
+	}
+
+	@Override
+	public FabricJavadocStyle getClassJavadocStyle(StructClass structClass) {
+		return javadocStyle;
 	}
 
 	@Override
@@ -94,7 +105,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 					addedParam = true;
 				}
 
-				parts.add(String.format("@param %s %s", fieldMapping.getName("named"), comment));
+				parts.add(String.format("@param %s %s", fieldMapping.getSrcName(), comment));
 			}
 		}
 
@@ -152,7 +163,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 						addedParam = true;
 					}
 
-					parts.add(String.format("@param %s %s", argMapping.getName("named"), comment));
+					parts.add(String.format("@param %s %s", argMapping.getSrcName(), comment));
 				}
 			}
 
@@ -179,7 +190,7 @@ public class TinyJavadocProvider implements IFabricJavadocProvider {
 	}
 
 	public static boolean isRecord(StructClass structClass) {
-		return (structClass.getAccessFlags() & ACC_RECORD) != 0;
+		return structClass.getRecordComponents() != null;
 	}
 
 	public static boolean isStatic(StructField structField) {

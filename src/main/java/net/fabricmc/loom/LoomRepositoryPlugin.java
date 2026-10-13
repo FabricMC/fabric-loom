@@ -44,10 +44,10 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 		if (target instanceof Settings settings) {
 			declareRepositories(settings.getDependencyResolutionManagement().getRepositories(), LoomFiles.create(settings), settings);
 
-			// leave a marker so projects don't try to override these
-			settings.getGradle().getPluginManager().apply(LoomRepositoryPlugin.class);
+			// Leave a project-local marker so projects don't try to override these.
+			settings.getGradle().beforeProject(project -> project.getPluginManager().apply(RepositoryManagementPlugin.class));
 		} else if (target instanceof Project project) {
-			if (project.getGradle().getPlugins().hasPlugin(LoomRepositoryPlugin.class)) {
+			if (project.getPlugins().hasPlugin(RepositoryManagementPlugin.class)) {
 				return;
 			}
 
@@ -56,6 +56,12 @@ public class LoomRepositoryPlugin implements Plugin<PluginAware> {
 			return;
 		} else {
 			throw new IllegalArgumentException("Expected target to be a Project or Settings, but was a " + target.getClass());
+		}
+	}
+
+	public static final class RepositoryManagementPlugin implements Plugin<Project> {
+		@Override
+		public void apply(Project target) {
 		}
 	}
 

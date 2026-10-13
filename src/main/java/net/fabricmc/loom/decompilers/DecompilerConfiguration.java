@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.cfr.LoomCFRDecompiler;
 import net.fabricmc.loom.decompilers.vineflower.VineflowerDecompiler;
@@ -146,6 +147,11 @@ public abstract class DecompilerConfiguration implements Runnable {
 				@Override
 				public String runtimeNamespace() {
 					return metaData.runtimeNamespace();
+				}
+
+				@Override
+				public JavadocStyle javadocStyle() {
+					return metaData.javadocStyle();
 				}
 			});
 		}

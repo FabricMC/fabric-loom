@@ -34,6 +34,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Provider;
 import org.jetbrains.annotations.ApiStatus;
+import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -42,6 +43,7 @@ import net.fabricmc.loom.configuration.accesswidener.AccessWidenerFile;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
@@ -74,7 +76,10 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	void setMinecraftProvider(MinecraftProvider minecraftProvider);
 
-	MappingConfiguration getMappingConfiguration();
+	RemapMappingConfiguration getMappingConfiguration();
+
+	@Nullable
+	MappingConfiguration getMappingConfigurationOrNull();
 
 	void setMappingConfiguration(MappingConfiguration mappingConfiguration);
 

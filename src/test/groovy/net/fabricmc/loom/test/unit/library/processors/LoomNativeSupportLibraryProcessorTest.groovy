@@ -40,7 +40,7 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
+		id || result
 		"1.19.4" || LibraryProcessor.ApplicationResult.CAN_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
@@ -58,10 +58,10 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		version                 || result
-		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		version || result
+		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17 || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
@@ -73,10 +73,10 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		version                 || result
+		version || result
 		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17 || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
@@ -88,10 +88,10 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		version                 || result
-		JavaVersion.VERSION_20  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_19  || LibraryProcessor.ApplicationResult.CAN_APPLY
-		JavaVersion.VERSION_17  || LibraryProcessor.ApplicationResult.CAN_APPLY
+		version || result
+		JavaVersion.VERSION_20 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_19 || LibraryProcessor.ApplicationResult.CAN_APPLY
+		JavaVersion.VERSION_17 || LibraryProcessor.ApplicationResult.CAN_APPLY
 		JavaVersion.VERSION_1_8 || LibraryProcessor.ApplicationResult.CAN_APPLY
 	}
 
@@ -103,7 +103,7 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == LibraryProcessor.ApplicationResult.CAN_APPLY
 
 		where:
-		id       | platform
+		id | platform
 		"1.19.4" | PlatformTestUtils.MAC_OS_ARM64
 		"1.18.2" | PlatformTestUtils.WINDOWS_X64
 		"1.17.1" | PlatformTestUtils.MAC_OS_X64
@@ -121,7 +121,11 @@ class LoomNativeSupportLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test to ensure that we added the mod
-		original.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } == null
-		processed.find { it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD } != null
+		original.find {
+			it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD
+		} == null
+		processed.find {
+			it.is("net.fabricmc:fabric-loom-native-support") && it.target() == Library.Target.LOCAL_MOD
+		} != null
 	}
 }

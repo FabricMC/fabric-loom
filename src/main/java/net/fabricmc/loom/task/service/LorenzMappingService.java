@@ -35,7 +35,7 @@ import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Nested;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.util.Lazy;
 import net.fabricmc.loom.util.service.Service;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -50,7 +50,7 @@ public final class LorenzMappingService extends Service<LorenzMappingService.Opt
 		Property<MappingsService.Options> getMappings();
 	}
 
-	public static Provider<Options> createOptions(Project project, MappingConfiguration mappingConfiguration, MappingsNamespace from, MappingsNamespace to) {
+	public static Provider<Options> createOptions(Project project, RemapMappingConfiguration mappingConfiguration, MappingsNamespace from, MappingsNamespace to) {
 		return TYPE.create(project, options -> options.getMappings().set(
 			MappingsService.createOptions(
 				project,

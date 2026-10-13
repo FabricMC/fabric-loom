@@ -129,9 +129,9 @@ class UnpickRemapperServiceTest extends ServiceTestBase {
 		def zip = Files.createTempFile(tempDir, "loom", ".zip")
 		Files.delete(zip)
 
-		def files = entries.stream().map {
+		def files = entries.collect {
 			new Pair<>(it.replace(".", "/") + ".class", new byte[0])
-		}.toList()
+		}
 
 		ZipUtils.add(zip, files)
 		return zip

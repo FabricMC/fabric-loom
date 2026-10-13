@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.api.mappings.intermediate.IntermediateMappingsProvider;
+import net.fabricmc.loom.configuration.providers.mappings.tiny.TinyJarInfo;
 import net.fabricmc.loom.extension.LoomGradleExtensionApiImpl;
 import net.fabricmc.loom.util.Checksum;
 
@@ -103,7 +104,7 @@ public abstract class IntermediaryMappingsProvider extends IntermediateMappingsP
 					.downloadPath(intermediaryJarPath);
 		}
 
-		MappingConfiguration.extractMappings(intermediaryJarPath, tinyMappings);
+		TinyJarInfo.extractMappings(intermediaryJarPath, tinyMappings);
 	}
 
 	@Override

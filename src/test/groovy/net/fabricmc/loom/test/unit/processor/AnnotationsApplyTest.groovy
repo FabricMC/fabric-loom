@@ -57,8 +57,12 @@ class AnnotationsApplyTest extends Specification {
 		def text1 = textifyImportantPartsOfClass(annotatedNode1)
 		def field1Text = textify(annotatedNode1.fields.find { it.name == "field1" })
 		def field2Text = textify(annotatedNode1.fields.find { it.name == "field2" })
-		def method1Text = textify(annotatedNode1.methods.find { it.name == "method1" })
-		def method2Text = textify(annotatedNode1.methods.find { it.name == "method2" })
+		def method1Text = textify(annotatedNode1.methods.find {
+			it.name == "method1"
+		})
+		def method2Text = textify(annotatedNode1.methods.find {
+			it.name == "method2"
+		})
 
 		//noinspection GrDeprecatedAPIUsage
 		def classReader2 = new ClassReader(getClassBytes(ExampleClass2))
@@ -76,8 +80,8 @@ class AnnotationsApplyTest extends Specification {
 	}
 
 	static byte[] getClassBytes(Class<?> clazz) {
-		return clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class").withCloseable {
-			it.bytes
+		try (def input = clazz.classLoader.getResourceAsStream(clazz.name.replace('.', '/') + ".class")) {
+			return input.bytes
 		}
 	}
 

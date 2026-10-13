@@ -47,13 +47,14 @@ class CachedDataTest extends Specification {
 		def path = testPath.resolve("cachedData.bin")
 		when:
 		// Write the cachedData to a file
-		FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE).withCloseable {
-			cachedData.write(it)
+		try (def channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+			cachedData.write(channel)
 		}
 
 		// And read it back
-		def readCachedData = Files.newInputStream(path).withCloseable {
-			return CachedData.read(it)
+		CachedData readCachedData
+		try (def input = Files.newInputStream(path)) {
+			readCachedData = CachedData.read(input)
 		}
 
 		then:

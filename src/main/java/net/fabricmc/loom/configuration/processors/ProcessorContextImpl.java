@@ -24,10 +24,13 @@
 
 package net.fabricmc.loom.configuration.processors;
 
+import java.util.Objects;
+
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.ProcessorContext;
 import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJarConfiguration;
 import net.fabricmc.loom.util.LazyCloseable;
@@ -63,7 +66,8 @@ public record ProcessorContextImpl(ConfigContext configContext, MinecraftJar min
 	@Override
 	public MemoryMappingTree getMappings() {
 		LoomGradleExtension extension = LoomGradleExtension.get(configContext().project());
-		return extension.getMappingConfiguration().getMappingsService(configContext().project(), configContext().serviceFactory()).getMappingTree();
+		MappingConfiguration mappingConfiguration = Objects.requireNonNull(extension.getMappingConfigurationOrNull(), "Mappings have not been configured");
+		return mappingConfiguration.getMappingsService(configContext().project(), configContext().serviceFactory()).getMappingTree();
 	}
 
 	@Override

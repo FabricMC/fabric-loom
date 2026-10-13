@@ -25,11 +25,12 @@
 package net.fabricmc.loom.test.util
 
 import groovy.transform.Immutable
+import groovy.transform.KnownImmutable
 
 import net.fabricmc.loom.util.Platform
 
 @Immutable
-class PlatformTestUtils implements Platform  {
+class PlatformTestUtils implements Platform {
 	public static final Platform WINDOWS_X64 = platform(OperatingSystem.WINDOWS, false)
 	public static final Platform WINDOWS_ARM64 = platform(OperatingSystem.WINDOWS, true)
 	public static final Platform LINUX_X64 = platform(OperatingSystem.LINUX, false)
@@ -65,25 +66,7 @@ class PlatformTestUtils implements Platform  {
 		return false
 	}
 
-	@Immutable
-	static class TestArchitecture implements Architecture {
-		boolean is64Bit
-		boolean isArm
-		boolean isRiscV
-
-		@Override
-		boolean is64Bit() {
-			is64Bit
-		}
-
-		@Override
-		boolean isArm() {
-			isArm
-		}
-
-		@Override
-		boolean isRiscV() {
-			return isRiscV
-		}
+	@KnownImmutable
+	static record TestArchitecture(boolean is64Bit, boolean isArm, boolean isRiscV) implements Architecture {
 	}
 }

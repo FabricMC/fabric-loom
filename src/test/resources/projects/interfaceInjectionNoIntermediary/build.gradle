@@ -26,3 +26,9 @@ loom {
 base {
 	archivesName = "fabric-example-mod"
 }
+
+tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask)
+
+tasks.named('check') {
+	dependsOn 'validateInjectedInterfaces'
+}

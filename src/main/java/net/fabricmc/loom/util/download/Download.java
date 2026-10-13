@@ -61,12 +61,11 @@ import net.fabricmc.loom.util.Checksum;
 public final class Download {
 	private static final String E_TAG = "ETag";
 	private static final Logger LOGGER = LoggerFactory.getLogger(Download.class);
-	private static final Duration TIMEOUT = Duration.ofMinutes(1);
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
 			.executor(Executors.newVirtualThreadPerTaskExecutor())
 			.followRedirects(HttpClient.Redirect.ALWAYS)
 			.proxy(ProxySelector.getDefault())
-			.connectTimeout(TIMEOUT)
+			.connectTimeout(Duration.ofMinutes(2))
 			.build();
 
 	public static DownloadBuilder create(String url) throws URISyntaxException {
@@ -97,7 +96,7 @@ public final class Download {
 
 	private HttpRequest.Builder requestBuilder() {
 		return HttpRequest.newBuilder(url)
-				.timeout(TIMEOUT)
+				.timeout(Duration.ofMinutes(10))
 				.version(httpVersion)
 				.GET();
 	}

@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.task.AbstractRemapJarTask;
 import net.fabricmc.loom.util.TinyRemapperHelper;
 import net.fabricmc.loom.util.service.Service;
@@ -96,7 +96,7 @@ public final class MappingsService extends Service<MappingsService.Options> impl
 	 * Returns options for creating a new mappings service, using the mappings as specified in the project's mapping configuration.
 	 */
 	public static Provider<Options> createOptionsWithProjectMappings(Project project, Provider<String> from, Provider<String> to) {
-		final MappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
+		final RemapMappingConfiguration mappingConfiguration = LoomGradleExtension.get(project).getMappingConfiguration();
 		return createOptions(project, mappingConfiguration.tinyMappings, from, to, true);
 	}
 

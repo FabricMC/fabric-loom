@@ -57,7 +57,7 @@ public abstract class JarManifestService implements BuildService<JarManifestServ
 	}
 
 	public static Provider<JarManifestService> get(Project project) {
-		return project.getGradle().getSharedServices().registerIfAbsent("LoomJarManifestService:" + project.getName(), JarManifestService.class, spec -> {
+		return project.getGradle().getSharedServices().registerIfAbsent("LoomJarManifestService:" + project.getPath(), JarManifestService.class, spec -> {
 			spec.parameters(params -> {
 				LoomGradleExtension extension = LoomGradleExtension.get(project);
 				Optional<String> tinyRemapperVersion = Optional.ofNullable(TinyRemapper.class.getPackage().getImplementationVersion());

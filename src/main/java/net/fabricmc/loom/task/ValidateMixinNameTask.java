@@ -39,6 +39,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.GradleException;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.SourceTask;
@@ -82,7 +83,7 @@ public abstract class ValidateMixinNameTask extends SourceTask {
 
 	@Inject
 	public ValidateMixinNameTask() {
-		setGroup("verification");
+		setGroup(JavaBasePlugin.VERIFICATION_GROUP);
 		getProject().getTasks().getByName("check").dependsOn(this);
 		getSoftFailures().convention(false);
 	}

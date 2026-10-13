@@ -75,7 +75,8 @@ public class NonRemappedJarTaskConfiguration {
 				project,
 				project.getTasks().named(JavaPlugin.JAR_TASK_NAME, Jar.class),
 				project.getConfigurations().named(Constants.Configurations.INCLUDE),
-				Constants.Task.PROCESS_INCLUDE_JARS
+				Constants.Task.PROCESS_INCLUDE_JARS,
+				Constants.Configurations.INCLUDE_INTERNAL
 		);
 
 		extension.getUnmappedModCollection().from(project.getTasks().named(JavaPlugin.JAR_TASK_NAME));

@@ -56,13 +56,13 @@ class ConfigurationCacheTest extends Specification implements GradleProjectTestT
 		result2.task(":${task}").outcome != FAILED
 
 		where:
-		task                      | _
-		"help"                    | _
-		"configureClientLaunch"   | _
-		"jar"                     | _
-		"check"                   | _
-		"remapSourcesJar"         | _
-		"build"                   | _
+		task | _
+		"help" | _
+		"configureClientLaunch" | _
+		"jar" | _
+		"check" | _
+		"remapSourcesJar" | _
+		"build" | _
 	}
 
 	// Test GradleUtils.configurationInputFile invalidates the cache when the file changes

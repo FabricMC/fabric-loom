@@ -33,12 +33,15 @@ import java.util.function.Function;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.Named;
 import org.gradle.api.Project;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.api.RunConfiguration;
+import net.fabricmc.loom.task.LoomTasks;
+import net.fabricmc.loom.task.RunGameTask;
 import net.fabricmc.loom.util.Platform;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
@@ -57,6 +60,12 @@ public abstract class RunConfigSettings implements Named, RunConfiguration, RunC
 	@Override
 	public String getName() {
 		return name;
+	}
+
+	@Override
+	public void task(Action<RunGameTask> action) {
+		String taskName = LoomTasks.getRunConfigTaskName(this);
+		project.getTasks().named(taskName::equals).withType(RunGameTask.class).configureEach(action);
 	}
 
 	// Backwards compatibility shims:
@@ -91,7 +100,9 @@ public abstract class RunConfigSettings implements Named, RunConfiguration, RunC
 	 * a convenient way to remove it if wanted.
 	 */
 	public void serverWithGui() {
-		getProgramArgs().removeIf("nogui"::equals);
+		getProgramArguments().set(getProgramArguments().get().stream()
+				.filter(argument -> !argument.equals("nogui"))
+				.toList());
 	}
 
 	// Note: Overridden for backwards compatibility

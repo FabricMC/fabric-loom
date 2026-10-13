@@ -91,9 +91,9 @@ class JarPackageIndexTest extends Specification {
 		def zip = Files.createTempFile(dir, "loom", ".zip")
 		Files.delete(zip)
 
-		def files = entries.stream().map {
+		def files = entries.collect {
 			new Pair<>(it, new byte[0])
-		}.toList()
+		}
 
 		ZipUtils.add(zip, files)
 		return zip

@@ -38,13 +38,13 @@ class ObjcBridgeUpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		platform                        || result
-		PlatformTestUtils.MAC_OS_ARM64  || LibraryProcessor.ApplicationResult.MUST_APPLY
-		PlatformTestUtils.MAC_OS_X64    || LibraryProcessor.ApplicationResult.DONT_APPLY
-		PlatformTestUtils.LINUX_ARM64   || LibraryProcessor.ApplicationResult.DONT_APPLY
-		PlatformTestUtils.LINUX_X64     || LibraryProcessor.ApplicationResult.DONT_APPLY
+		platform || result
+		PlatformTestUtils.MAC_OS_ARM64 || LibraryProcessor.ApplicationResult.MUST_APPLY
+		PlatformTestUtils.MAC_OS_X64 || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.LINUX_ARM64 || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.LINUX_X64 || LibraryProcessor.ApplicationResult.DONT_APPLY
 		PlatformTestUtils.WINDOWS_ARM64 || LibraryProcessor.ApplicationResult.DONT_APPLY
-		PlatformTestUtils.WINDOWS_X64   || LibraryProcessor.ApplicationResult.DONT_APPLY
+		PlatformTestUtils.WINDOWS_X64 || LibraryProcessor.ApplicationResult.DONT_APPLY
 	}
 
 	def "only apply to unsupported versions"() {
@@ -55,7 +55,7 @@ class ObjcBridgeUpgradeLibraryProcessorTest extends LibraryProcessorTest {
 		processor.applicationResult == result
 
 		where:
-		id       || result
+		id || result
 		"1.19.2" || LibraryProcessor.ApplicationResult.DONT_APPLY
 		"1.18.2" || LibraryProcessor.ApplicationResult.MUST_APPLY
 		"1.17.1" || LibraryProcessor.ApplicationResult.MUST_APPLY
@@ -73,18 +73,28 @@ class ObjcBridgeUpgradeLibraryProcessorTest extends LibraryProcessorTest {
 
 		then:
 		// Test that we always compile against the original version
-		original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
-		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE }.version() == "1.0.0"
+		original.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE
+		}.version() == "1.0.0"
+		processed.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.COMPILE
+		}.version() == "1.0.0"
 
 		// Test that we use 1.1 at runtime
-		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.RUNTIME }.version() == "1.1"
+		processed.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.RUNTIME
+		}.version() == "1.1"
 
 		// Test that we removed the natives, as they are included in the jar on the runtime classpath
-		original.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } != null
-		processed.find { it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES } == null
+		original.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES
+		} != null
+		processed.find {
+			it.is("ca.weblite:java-objc-bridge") && it.target() == Library.Target.NATIVES
+		} == null
 
 		where:
-		id       | _
+		id | _
 		"1.18.2" | _
 		"1.17.1" | _
 		"1.16.5" | _

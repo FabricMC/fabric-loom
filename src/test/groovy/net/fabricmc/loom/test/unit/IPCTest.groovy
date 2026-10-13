@@ -49,7 +49,7 @@ class IPCTest extends Specification {
 		when:
 		def ipcServer = new IPCServer(path, consumer)
 
-		new IPCClient(path).withCloseable { client ->
+		try (var client = new IPCClient(path)) {
 			client.accept("Test")
 			client.accept("Hello")
 		}

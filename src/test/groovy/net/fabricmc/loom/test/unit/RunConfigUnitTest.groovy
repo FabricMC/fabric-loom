@@ -24,8 +24,10 @@
 
 package net.fabricmc.loom.test.unit
 
+import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.ide.RunConfigSettings
 import net.fabricmc.loom.util.Arguments
 
 class RunConfigUnitTest extends Specification {
@@ -38,5 +40,19 @@ class RunConfigUnitTest extends Specification {
 
 		then:
 		args == '-Dfabric.test=123 "-Dfabric.test=abc 123"'
+	}
+
+	def "server with gui removes nogui argument"() {
+		given:
+		def project = ProjectBuilder.builder().build()
+		def run = project.objects.newInstance(RunConfigSettings, project, "server")
+		run.server()
+		run.programArguments.addAll("custom", "nogui")
+
+		when:
+		run.serverWithGui()
+
+		then:
+		run.programArguments.get() == ["custom"]
 	}
 }

@@ -43,8 +43,8 @@ class ChecksumTest extends Specification {
 		!hash.empty
 
 		where:
-		path   | dir
-		":"    | "C://mod"
+		path | dir
+		":" | "C://mod"
 		":sub" | "/Users/test/Documents/modding/fabric-loom"
 	}
 }

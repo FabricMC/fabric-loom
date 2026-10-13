@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.unit.providers
 
 import java.nio.file.Path
 
+import groovy.transform.ImmutableOptions
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
@@ -78,11 +79,15 @@ class MinecraftJarMergerTest extends Specification {
 	}
 
 	static int methodAccess(Path jar, String owner, String name, String desc) {
-		return getClassNode(jar, owner).methods.find { it.name == name && it.desc == desc }.access
+		return getClassNode(jar, owner).methods.find {
+			it.name == name && it.desc == desc
+		}.access
 	}
 
 	static int fieldAccess(Path jar, String owner, String name, String desc) {
-		return getClassNode(jar, owner).fields.find { it.name == name && it.desc == desc }.access
+		return getClassNode(jar, owner).fields.find {
+			it.name == name && it.desc == desc
+		}.access
 	}
 
 	static ClassNode getClassNode(Path jar, String owner) {
@@ -119,8 +124,8 @@ class MinecraftJarMergerTest extends Specification {
 		def manifest = LoomGradlePlugin.GSON.fromJson(manifestJson, VersionsManifest.class)
 		def version = manifest.getVersion(id)
 
-		new DownloadExecutor(2).withCloseable {
-			return downloadVersion(version, it)
+		try (def downloadExecutor = new DownloadExecutor(2)) {
+			return downloadVersion(version, downloadExecutor)
 		}
 	}
 
@@ -154,8 +159,7 @@ class MinecraftJarMergerTest extends Specification {
 		return jarPath
 	}
 
-	static class Jars {
-		Path clientJar
-		Path serverJar
+	@ImmutableOptions(knownImmutableClasses = [Path])
+	static record Jars(Path clientJar, Path serverJar) {
 	}
 }

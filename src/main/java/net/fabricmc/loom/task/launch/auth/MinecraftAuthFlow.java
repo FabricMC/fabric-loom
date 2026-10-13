@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2025 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,27 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util;
+package net.fabricmc.loom.task.launch.auth;
 
-import org.gradle.api.problems.ProblemGroup;
-import org.gradle.api.problems.ProblemId;
+import java.io.IOException;
 
-public final class LoomProblems {
-	public static final ProblemGroup PROBLEM_GROUP = ProblemGroup.create("loom", "Loom");
-
-	private LoomProblems() {
+final class MinecraftAuthFlow {
+	private MinecraftAuthFlow() {
 	}
 
-	public static ProblemId problemId(String name, String displayName) {
-		return ProblemId.create(name, displayName, PROBLEM_GROUP);
+	static Result authenticate(MicrosoftAuthService authService, String microsoftAccessToken) throws IOException {
+		MicrosoftAuthService.XboxToken xboxUserToken = authService.authenticateXboxUser(microsoftAccessToken);
+		MicrosoftAuthService.XboxToken xstsToken = authService.authorizeMinecraftServices(xboxUserToken);
+		MicrosoftAuthService.MinecraftToken minecraftToken = authService.loginToMinecraft(xstsToken.userHash(), xstsToken.token());
+		MicrosoftAuthService.MinecraftEntitlements entitlements = authService.fetchMinecraftEntitlements(minecraftToken.accessToken());
+
+		if (!entitlements.canPlayMinecraft()) {
+			throw new IOException("The Microsoft account is not entitled to play Minecraft");
+		}
+
+		return new Result(minecraftToken, entitlements);
+	}
+
+	record Result(MicrosoftAuthService.MinecraftToken token, MicrosoftAuthService.MinecraftEntitlements entitlements) {
 	}
 }

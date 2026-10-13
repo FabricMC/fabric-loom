@@ -34,6 +34,7 @@ public class Constants {
 	public static final String EXPERIMENTAL_VERSIONS = "https://maven.fabricmc.net/net/minecraft/experimental_versions.json";
 	public static final String FABRIC_REPOSITORY = "https://maven.fabricmc.net/";
 	public static final String DLI_ENTRYPOINT = "net.fabricmc.devlaunchinjector.Main";
+	public static final String MICROSOFT_CLIENT_ID = "f8ebf47c-dffd-4ee4-b27e-c293f3a887a8";
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 	public static final String RELEASE_TIME_1_21_11_UNOBFUSCATED_SNAPSHOTS = "2025-11-01T00:00:00+00:00";
@@ -50,6 +51,7 @@ public class Constants {
 		public static final String MOD_COMPILE_CLASSPATH = "modCompileClasspath";
 		public static final String MOD_COMPILE_CLASSPATH_MAPPED = "modCompileClasspathMapped";
 		public static final String INCLUDE = "include";
+		public static final String INCLUDE_INTERNAL = "includeInternal";
 		public static final String MINECRAFT = "minecraft";
 
 		public static final String MINECRAFT_COMPILE_LIBRARIES = "minecraftLibraries";
@@ -72,6 +74,7 @@ public class Constants {
 		 */
 		public static final String MINECRAFT_NATIVES = "minecraftNatives";
 		public static final String MAPPINGS = "mappings";
+		public static final String ANNOTATIONS = "annotations";
 		public static final String MAPPINGS_FINAL = "mappingsFinal";
 		public static final String LOADER_DEPENDENCIES = "loaderLibraries";
 		public static final String LOOM_DEVELOPMENT_DEPENDENCIES = "loomDevelopmentDependencies";

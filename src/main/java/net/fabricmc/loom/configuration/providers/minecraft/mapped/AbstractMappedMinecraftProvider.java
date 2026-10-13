@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +47,7 @@ import net.fabricmc.loom.configuration.ConfigContext;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.IntermediaryMappingsProvider;
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
+import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
 import net.fabricmc.loom.configuration.providers.minecraft.AnnotationsApplyVisitor;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
@@ -56,6 +58,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVi
 import net.fabricmc.loom.extension.LoomFiles;
 import net.fabricmc.loom.util.SidedClassVisitor;
 import net.fabricmc.loom.util.TinyRemapperHelper;
+import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -205,7 +208,13 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	protected String getVersion() {
 		if (extension.disableObfuscation()) {
-			return extension.getMinecraftProvider().minecraftVersion();
+			MappingConfiguration mappingConfiguration = extension.getMappingConfigurationOrNull();
+
+			if (mappingConfiguration == null) {
+				return extension.getMinecraftProvider().minecraftVersion();
+			}
+
+			return "%s-%s".formatted(extension.getMinecraftProvider().minecraftVersion(), mappingConfiguration.mappingsIdentifier());
 		}
 
 		return "%s-%s".formatted(extension.getMinecraftProvider().minecraftVersion(), extension.getMappingConfiguration().mappingsIdentifier());
@@ -257,14 +266,30 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 
 	protected void remapJar(RemappedJars remappedJars, ConfigContext configContext) throws IOException {
 		if (extension.disableObfuscation()) {
-			// TODO debof - can we skip this?
 			Files.createDirectories(remappedJars.outputJarPath().getParent());
 			Files.copy(remappedJars.inputJar(), remappedJars.outputJarPath(), StandardCopyOption.REPLACE_EXISTING);
+
+			MappingConfiguration mappingConfiguration = extension.getMappingConfigurationOrNull();
+
+			if (mappingConfiguration != null) {
+				AnnotationsData annotationsData = AnnotationsData.getRemappedAnnotations(
+						MappingsNamespace.OFFICIAL,
+						mappingConfiguration,
+						getProject(),
+						configContext.serviceFactory(),
+						MappingsNamespace.OFFICIAL.toString()
+				);
+
+				if (annotationsData != null) {
+					applyAnnotations(remappedJars.outputJarPath(), annotationsData);
+				}
+			}
+
 			getMavenHelper(remappedJars.type()).savePom();
 			return;
 		}
 
-		final MappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
+		final RemapMappingConfiguration mappingConfiguration = extension.getMappingConfiguration();
 		final String fromM = remappedJars.sourceNamespace().toString();
 		final String toM = getTargetNamespace().toString();
 
@@ -300,6 +325,15 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		getMavenHelper(remappedJars.type()).savePom();
+	}
+
+	private static void applyAnnotations(Path jar, AnnotationsData annotationsData) throws IOException {
+		Map<String, ZipUtils.UnsafeUnaryOperator<byte[]>> transforms = new HashMap<>();
+		annotationsData.classes().forEach((className, classData) -> transforms.put(
+				className + ".class",
+				(ZipUtils.AsmClassOperator) classVisitor -> new AnnotationsApplyVisitor.AnnotationsApplyClassVisitor(classVisitor, classData)
+		));
+		ZipUtils.transform(jar, transforms);
 	}
 
 	protected void configureRemapper(RemappedJars remappedJars, TinyRemapper.Builder tinyRemapperBuilder) {

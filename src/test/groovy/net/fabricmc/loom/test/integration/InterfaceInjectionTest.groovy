@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2016-2021 FabricMC
+ * Copyright (c) 2016-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,16 +25,22 @@
 package net.fabricmc.loom.test.integration
 
 import org.gradle.testkit.runner.BuildResult
+import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 import spock.lang.Unroll
 
+import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class InterfaceInjectionTest extends Specification implements GradleProjectTestTrait {
+	@Language("JAVA")
+	private static final String INJECTED_INTERFACE_WITH_ABSTRACT_METHOD = "interface TestItf { void foo(); }"
+
 	@Unroll
 	def "interface injection (gradle #version)"() {
 		setup:
@@ -111,5 +117,74 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 
 		where:
 		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "validate invalid injected interfaces (gradle #version, class tweaker: #useCt)"() {
+		setup:
+		def gradle = gradleProject(project: 'minimalBaseNoRemap', version: version)
+		gradle.buildGradle << """
+ 			dependencies {
+ 				minecraft "com.mojang:minecraft:26.2"
+ 				implementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+ 			}
+
+ 			tasks.register('validateInjectedInterfaces', net.fabricmc.loom.task.ValidateInjectedInterfacesTask) {
+ 				problemReportingOptions.displayGithubActionsAnnotations = true
+ 			}
+
+ 			tasks.named('check') {
+ 				dependsOn 'validateInjectedInterfaces'
+ 			}
+			"""
+		new File(gradle.projectDir, 'src/main/java').mkdirs()
+		new File(gradle.projectDir, 'src/main/resources').mkdirs()
+		new File(gradle.projectDir, 'src/main/java/TestItf.java').text = INJECTED_INTERFACE_WITH_ABSTRACT_METHOD
+
+		if (useCt) {
+			new File(gradle.projectDir, 'src/main/resources/fabric.mod.json').text = """
+				{
+					"schemaVersion": 1,
+					"id": "test",
+					"version": "1.0.0",
+					"accessWidener": "test.classtweaker"
+				}
+				"""
+			new File(gradle.projectDir, 'src/main/resources/test.classtweaker').text = """\
+				classTweaker v2 official
+				inject-interface net/minecraft/world/level/block/Block TestItf
+				""".stripIndent()
+		} else {
+			new File(gradle.projectDir, 'src/main/resources/fabric.mod.json').text = """
+				{
+					"schemaVersion": 1,
+					"id": "test",
+					"version": "1.0.0",
+					"custom": {
+						"loom:injected_interfaces": {
+							"net/minecraft/class_2248": ["TestItf"]
+						}
+					}
+				}
+				"""
+		}
+
+		when:
+		def result = gradle.run(task: 'build', expectFailure: true)
+
+		then:
+		result.task(':validateInjectedInterfaces').outcome == FAILED
+		result.output.contains('Injected interface TestItf has abstract method foo()V')
+		// Check that the output has the GH Actions command.
+		result.output.lines()
+				.anyMatch {
+					// Note: the final .+ is for catching the rest of the message. We don't care about the exact
+					// message contents in this test.
+					it.matches("::error file=.+TestItf\\.java,line=1,title=Abstract method in injected interface::Method TestItf\\.foo\\(\\)V is abstract\\..+")
+				}
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+		useCt << [true, false]
 	}
 }

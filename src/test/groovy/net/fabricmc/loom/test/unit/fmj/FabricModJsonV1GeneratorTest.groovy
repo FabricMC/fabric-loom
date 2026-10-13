@@ -667,11 +667,10 @@ class FabricModJsonV1GeneratorTest extends Specification {
 
 	// Ensure that Fabric loader can actually parse the generated JSON.
 	private static int tryParse(String json) {
-		def meta = new ByteArrayInputStream(json.bytes).withCloseable {
+		try (def input = new ByteArrayInputStream(json.bytes)) {
 			//noinspection GroovyAccessibility
-			ModMetadataParser.readModMetadata(it, false)
+			return ModMetadataParser.readModMetadata(input, false).getSchemaVersion()
 		}
-		return meta.getSchemaVersion()
 	}
 
 	private static FabricModJsonV1Spec baseSpec() {

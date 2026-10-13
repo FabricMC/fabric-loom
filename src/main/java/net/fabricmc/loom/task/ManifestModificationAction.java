@@ -41,9 +41,8 @@ import org.gradle.api.provider.Provider;
 import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.task.service.JarManifestService;
-import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.ZipReprocessorUtil;
 
 /**
  * Action that modifies the manifest of a jar file to add Loom metadata.
@@ -94,7 +93,7 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 			manifestAttributes.put(Constants.Manifest.CLIENT_ENTRIES, String.join(";", clientOnlyEntries.get()));
 		}
 
-		int count = ZipUtils.transform(jarFile.toPath(), Map.of(Constants.Manifest.PATH, bytes -> {
+		ZipReprocessorUtil.transformZipEntry(jarFile.toPath(), Constants.Manifest.PATH, bytes -> {
 			var manifest = new Manifest(new ByteArrayInputStream(bytes));
 
 			// Apply standard Loom manifest attributes (Gradle version, Loom version, etc.)
@@ -103,8 +102,6 @@ public class ManifestModificationAction implements Action<Task>, Serializable {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			manifest.write(out);
 			return out.toByteArray();
-		}));
-
-		Check.require(count > 0, "Did not transform any jar manifest");
+		});
 	}
 }

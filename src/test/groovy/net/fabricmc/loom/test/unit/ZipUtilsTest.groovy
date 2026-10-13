@@ -52,7 +52,7 @@ class ZipUtilsTest extends Specification {
 		Files.exists(zip)
 		ZipUtils.contains(zip, "test.txt")
 		!ZipUtils.contains(zip, "nope.txt")
-		new String( ZipUtils.unpack(zip, "test.txt"), StandardCharsets.UTF_8) == "This is a test of packing"
+		new String(ZipUtils.unpack(zip, "test.txt"), StandardCharsets.UTF_8) == "This is a test of packing"
 	}
 
 	def "transform string"() {
@@ -75,7 +75,7 @@ class ZipUtilsTest extends Specification {
 		then:
 		transformed == 1
 		ZipUtils.contains(zip, "test.txt")
-		new String( ZipUtils.unpack(zip, "test.txt"), StandardCharsets.UTF_8) == "THIS IS A TEST OF TRANSFORMING"
+		new String(ZipUtils.unpack(zip, "test.txt"), StandardCharsets.UTF_8) == "THIS IS A TEST OF TRANSFORMING"
 	}
 
 	def "replace string"() {
@@ -183,13 +183,13 @@ class ZipUtilsTest extends Specification {
 		Checksum.of(zip).sha1().hex() == "1b06cc0aaa65ab2b0d423fe33431ff5bd14bf9c8"
 
 		where:
-		timezone 			| _
-		"UTC" 				| _
-		"US/Central" 		| _
-		"Europe/London" 	| _
-		"Australia/Sydney" 	| _
-		"Etc/GMT-6" 		| _
-		"Etc/GMT+9" 		| _
+		timezone | _
+		"UTC" | _
+		"US/Central" | _
+		"Europe/London" | _
+		"Australia/Sydney" | _
+		"Etc/GMT-6" | _
+		"Etc/GMT+9" | _
 	}
 
 	def "transform json"() {

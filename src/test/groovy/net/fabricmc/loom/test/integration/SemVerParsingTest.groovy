@@ -37,12 +37,12 @@ class SemVerParsingTest extends Specification implements GradleProjectTestTrait 
 		NestableJarGenerationTask.validSemVer(version) == true
 
 		where:
-		version                   | _
-		"1.0.0"                   | _
-		"2.5.3"                   | _
-		"3.0.0-beta.2"            | _
-		"4.2.1-alpha+001"         | _
-		"5.0.0-rc.1+build.1"      | _
+		version | _
+		"1.0.0" | _
+		"2.5.3" | _
+		"3.0.0-beta.2" | _
+		"4.2.1-alpha+001" | _
+		"5.0.0-rc.1+build.1" | _
 	}
 
 	@Unroll
@@ -51,11 +51,11 @@ class SemVerParsingTest extends Specification implements GradleProjectTestTrait 
 		NestableJarGenerationTask.validSemVer(version) == false
 
 		where:
-		version                   | _
-		"1.0"                     | _
-		"3.0.0.Beta1-120922-126"  | _
-		"3.0.2.Final"             | _
-		"4.2.1.4.RELEASE"         | _
+		version | _
+		"1.0" | _
+		"3.0.0.Beta1-120922-126" | _
+		"3.0.2.Final" | _
+		"4.2.1.4.RELEASE" | _
 	}
 
 	@Unroll
@@ -64,8 +64,8 @@ class SemVerParsingTest extends Specification implements GradleProjectTestTrait 
 		NestableJarGenerationTask.getVersion(metadata) == expectedVersion
 
 		where:
-		metadata                                                               | expectedVersion
-		new NestableJarGenerationTask.Metadata("group", "name", "1.0.0.Final", null)  | "1.0.0"
-		new NestableJarGenerationTask.Metadata("group", "name", "2.5.3.final", null)  | "2.5.3"
+		metadata | expectedVersion
+		new NestableJarGenerationTask.Metadata("group", "name", "1.0.0.Final", null) | "1.0.0"
+		new NestableJarGenerationTask.Metadata("group", "name", "2.5.3.final", null) | "2.5.3"
 	}
 }

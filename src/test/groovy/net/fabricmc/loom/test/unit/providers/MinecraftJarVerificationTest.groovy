@@ -56,13 +56,13 @@ class MinecraftJarVerificationTest extends Specification {
 		true == true
 
 		where:
-		version  | _
+		version | _
 		"1.21.5" | _
 		"1.16.5" | _
 		"1.14.4" | _
 		"1.7.10" | _
-		"1.7.9"  | _ // Sha1 signed
-		"b1.5"   | _ // Not signed
+		"1.7.9" | _ // Sha1 signed
+		"b1.5" | _ // Not signed
 	}
 
 	def "check bundled server verified"() {
@@ -81,7 +81,7 @@ class MinecraftJarVerificationTest extends Specification {
 		true == true
 
 		where:
-		version  | _
+		version | _
 		"1.21.5" | _
 	}
 
@@ -98,12 +98,12 @@ class MinecraftJarVerificationTest extends Specification {
 		true == true
 
 		where:
-		version  | _
+		version | _
 		"1.16.5" | _
 		"1.14.4" | _
 		"1.7.10" | _
-		"1.7.9"  | _ // Sha1 signed
-		"1.2.5"  | _
+		"1.7.9" | _ // Sha1 signed
+		"1.2.5" | _
 	}
 
 	def "hash mismatch"() {

@@ -18,12 +18,12 @@ tasks.withType(JavaCompile).configureEach {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 	kotlinOptions {
-		jvmTarget = "21"
+		jvmTarget = "25"
 	}
 }
 
 group = 'net.fabricmc'
-def baseVersion = '1.17'
+def baseVersion = '1.19'
 
 def ENV = System.getenv()
 if (ENV.BUILD_NUMBER) {
@@ -38,8 +38,8 @@ if (ENV.BUILD_NUMBER) {
 
 // We must build against the version of Kotlin Gradle ships with.
 def props = new Properties()
-Project.class.getClassLoader().getResource("gradle-kotlin-dsl-versions.properties").openStream().withCloseable {
-	props.load(it)
+try (def input = Project.class.getClassLoader().getResource("gradle-kotlin-dsl-versions.properties").openStream()) {
+	props.load(input)
 }
 def kotlinVersion = props.getProperty("kotlin")
 if (libs.versions.kotlin.get() != kotlinVersion) {
@@ -92,7 +92,7 @@ dependencies {
 	implementation libs.bundles.asm
 
 	// game handling utils
-	implementation (libs.fabric.stitch) {
+	implementation(libs.fabric.stitch) {
 		exclude module: 'enigma'
 		exclude module: 'guava'
 	}
@@ -101,11 +101,9 @@ dependencies {
 	implementation libs.fabric.tiny.remapper
 	implementation libs.fabric.clazz.tweaker
 	implementation libs.fabric.mapping.io
-	implementation (libs.fabric.lorenz.tiny) {
+	implementation(libs.fabric.lorenz.tiny) {
 		transitive = false
 	}
-
-	implementation libs.fabric.loom.nativelib
 
 	// decompilers
 	cfrCompileOnly runtimeLibs.cfr
@@ -143,7 +141,7 @@ dependencies {
 	}
 	testImplementation testLibs.junit.jupiter.engine
 	testRuntimeOnly testLibs.junit.platform.launcher
-	testImplementation (testLibs.javalin) {
+	testImplementation(testLibs.javalin) {
 		exclude group: 'org.jetbrains.kotlin'
 	}
 	testImplementation testLibs.mockito
@@ -152,11 +150,13 @@ dependencies {
 	testImplementation testLibs.bcutil
 	testImplementation testLibs.bcpkix
 	testImplementation testLibs.fabric.loader
+	testImplementation runtimeLibs.cfr
+	testImplementation runtimeLibs.vineflower
 
 	compileOnly runtimeLibs.jetbrains.annotations
 	testCompileOnly runtimeLibs.jetbrains.annotations
 
-	testCompileOnly (testLibs.mixin) {
+	testCompileOnly(testLibs.mixin) {
 		transitive = false
 	}
 }
@@ -176,13 +176,13 @@ base {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
+	it.options.release = 25
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 spotless {
@@ -220,6 +220,10 @@ checkstyle {
 codenarc {
 	toolVersion = libs.versions.codenarc.get()
 	configFile = file("codenarc.groovy")
+
+	if (ENV.CI) {
+		reportFormat = 'xml'
+	}
 }
 
 gradlePlugin {
@@ -274,6 +278,7 @@ test {
 // Workaround https://github.com/gradle/gradle/issues/25898
 tasks.withType(Test).configureEach {
 	jvmArgs = [
+		'--enable-native-access=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang=ALL-UNNAMED',
 		'--add-opens=java.base/java.util=ALL-UNNAMED',
 		'--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
@@ -346,7 +351,9 @@ publishing {
 
 // The publish tasks appear to write to the same files, so we need to ensure they don't run in parallel.
 tasks.withType(PublishToMavenLocal).configureEach { publishTask ->
-	mustRunAfter(tasks.withType(PublishToMavenLocal).matching { it.name < publishTask.name })
+	mustRunAfter(tasks.withType(PublishToMavenLocal).matching {
+		it.name <publishTask.name
+	})
 }
 
 tasks.register('writeActionsTestMatrix', WriteActionsTestMatrix) {

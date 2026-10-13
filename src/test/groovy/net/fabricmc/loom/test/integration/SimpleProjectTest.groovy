@@ -80,10 +80,10 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 		then:
 		result.task(":${ide}").outcome == SUCCESS
 		where:
-		ide 				| _
-		'ideaSyncTask' 		| _
-		'genEclipseRuns'	| _
-		'vscode'			| _
+		ide | _
+		'ideaSyncTask' | _
+		'genEclipseRuns' | _
+		'vscode' | _
 	}
 
 	@Unroll
@@ -187,6 +187,39 @@ class SimpleProjectTest extends Specification implements GradleProjectTestTrait 
 
 		new String(ZipUtils.unpack(sourcesJar, "/net/fabricmc/example/ExampleMod.java")).contains("ResourceLocation")
 		textify(ZipUtils.unpack(classesJar, "/net/fabricmc/example/ExampleMod.class")).contains("ResourceLocation")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "sources variant when sources jar is configured before Loom (gradle #version)"() {
+		given:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+		gradle.buildGradle.text = gradle.buildGradle.text.replace(
+				"id 'net.fabricmc.fabric-loom-remap'",
+				"id 'java-library'\n\tid 'net.fabricmc.fabric-loom-remap' apply false"
+				)
+		gradle.buildGradle << """
+			java.withSourcesJar()
+			apply plugin: 'net.fabricmc.fabric-loom-remap'
+
+			dependencies {
+				minecraft 'com.mojang:minecraft:1.16.5'
+				mappings 'net.fabricmc:yarn:1.16.5+build.5:v2'
+			}
+			""".stripIndent()
+
+		when:
+		def result = gradle.run(task: "outgoingVariants", args: [
+			"--variant",
+			"sourcesElements"
+		])
+
+		then:
+		result.task(":outgoingVariants").outcome == SUCCESS
+		result.output.count("fabric-example-mod-1.0.0-sources.jar") == 1
+		!result.output.contains("devlibs")
 
 		where:
 		version << STANDARD_TEST_VERSIONS

@@ -32,6 +32,7 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
 import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+import static org.gradle.testkit.runner.TaskOutcome.UP_TO_DATE
 
 class MultiMcVersionTest extends Specification implements GradleProjectTestTrait {
 	static List<String> versions = [
@@ -97,6 +98,38 @@ class MultiMcVersionTest extends Specification implements GradleProjectTestTrait
 		result.task(":fabric-1.19.3:build").outcome == SUCCESS
 		// Ensure that loom is only loaded once.
 		result.output.count("Fabric Loom:") == 1
+
+		where:
+		version << [PRE_RELEASE_GRADLE]
+	}
+
+	@Unroll
+	def "isolated projects (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "multi-mc-versions", version: version)
+		gradle.buildSrc("multiMcVersions", false)
+
+		versions.forEach {
+			// Make dir as its now required by Gradle
+			new File(gradle.projectDir, it).mkdir()
+		}
+
+		when:
+		def result = gradle.run(
+				tasks: ":fabric-1.19.3:build",
+				isloatedProjects: true)
+		def result2 = gradle.run(
+				tasks: ":fabric-1.19.3:build",
+				isloatedProjects: true)
+		def result3 = gradle.run(
+				tasks: ":fabric-1.19.3:build",
+				isloatedProjects: true)
+
+		then:
+		result.task(":fabric-1.19.3:build").outcome == SUCCESS
+		result2.task(":fabric-1.19.3:build").outcome == UP_TO_DATE
+		result3.task(":fabric-1.19.3:build").outcome == UP_TO_DATE
+		result3.output.contains("Reusing configuration cache.")
 
 		where:
 		version << [PRE_RELEASE_GRADLE]

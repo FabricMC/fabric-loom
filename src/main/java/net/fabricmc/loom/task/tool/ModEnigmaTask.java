@@ -47,8 +47,8 @@ import org.gradle.process.ExecOperations;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.task.AbstractLoomTask;
-import net.fabricmc.loom.util.LoomProblems;
 import net.fabricmc.loom.util.LoomVersions;
+import net.fabricmc.loom.util.problem.LoomProblems;
 
 /**
  * Add this task to a mod development environment to use Enigma against the game jars.

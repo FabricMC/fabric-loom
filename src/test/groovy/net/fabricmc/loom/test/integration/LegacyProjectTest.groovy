@@ -72,15 +72,15 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		result.task(":configureClientLaunch").outcome == SUCCESS
 
 		where:
-		version 		| _
-		'1.13.2'		| _
-		'1.12.2'		| _
-		'1.8.9'			| _
-		'1.7.10'		| _
-		'1.7'			| _
-		'1.6.4'			| _
-		'1.4.7'			| _
-		'1.3.2'			| _
+		version | _
+		'1.13.2' | _
+		'1.12.2' | _
+		'1.8.9' | _
+		'1.7.10' | _
+		'1.7' | _
+		'1.6.4' | _
+		'1.4.7' | _
+		'1.3.2' | _
 	}
 
 	@Unroll
@@ -106,10 +106,10 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 		result.task(":configureClientLaunch").outcome == SUCCESS
 
 		where:
-		version 		| _
-		'1.2.5'			| _
-		'b1.8.1'		| _
-		'a1.2.5'		| _
+		version | _
+		'1.2.5' | _
+		'b1.8.1' | _
+		'a1.2.5' | _
 	}
 
 	@Unroll

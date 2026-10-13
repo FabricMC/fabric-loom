@@ -41,18 +41,32 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
 		// And at runtime we have the new version.
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.2"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		}.version() == "3.3.2"
 
 		// Test to make sure that the natives were upgraded.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.2"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.2"
 
 		// Test to make sure that the natives were replaced.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos-arm64"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-macos"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-macos-arm64"
 	}
 
 	// Test to make sure that we dont upgrade LWJGL on an x64 mac
@@ -64,18 +78,32 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.2.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.2.1"
 		// Make sure that there isn't a runtime library
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME } == null
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		} == null
 
 		// Test to make sure that the natives were not upgraded.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.2.1"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.2.1"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.2.1"
 
 		// Test to make sure that the natives were not replaced.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-macos"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-macos"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-macos"
 	}
 
 	// A test to ensure that we can add linux RISC-V support on an unsupported version
@@ -87,18 +115,32 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 
 		then:
 		// Test to make sure that we compile against the original version
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.3"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE }.version() == "3.3.3"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.3"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.COMPILE
+		}.version() == "3.3.3"
 		// And at runtime we have the new version.
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME }.version() == "3.3.4"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.RUNTIME
+		}.version() == "3.3.4"
 
 		// Test to make sure that the natives were upgraded.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.3"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.version() == "3.3.4"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.3"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.version() == "3.3.4"
 
 		// Test to make sure that the natives were added.
-		original.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-linux"
-		processed.find { it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES }.classifier() == "natives-linux-riscv64"
+		original.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-linux"
+		processed.find {
+			it.is("org.lwjgl:lwjgl-glfw") && it.target() == Library.Target.NATIVES
+		}.classifier() == "natives-linux-riscv64"
 	}
 
 	def "runtime log4j"() {
@@ -110,9 +152,15 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		]).processLibraries(original, context)
 
 		then:
-		original.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE } != null
+		original.find {
+			it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE
+		} != null
 
-		processed.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.RUNTIME } != null
-		processed.find { it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE } == null
+		processed.find {
+			it.is("org.apache.logging.log4j") && it.target() == Library.Target.RUNTIME
+		} != null
+		processed.find {
+			it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE
+		} == null
 	}
 }

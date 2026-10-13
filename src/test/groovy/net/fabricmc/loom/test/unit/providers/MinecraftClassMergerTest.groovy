@@ -48,13 +48,13 @@ class MinecraftClassMergerTest extends Specification {
 		MinecraftClassMerger.formatMethodAccessFlags(merged) == MinecraftClassMerger.formatMethodAccessFlags(expected)
 
 		where:
-		client                    | server                     | expected
-		ACC_PUBLIC                | ACC_PUBLIC                 | ACC_PUBLIC
-		ACC_PRIVATE               | ACC_PUBLIC                 | ACC_PRIVATE
-		ACC_PUBLIC                | ACC_PRIVATE                | ACC_PRIVATE
-		ACC_PROTECTED             | ACC_PRIVATE                | ACC_PRIVATE
-		ACC_PROTECTED             | ACC_PUBLIC                 | ACC_PROTECTED
-		ACC_PUBLIC_STATIC         | ACC_PRIVATE_STATIC         | ACC_PRIVATE_STATIC
+		client | server | expected
+		ACC_PUBLIC | ACC_PUBLIC | ACC_PUBLIC
+		ACC_PRIVATE | ACC_PUBLIC | ACC_PRIVATE
+		ACC_PUBLIC | ACC_PRIVATE | ACC_PRIVATE
+		ACC_PROTECTED | ACC_PRIVATE | ACC_PRIVATE
+		ACC_PROTECTED | ACC_PUBLIC | ACC_PROTECTED
+		ACC_PUBLIC_STATIC | ACC_PRIVATE_STATIC | ACC_PRIVATE_STATIC
 	}
 
 	def "cannot merge access"() {
@@ -65,9 +65,9 @@ class MinecraftClassMergerTest extends Specification {
 		thrown(IllegalStateException)
 
 		where:
-		client                    | server
-		ACC_PRIVATE_STATIC        | ACC_PUBLIC
-		ACC_PRIVATE               | ACC_PRIVATE_STATIC
-		ACC_PRIVATE_FINAL         | ACC_PUBLIC
+		client | server
+		ACC_PRIVATE_STATIC | ACC_PUBLIC
+		ACC_PRIVATE | ACC_PRIVATE_STATIC
+		ACC_PRIVATE_FINAL | ACC_PUBLIC
 	}
 }

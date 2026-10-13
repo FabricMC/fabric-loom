@@ -31,9 +31,9 @@ import java.util.Map;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.util.IOStringConsumer;
 
-public record DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, IOStringConsumer logger, Map<String, String> options, String runtimeNamespace) {
+public record DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, IOStringConsumer logger, Map<String, String> options, String runtimeNamespace, JavadocStyle javadocStyle) {
 	@Deprecated
 	public DecompilationMetadata(int numberOfThreads, Path javaDocs, Collection<Path> libraries, IOStringConsumer logger, Map<String, String> options) {
-		this(numberOfThreads, javaDocs, libraries, logger, options, MappingsNamespace.NAMED.toString());
+		this(numberOfThreads, javaDocs, libraries, logger, options, MappingsNamespace.NAMED.toString(), JavadocStyle.HTML);
 	}
 }

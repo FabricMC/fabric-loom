@@ -117,7 +117,7 @@ class MixinConfigurationTest extends Specification {
 
 	static MixinRefmap.NamespacePair NAMESPACE = new MixinRefmap.NamespacePair("named", "intermediary")
 	@Language("JSON")
-	static String REFMAP ='''
+	static String REFMAP = '''
 {
   "mappings": {
     "net/fabricmc/fabric/mixin/block/ChunkSectionBlockStateCounterMixin": {

@@ -29,6 +29,8 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
+
 // This is an internal interface to loom, DO NOT USE this in your own plugins.
 public interface LoomInternalDecompiler {
 	void decompile(Context context);
@@ -53,6 +55,8 @@ public interface LoomInternalDecompiler {
 		byte[] unpackZip(Path zip, String path) throws IOException;
 
 		String runtimeNamespace();
+
+		JavadocStyle javadocStyle();
 	}
 
 	interface Logger {

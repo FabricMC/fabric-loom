@@ -75,7 +75,7 @@ public abstract class RenderDocRunTask extends RunGameTask {
 			exec.args(getRenderDocArgs().get());
 			exec.args("--working-dir", getInternalRunDir().get().getAsFile().getAbsolutePath());
 			exec.args(getJavaLauncher().get().getExecutablePath());
-			exec.args(getJvmArgs());
+			exec.args(getAllJvmArgs());
 			exec.args("-D%s=true".formatted(Constants.Properties.RENDER_DOC));
 			exec.args(getMainClass().get());
 

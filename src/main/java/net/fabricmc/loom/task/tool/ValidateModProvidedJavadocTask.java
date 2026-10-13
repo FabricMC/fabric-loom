@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2025 FabricMC
+ * Copyright (c) 2025-2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,14 +37,15 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.problems.ProblemId;
-import org.gradle.api.problems.ProblemReporter;
 import org.gradle.api.problems.Problems;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.SkipWhenEmpty;
@@ -60,7 +61,9 @@ import org.objectweb.asm.tree.MethodNode;
 
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.util.FileSystemUtil;
-import net.fabricmc.loom.util.LoomProblems;
+import net.fabricmc.loom.util.problem.LoomProblemReporter;
+import net.fabricmc.loom.util.problem.LoomProblems;
+import net.fabricmc.loom.util.problem.ProblemReportingOptions;
 import net.fabricmc.mappingio.FlatMappingVisitor;
 import net.fabricmc.mappingio.MappedElementKind;
 import net.fabricmc.mappingio.MappingReader;
@@ -101,42 +104,52 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	@Input
 	public abstract Property<String> getExpectedNamespace();
 
+	@Nested
+	public ProblemReportingOptions getProblemReportingOptions() {
+		return problemReportingOptions;
+	}
+
 	@ApiStatus.Internal
 	@Inject
 	protected abstract Problems getProblems();
 
+	private final ProblemReportingOptions problemReportingOptions;
+
 	public ValidateModProvidedJavadocTask() {
 		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJarsCollection));
 		getExpectedNamespace().convention(getExtension().getProductionNamespace());
+		problemReportingOptions = getProject().getObjects().newInstance(ProblemReportingOptions.class);
 
 		// Ignore outputs for up-to-date checks as there aren't any (so only inputs are checked)
 		getOutputs().upToDateWhen(task -> true);
 	}
 
+	public void problemReportingOptions(Action<? super ProblemReportingOptions> action) {
+		action.execute(getProblemReportingOptions());
+	}
+
 	@TaskAction
 	protected void check() throws IOException {
-		try (var validator = new Validator(this::reportError, getMinecraftJars().getFiles())) {
+		final var reporter = new LoomProblemReporter(getProblems().getReporter(), getProblemReportingOptions());
+		final ErrorReporter errorReporter = (problemId, currentPath, details, cause) -> reporter.problem(problemId, builder -> {
+			builder.fileLocation(currentPath);
+
+			if (details != null) {
+				builder.details(details);
+			}
+
+			if (cause != null) {
+				builder.cause(cause);
+			}
+		});
+
+		try (var validator = new Validator(errorReporter, getMinecraftJars().getFiles())) {
 			for (File mappingFile : getMappingFiles()) {
 				validator.check(mappingFile.toPath(), getExpectedNamespace().get());
 			}
 		}
-	}
 
-	private void reportError(ProblemId problemId, Path currentPath, @Nullable String details, @Nullable Exception cause) throws IOException {
-		final ProblemReporter reporter = getProblems().getReporter();
-		final String message = details != null ? details : problemId.getDisplayName();
-		reporter.throwing(new IOException(message, cause), problemId,
-				spec -> {
-					spec.fileLocation(currentPath.toAbsolutePath().toString());
-
-					if (details != null) {
-						spec.details(details);
-					}
-
-					if (cause != null) {
-						spec.withException(cause);
-					}
-				});
+		reporter.reportAndThrow("Found issues in mod-provided javadoc");
 	}
 
 	@VisibleForTesting

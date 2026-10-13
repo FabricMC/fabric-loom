@@ -80,8 +80,11 @@ public abstract class RemapTaskConfiguration implements Runnable {
 			task.dependsOn(jarTask);
 			task.setDescription("Remaps the built project jar to intermediary mappings.");
 			task.setGroup(Constants.TaskGroup.FABRIC);
-			getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
-			getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+
+			if (!GradleUtils.getBooleanProperty(getProject(), Constants.Properties.DISABLE_REMAPPED_VARIANTS)) {
+				getArtifacts().add(JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, task);
+				getArtifacts().add(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, task);
+			}
 
 			// Setup the input file and the nested deps
 			task.getInputFile().convention(jarTask.flatMap(AbstractArchiveTask::getArchiveFile));

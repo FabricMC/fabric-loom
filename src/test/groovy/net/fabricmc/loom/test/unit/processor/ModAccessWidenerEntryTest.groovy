@@ -24,17 +24,30 @@
 
 package net.fabricmc.loom.test.unit.processor
 
-import spock.lang.Specification
+import java.nio.file.Files
+import java.nio.file.Path
 
+import spock.lang.Specification
+import spock.lang.TempDir
+
+import net.fabricmc.loom.configuration.accesswidener.AccessWidenerJarProcessor
 import net.fabricmc.loom.configuration.accesswidener.ModAccessWidenerEntry
+import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.fmj.FabricModJson
+import net.fabricmc.loom.util.fmj.FabricModJsonSource
 import net.fabricmc.loom.util.fmj.ModEnvironment
 
 class ModAccessWidenerEntryTest extends Specification {
+	@TempDir
+	Path modDirectory
+
 	def "read local mod"() {
 		given:
+		def accessWidener = modDirectory.resolve("test.accesswidener")
+		Files.writeString(accessWidener, "accessWidener v2 named\n")
 		def mod = Mock(FabricModJson.Mockable)
 		mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod.getSource() >> new FabricModJsonSource.DirectorySource(modDirectory)
 
 		when:
 		def entries = ModAccessWidenerEntry.readAll(mod, true)
@@ -45,6 +58,32 @@ class ModAccessWidenerEntryTest extends Specification {
 		entry.path() == "test.accesswidener"
 		entry.environment() == ModEnvironment.UNIVERSAL
 		entry.transitiveOnly()
-		entry.hashCode() == -1218981396
+		entry.hash() == Checksum.of(accessWidener).sha1().hex()
+	}
+
+	def "cache hash tracks access widener contents"() {
+		given:
+		def accessWidener = modDirectory.resolve("test.accesswidener")
+		Files.writeString(accessWidener, "accessWidener v2 named\ntransitive-accessible class test/Original\n")
+		def mod = Mock(FabricModJson.Mockable)
+		mod.getId() >> "testmod"
+		mod.getClassTweakers() >> ["test.accesswidener": ModEnvironment.UNIVERSAL]
+		mod.getSource() >> new FabricModJsonSource.DirectorySource(modDirectory)
+		def originalEntry = ModAccessWidenerEntry.readAll(mod, true)[0]
+		def originalHash = originalEntry.hashCode()
+		def originalSpec = new AccessWidenerJarProcessor.Spec([originalEntry])
+		def originalSpecHash = originalSpec.hashCode()
+
+		when:
+		def unchangedEntry = ModAccessWidenerEntry.readAll(mod, true)[0]
+		Files.writeString(accessWidener, "accessWidener v2 named\ntransitive-accessible class test/Changed\n")
+		def changedEntry = ModAccessWidenerEntry.readAll(mod, true)[0]
+
+		then:
+		unchangedEntry.hashCode() == originalHash
+		changedEntry.hashCode() != originalHash
+		new AccessWidenerJarProcessor.Spec([changedEntry]).hashCode() != originalSpecHash
+		originalEntry.hashCode() == originalHash
+		originalSpec.hashCode() == originalSpecHash
 	}
 }

@@ -25,6 +25,7 @@
 package net.fabricmc.loom.configuration.accesswidener;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,7 @@ import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.classtweaker.visitors.TransitiveOnlyFilter;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
+import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.LazyCloseable;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.ModEnvironment;
@@ -45,12 +47,20 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 /**
  * {@link AccessWidenerEntry} implementation for a {@link FabricModJson}.
  */
-public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironment environment, boolean transitiveOnly) implements AccessWidenerEntry {
+public record ModAccessWidenerEntry(FabricModJson mod, String path, ModEnvironment environment, boolean transitiveOnly, String hash) implements AccessWidenerEntry {
 	public static List<ModAccessWidenerEntry> readAll(FabricModJson modJson, boolean transitiveOnly) {
 		var entries = new ArrayList<ModAccessWidenerEntry>();
 
 		for (Map.Entry<String, ModEnvironment> entry : modJson.getClassTweakers().entrySet()) {
-			entries.add(new ModAccessWidenerEntry(modJson, entry.getKey(), entry.getValue(), transitiveOnly));
+			final String hash;
+
+			try {
+				hash = Checksum.of(modJson.getSource().read(entry.getKey())).sha1().hex();
+			} catch (IOException e) {
+				throw new UncheckedIOException("Failed to read access widener '%s' from mod: %s".formatted(entry.getKey(), modJson.getId()), e);
+			}
+
+			entries.add(new ModAccessWidenerEntry(modJson, entry.getKey(), entry.getValue(), transitiveOnly, hash));
 		}
 
 		return Collections.unmodifiableList(entries);

@@ -61,7 +61,9 @@ class DownloadStringTest extends DownloadTest {
 
 	def "String: Server error"() {
 		setup:
+		int requests = 0
 		server.get("/stringNotFound") {
+			requests++
 			it.status(HttpStatus.INTERNAL_SERVER_ERROR)
 		}
 
@@ -73,6 +75,10 @@ class DownloadStringTest extends DownloadTest {
 		then:
 		def e = thrown DownloadException
 		e.statusCode == 500
+		requests == 3
+		e.message.contains("Failed to download $PATH/stringNotFound after 3 attempts:")
+		e.message.contains("500")
+		!e.message.contains("trust certificates")
 	}
 
 	def "String: Redirect"() {

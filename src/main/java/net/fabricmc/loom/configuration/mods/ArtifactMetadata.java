@@ -77,7 +77,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 				}
 
 				if (loomVersion != null && refmapRemapType == MixinRemapType.STATIC) {
-					validateLoomVersion(loomVersion, currentLoomVersion);
+					validateLoomVersion(loomVersion, currentLoomVersion, artifact.path().getFileName().toString());
 				}
 
 				if (knownIndyBsmsValue != null) {
@@ -97,7 +97,7 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 
 	// Validates that the version matches or is less than the current loom version
 	// This is only done for jars with tiny-remapper remapped mixins.
-	private static void validateLoomVersion(String version, String currentLoomVersion) {
+	private static void validateLoomVersion(String version, String currentLoomVersion, String artifactName) {
 		if ("0.0.0+unknown".equals(currentLoomVersion)) {
 			// Unknown version, skip validation. This is the case when running from source (tests)
 			return;
@@ -112,7 +112,8 @@ public record ArtifactMetadata(boolean isFabricMod, RemapRequirements remapRequi
 			final int currentVersionPart = Integer.parseInt(currentVersionParts[i]);
 
 			if (versionPart > currentVersionPart) {
-				throw new IllegalStateException("Mod was built with a newer version of Loom (%s), you are using Loom (%s)".formatted(version, currentLoomVersion));
+				throw new IllegalStateException("Mod %s was built with Loom %s; this project uses Loom %s. Upgrade this project's Loom version."
+						.formatted(artifactName, version, currentLoomVersion));
 			} else if (versionPart < currentVersionPart) {
 				// Older version, no need to check further
 				break;

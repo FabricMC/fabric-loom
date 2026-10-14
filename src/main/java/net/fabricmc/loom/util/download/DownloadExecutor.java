@@ -50,8 +50,8 @@ public class DownloadExecutor implements AutoCloseable {
 			try {
 				return downloadRunner.run();
 			} catch (DownloadException e) {
-				executorService.shutdownNow();
 				downloadExceptions.add(e);
+				executorService.shutdownNow();
 				throw new CompletionException(e);
 			}
 		}, executorService);
@@ -68,10 +68,13 @@ public class DownloadExecutor implements AutoCloseable {
 		}
 
 		if (!downloadExceptions.isEmpty()) {
-			DownloadException downloadException = new DownloadException("Failed to download");
+			DownloadException primaryFailure = downloadExceptions.getFirst();
+			DownloadException downloadException = new DownloadException(primaryFailure.getMessage(), primaryFailure);
 
 			for (DownloadException suppressed : downloadExceptions) {
-				downloadException.addSuppressed(suppressed);
+				if (suppressed != primaryFailure) {
+					downloadException.addSuppressed(suppressed);
+				}
 			}
 
 			throw downloadException;

@@ -121,7 +121,11 @@ public abstract class MinecraftProvider {
 			final JavaVersion requiredJavaVersion = JavaVersion.toVersion(requiredMajorJavaVersion);
 
 			if (!javaVersion.isCompatibleWith(requiredJavaVersion)) {
-				throw new IllegalStateException("Minecraft " + minecraftVersion() + " requires Java " + requiredJavaVersion + " but Java " + javaVersion + " was selected");
+				throw new IllegalStateException(("Minecraft %s requires Java %s, but Java %s was selected. "
+						+ "Gradle is running Java %s from %s. "
+						+ "Select a compatible Gradle JVM in your IDE settings or update Gradle's JVM configuration.")
+						.formatted(minecraftVersion(), requiredJavaVersion, javaVersion,
+								System.getProperty("java.version"), System.getProperty("java.home")));
 			}
 		}
 	}

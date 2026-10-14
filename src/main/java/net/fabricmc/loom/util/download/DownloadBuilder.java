@@ -31,8 +31,10 @@ import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertPathBuilderException;
+import java.security.cert.CertPathValidatorException;
+import java.security.cert.CertificateException;
 import java.time.Duration;
-import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 import org.jspecify.annotations.Nullable;
@@ -164,12 +166,41 @@ public class DownloadBuilder {
 				}
 
 				if (i == maxRetries) {
-					throw new DownloadException(String.format(Locale.ENGLISH, "Failed download after %d attempts", maxRetries), e);
+					throw failedDownload(e);
 				}
 			}
 		}
 
 		throw new IllegalStateException();
+	}
+
+	private DownloadException failedDownload(DownloadException exception) {
+		Throwable failure = exception;
+
+		while (failure.getCause() != null) {
+			failure = failure.getCause();
+		}
+
+		String message = "Failed to download %s after %d attempts: %s".formatted(url, maxRetries, failure);
+
+		if (isCertificateFailure(exception)) {
+			message += " Check the trust certificates in the JDK running Gradle (java.home: %s) and whether a proxy or antivirus is intercepting HTTPS connections."
+					.formatted(System.getProperty("java.home"));
+		}
+
+		return new DownloadException(message, exception);
+	}
+
+	private static boolean isCertificateFailure(Throwable failure) {
+		while (failure != null) {
+			if (failure instanceof CertificateException || failure instanceof CertPathBuilderException || failure instanceof CertPathValidatorException) {
+				return true;
+			}
+
+			failure = failure.getCause();
+		}
+
+		return false;
 	}
 
 	// See comment on org.gradle.util.internal.GUtil.isSecureUrl

@@ -142,7 +142,6 @@ class ArtifactMetadataTest extends Specification {
 		"2.0" | "1.4.99"
 	}
 
-	// Test that a mod with the same or older version of loom can be read
 	def "Invalid loom version"() {
 		given:
 		def zip = createModWithRemapType(modLoomVersion, "static")
@@ -150,7 +149,7 @@ class ArtifactMetadataTest extends Specification {
 		def metadata = createMetadata(zip, loomVersion)
 		then:
 		def e = thrown(IllegalStateException)
-		e.message == "Mod was built with a newer version of Loom ($modLoomVersion), you are using Loom ($loomVersion)"
+		e.message == "Mod ${zip.fileName} was built with Loom $modLoomVersion; this project uses Loom $loomVersion. Upgrade this project's Loom version."
 		where:
 		loomVersion | modLoomVersion
 		"1.4" | "1.5"

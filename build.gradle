@@ -60,7 +60,13 @@ configurations.configureEach {
 	}
 }
 
-configurations.named(JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME) {
+configurations.matching {
+	it.name in [
+		JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME,
+		JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME,
+		JavaPlugin.SOURCES_ELEMENTS_CONFIGURATION_NAME
+	]
+}.configureEach {
 	attributes {
 		attribute(GradlePluginApiVersion.GRADLE_PLUGIN_API_VERSION_ATTRIBUTE, objects.named(GradlePluginApiVersion, GradleVersion.current().getVersion()))
 	}

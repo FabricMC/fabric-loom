@@ -149,7 +149,7 @@ class ArtifactMetadataTest extends Specification {
 		def metadata = createMetadata(zip, loomVersion)
 		then:
 		def e = thrown(IllegalStateException)
-		e.message == "Mod ${zip.fileName} was built with Loom $modLoomVersion; this project uses Loom $loomVersion. Upgrade this project's Loom version to a compatible release."
+		e.message == "Mod ${zip.fileName} was built with Loom $modLoomVersion; this project uses Loom $loomVersion. Upgrade this project's Loom version."
 		where:
 		loomVersion | modLoomVersion
 		"1.4" | "1.5"

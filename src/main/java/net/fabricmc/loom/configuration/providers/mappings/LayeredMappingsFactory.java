@@ -31,11 +31,13 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,22 +47,38 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
+import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
+import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipUtils;
+import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.mappingio.adapter.MappingDstNsReorder;
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileWriter;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
-public record LayeredMappingsFactory(LayeredMappingSpec spec) {
+public final class LayeredMappingsFactory {
 	private static final String GROUP = "loom";
 	private static final String MODULE = "mappings";
 	private static final Logger LOGGER = LoggerFactory.getLogger(LayeredMappingsFactory.class);
+
+	private final LayeredMappingSpec spec;
+	private String classifier;
+	private final List<ExternalModuleDependency> dependencies = new ArrayList<>();
+
+	public LayeredMappingsFactory(LayeredMappingSpec spec) {
+		this.spec = spec;
+	}
+
+	public LayeredMappingSpec spec() {
+		return spec;
+	}
 
 	/*
 	As we no longer have SelfResolvingDependency we now always create the mappings file after evaluation.
@@ -77,19 +95,31 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	private void evaluate(ConfigContext configContext) throws IOException {
+		final Project project = configContext.project();
+		final String classifier = classifier(project);
+
+		for (ExternalModuleDependency dependency : dependencies) {
+			dependency.artifact(artifact -> artifact.setClassifier(classifier));
+		}
+
 		LOGGER.info("Evaluating layer mapping: {}", mavenNotation());
 
 		final Path mavenRepoDir = configContext.extension().getFiles().getGlobalMinecraftRepo().toPath();
-		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec().getVersion(), null, mavenRepoDir);
-		final Path jar = resolve(configContext.project());
-		maven.copyToMaven(jar, null);
+		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec.getVersion(), classifier, mavenRepoDir);
+		final Path jar = resolve(project);
+		if (!maven.exists(null)
+				|| configContext.extension().refreshDeps()
+				|| Files.mismatch(jar, maven.getOutputFile(null)) != -1) {
+			maven.copyToMaven(jar, null);
+		}
 	}
 
 	public Path resolve(Project project) throws IOException {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_"));
+		final String classifier = classifier(project);
+		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_") + "-" + classifier);
 		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
-		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, spec.getVersion()));
+		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s-%s.jar", GROUP, MODULE, spec.getVersion(), classifier));
 
 		if (Files.exists(mappingsZip) && !mappingContext.refreshDeps()) {
 			return mappingsZip;
@@ -110,11 +140,31 @@ public record LayeredMappingsFactory(LayeredMappingSpec spec) {
 	}
 
 	public Dependency createDependency(Project project) {
-		return project.getDependencies().create(mavenNotation());
+		final ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion()));
+		dependencies.add(dependency);
+		return dependency;
 	}
 
 	public String mavenNotation() {
-		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion());
+		return classifier == null
+				? String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion())
+				: String.format("%s:%s:%s:%s", GROUP, MODULE, spec.getVersion(), classifier);
+	}
+
+	private String classifier(Project project) {
+		if (classifier == null) {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			final String minecraftVersion = DependencyInfo.create(project, Constants.Configurations.MINECRAFT).getDependency().getVersion();
+			final String context = String.join("\0",
+					minecraftVersion,
+					Boolean.toString(extension.getUseIntermediateMappings().get()),
+					extension.getProductionNamespace().get(),
+					Boolean.toString(GradleUtils.getBooleanProperty(project, Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS))
+			);
+			classifier = "ctx-" + Checksum.of(context).sha256().hex(8);
+		}
+
+		return classifier;
 	}
 
 	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile, boolean useIntermediateMappings) throws IOException {

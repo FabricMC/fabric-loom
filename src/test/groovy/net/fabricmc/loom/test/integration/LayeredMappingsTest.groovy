@@ -35,6 +35,57 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class LayeredMappingsTest extends Specification implements GradleProjectTestTrait {
+	def "layered mapping cache identity includes mapping context"() {
+		given:
+		def testGradleHome = File.createTempDir("layered-mappings-context")
+		def first = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE, gradleHomeDir: testGradleHome)
+		first.buildGradle << """
+			dependencies {
+				minecraft "com.mojang:minecraft:1.21.4"
+				mappings loom.officialMojangMappings()
+			}
+		"""
+		def second = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE, gradleHomeDir: testGradleHome)
+		second.buildGradle << """
+			dependencies {
+				minecraft "com.mojang:minecraft:1.21.1"
+				mappings loom.officialMojangMappings()
+			}
+		"""
+		def mappingsRoot = new File(first.gradleHomeDir, "caches/fabric-loom/minecraftMaven/loom/mappings")
+		def mappingJars = {
+			->
+			def files = []
+			if (mappingsRoot.exists()) {
+				mappingsRoot.eachFileRecurse { file ->
+					if (file.name.endsWith(".jar")) files << file
+				}
+			}
+			files
+		}
+
+		when:
+		def before = mappingJars()*.absolutePath as Set
+		first.run(task: "help", configurationCache: false)
+		def firstJars = mappingJars().findAll { !before.contains(it.absolutePath) }
+		def firstTimestamps = firstJars.collectEntries {
+			[(it.absolutePath): it.lastModified()]
+		}
+		second.run(task: "help", configurationCache: false)
+		def secondJars = mappingJars().findAll {
+			!firstJars*.absolutePath.contains(it.absolutePath) && !before.contains(it.absolutePath)
+		}
+		first.run(task: "help")
+		def cached = first.run(task: "help")
+
+		then:
+		firstJars.size() == 1
+		secondJars.size() == 1
+		firstJars*.name != secondJars*.name
+		firstJars.every { it.lastModified() == firstTimestamps[it.absolutePath] }
+		cached.output.contains("Reusing configuration cache.")
+	}
+
 	def "build #layer"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE)

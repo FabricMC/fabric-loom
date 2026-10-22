@@ -47,14 +47,13 @@ import net.fabricmc.loom.api.mappings.layered.MappingContext;
 import net.fabricmc.loom.api.mappings.layered.MappingLayer;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
-import net.fabricmc.loom.configuration.DependencyInfo;
 import net.fabricmc.loom.configuration.mods.dependency.LocalMavenHelper;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsData;
 import net.fabricmc.loom.configuration.providers.mappings.extras.annotations.AnnotationsLayer;
 import net.fabricmc.loom.configuration.providers.mappings.extras.unpick.UnpickLayer;
 import net.fabricmc.loom.configuration.providers.mappings.unpick.UnpickMetadata;
 import net.fabricmc.loom.configuration.providers.mappings.utils.AddConstructorMappingVisitor;
-import net.fabricmc.loom.util.Checksum;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftVersionMeta;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ZipUtils;
 import net.fabricmc.loom.util.gradle.GradleUtils;
@@ -69,7 +68,6 @@ public final class LayeredMappingsFactory {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LayeredMappingsFactory.class);
 
 	private final LayeredMappingSpec spec;
-	private String classifier;
 	private final List<ExternalModuleDependency> dependencies = new ArrayList<>();
 
 	public LayeredMappingsFactory(LayeredMappingSpec spec) {
@@ -96,17 +94,19 @@ public final class LayeredMappingsFactory {
 
 	private void evaluate(ConfigContext configContext) throws IOException {
 		final Project project = configContext.project();
-		final String classifier = classifier(project);
+		final ResolvedLayeredMappingSpec resolvedSpec = resolveSpec(project);
+		final String version = resolvedSpec.getVersion();
 
 		for (ExternalModuleDependency dependency : dependencies) {
-			dependency.artifact(artifact -> artifact.setClassifier(classifier));
+			dependency.version(constraint -> constraint.require(version));
 		}
 
-		LOGGER.info("Evaluating layer mapping: {}", mavenNotation());
+		LOGGER.info("Evaluating layered mappings: {}", version);
 
 		final Path mavenRepoDir = configContext.extension().getFiles().getGlobalMinecraftRepo().toPath();
-		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, spec.getVersion(), classifier, mavenRepoDir);
-		final Path jar = resolve(project);
+		final LocalMavenHelper maven = new LocalMavenHelper(GROUP, MODULE, version, null, mavenRepoDir);
+		final Path jar = resolve(project, resolvedSpec);
+
 		if (!maven.exists(null)
 				|| configContext.extension().refreshDeps()
 				|| Files.mismatch(jar, maven.getOutputFile(null)) != -1) {
@@ -115,18 +115,20 @@ public final class LayeredMappingsFactory {
 	}
 
 	public Path resolve(Project project) throws IOException {
-		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final String classifier = classifier(project);
-		final MappingContext mappingContext = new GradleMappingContext(project, spec.getVersion().replace("+", "_").replace(".", "_") + "-" + classifier);
+		return resolve(project, resolveSpec(project));
+	}
+
+	private Path resolve(Project project, ResolvedLayeredMappingSpec resolvedSpec) throws IOException {
+		final MappingContext mappingContext = new GradleMappingContext(project, resolvedSpec.getVersion().replace("+", "_").replace(".", "_"));
 		final Path mappingsDir = mappingContext.minecraftProvider().dir("layered").toPath();
-		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s-%s.jar", GROUP, MODULE, spec.getVersion(), classifier));
+		final Path mappingsZip = mappingsDir.resolve(String.format("%s.%s-%s.jar", GROUP, MODULE, resolvedSpec.getVersion()));
 
 		if (Files.exists(mappingsZip) && !mappingContext.refreshDeps()) {
 			return mappingsZip;
 		}
 
-		boolean useIntermediateMappings = extension.getUseIntermediateMappings().get();
-		var processor = new LayeredMappingsProcessor(spec, !useIntermediateMappings);
+		boolean useIntermediateMappings = resolvedSpec.useIntermediateMappings();
+		var processor = new LayeredMappingsProcessor(resolvedSpec.spec(), !useIntermediateMappings);
 		List<MappingLayer> layers = processor.resolveLayers(mappingContext);
 
 		Files.deleteIfExists(mappingsZip);
@@ -140,31 +142,29 @@ public final class LayeredMappingsFactory {
 	}
 
 	public Dependency createDependency(Project project) {
-		final ExternalModuleDependency dependency = (ExternalModuleDependency) project.getDependencies().create(String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion()));
+		final var dependency = (ExternalModuleDependency) project.getDependencies().create(mavenNotation());
 		dependencies.add(dependency);
 		return dependency;
 	}
 
 	public String mavenNotation() {
-		return classifier == null
-				? String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion())
-				: String.format("%s:%s:%s:%s", GROUP, MODULE, spec.getVersion(), classifier);
+		return String.format("%s:%s:%s", GROUP, MODULE, spec.getVersion());
 	}
 
-	private String classifier(Project project) {
-		if (classifier == null) {
-			final LoomGradleExtension extension = LoomGradleExtension.get(project);
-			final String minecraftVersion = DependencyInfo.create(project, Constants.Configurations.MINECRAFT).getDependency().getVersion();
-			final String context = String.join("\0",
-					minecraftVersion,
-					Boolean.toString(extension.getUseIntermediateMappings().get()),
-					extension.getProductionNamespace().get(),
-					Boolean.toString(GradleUtils.getBooleanProperty(project, Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS))
-			);
-			classifier = "ctx-" + Checksum.of(context).sha256().hex(8);
-		}
-
-		return classifier;
+	private ResolvedLayeredMappingSpec resolveSpec(Project project) {
+		final LoomGradleExtension extension = LoomGradleExtension.get(project);
+		final boolean useIntermediateMappings = extension.getUseIntermediateMappings().get();
+		final MinecraftVersionMeta versionInfo = extension.getMinecraftProvider().getVersionInfo();
+		return new ResolvedLayeredMappingSpec(
+				spec,
+				extension.getMinecraftProvider().minecraftVersion(),
+				useIntermediateMappings ? extension.getIntermediateMappingsProvider().getName() : null,
+				extension.getProductionNamespace().get(),
+				useIntermediateMappings,
+				GradleUtils.getBooleanProperty(project, Constants.Properties.DROP_NON_INTERMEDIATE_ROOT_METHODS),
+				versionInfo.download("client_mappings"),
+				versionInfo.download("server_mappings")
+		);
 	}
 
 	private void writeMapping(LayeredMappingsProcessor processor, List<MappingLayer> layers, Path mappingsFile, boolean useIntermediateMappings) throws IOException {

@@ -35,54 +35,63 @@ import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class LayeredMappingsTest extends Specification implements GradleProjectTestTrait {
-	def "layered mapping cache identity includes mapping context"() {
+	def "layered mappings have different identities for different Minecraft versions"() {
 		given:
-		def testGradleHome = File.createTempDir("layered-mappings-context")
-		def first = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE, gradleHomeDir: testGradleHome)
-		first.buildGradle << """
-			dependencies {
-				minecraft "com.mojang:minecraft:1.21.4"
-				mappings loom.officialMojangMappings()
-			}
-		"""
-		def second = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE, gradleHomeDir: testGradleHome)
-		second.buildGradle << """
-			dependencies {
-				minecraft "com.mojang:minecraft:1.21.1"
-				mappings loom.officialMojangMappings()
-			}
-		"""
-		def mappingsRoot = new File(first.gradleHomeDir, "caches/fabric-loom/minecraftMaven/loom/mappings")
-		def mappingJars = {
-			->
-			def files = []
-			if (mappingsRoot.exists()) {
-				mappingsRoot.eachFileRecurse { file ->
-					if (file.name.endsWith(".jar")) files << file
+		def projects = ["1.18.1", "1.18.2"].collect { minecraftVersion ->
+			def gradle = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE)
+			gradle.buildGradle << """
+				dependencies {
+					minecraft "com.mojang:minecraft:$minecraftVersion"
+					mappings loom.officialMojangMappings()
 				}
-			}
-			files
+				tasks.register("copyMappings", Copy) {
+					from configurations.mappings
+					into layout.buildDirectory.dir("mappings")
+				}
+			"""
+			gradle
 		}
 
 		when:
-		def before = mappingJars()*.absolutePath as Set
-		first.run(task: "help", configurationCache: false)
-		def firstJars = mappingJars().findAll { !before.contains(it.absolutePath) }
-		def firstTimestamps = firstJars.collectEntries {
-			[(it.absolutePath): it.lastModified()]
+		projects.each { it.run(task: "copyMappings", configurationCache: false) }
+		def mappingNames = projects.collect {
+			new File(it.projectDir, "build/mappings").list().toList()
 		}
-		second.run(task: "help", configurationCache: false)
-		def secondJars = mappingJars().findAll {
-			!firstJars*.absolutePath.contains(it.absolutePath) && !before.contains(it.absolutePath)
-		}
-		first.run(task: "help")
-		def cached = first.run(task: "help")
 
 		then:
-		firstJars.size() == 1
-		secondJars.size() == 1
-		firstJars*.name != secondJars*.name
-		firstJars.every { it.lastModified() == firstTimestamps[it.absolutePath] }
+		mappingNames.every { it.size() == 1 }
+		mappingNames.toSet().size() == 2
+	}
+
+	def "unchanged layered mappings preserve configuration cache"() {
+		given:
+		def gradle = gradleProject(project: "minimalBase", version: DEFAULT_GRADLE)
+		gradle.buildGradle << '''
+			dependencies {
+				minecraft "com.mojang:minecraft:1.18.1"
+				mappings loom.officialMojangMappings()
+			}
+			loom.noIntermediateMappings()
+			loom.productionNamespace = "official"
+			tasks.register("copyMappings", Copy) {
+				from configurations.mappings
+				into layout.buildDirectory.dir("mappings")
+			}
+			afterEvaluate {
+				file("mappings-path.txt").text = configurations.mappings.singleFile.absolutePath
+			}
+		'''
+		gradle.run(task: "copyMappings", configurationCache: false)
+		def mappingsFile = new File(new File(gradle.projectDir, "mappings-path.txt").text)
+		assert mappingsFile.setLastModified(1_000)
+
+		when:
+		gradle.run(task: "copyMappings", configurationCache: false)
+		gradle.run(task: "copyMappings")
+		def cached = gradle.run(task: "copyMappings")
+
+		then:
+		mappingsFile.lastModified() == 1_000
 		cached.output.contains("Reusing configuration cache.")
 	}
 
@@ -166,10 +175,15 @@ class LayeredMappingsTest extends Specification implements GradleProjectTestTrai
 	@Unroll
 	def "build no intermediary (gradle #version)"() {
 		setup:
-		def gradle = gradleProject(project: "mojangMappings", version: version)
+		def gradle = gradleProject(project: "minimalBase", version: version)
 		gradle.buildGradle << '''
+			dependencies {
+				minecraft "com.mojang:minecraft:1.18.1"
+				mappings loom.officialMojangMappings()
+			}
 			loom {
 				noIntermediateMappings()
+				productionNamespace = "official"
 			}
 		'''
 

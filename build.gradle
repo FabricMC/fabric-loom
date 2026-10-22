@@ -202,12 +202,12 @@ spotless {
 	groovy {
 		importOrder('java', 'javax', '', 'net.fabricmc', '\\#')
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
-		greclipse()
+		// greclipse()
 	}
 
 	groovyGradle {
 		target 'src/**/*.gradle', '*.gradle'
-		greclipse()
+		// greclipse()
 	}
 
 	kotlin {

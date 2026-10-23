@@ -64,7 +64,7 @@ class MixinRefmapInlinerTest extends Specification {
 
 		then:
 		text.contains('@Lorg/spongepowered/asm/mixin/Mixin;(targets={"RemappedClassName"})')
-		text.contains('@Lorg/spongepowered/asm/mixin/injection/Inject;(at={@Lorg/spongepowered/asm/mixin/injection/At;(value="INJECT")}, method={"remappedInjectExample"})')
+		text.contains('@Lorg/spongepowered/asm/mixin/injection/Inject;(method={"remappedInjectExample"}, at={@Lorg/spongepowered/asm/mixin/injection/At;(value="INJECT")})')
 	}
 
 	static byte[] getClassBytes(Class<?> clazz) {

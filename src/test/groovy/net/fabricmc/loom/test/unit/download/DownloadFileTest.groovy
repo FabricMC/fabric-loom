@@ -379,17 +379,14 @@ class DownloadFileTest extends DownloadTest {
 		def dir = File.createTempDir().toPath()
 
 		when:
-		boolean didDownload = false
+		def result
 		try (def downloadExecutor = new DownloadExecutor(2)) {
-			Download.create("$PATH/async1")
+			result = await Download.create("$PATH/async1")
 					.downloadPathAsync(dir.resolve("1.txt"), downloadExecutor)
-					.thenAccept {
-						didDownload = it.didDownload()
-					}
 		}
 
 		then:
-		didDownload
+		result.didDownload()
 	}
 
 	def "File: Async Error"() {

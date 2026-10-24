@@ -73,28 +73,14 @@ public final class GradleUtils {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 
 		if (extension.isProjectIsolationActive()) {
-			return project.getProviders().gradleProperty(key).map(s -> {
-				try {
-					return Boolean.parseBoolean(s);
-				} catch (final IllegalArgumentException ex) {
-					return false;
-				}
-			});
+			return project.getProviders().gradleProperty(key).map(Boolean::parseBoolean);
 		}
 
 		// Works around https://github.com/gradle/gradle/issues/23572
 		return project.provider(() -> {
 			final Object value = project.findProperty(key);
 
-			if (value instanceof String str) {
-				try {
-					return Boolean.parseBoolean(str);
-				} catch (final IllegalArgumentException ex) {
-					return false;
-				}
-			} else {
-				return false;
-			}
+			return value == null ? null : Boolean.parseBoolean(value.toString());
 		});
 	}
 

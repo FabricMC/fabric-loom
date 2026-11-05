@@ -32,6 +32,7 @@ import org.gradle.api.plugins.JavaPlugin
 import org.intellij.lang.annotations.Language
 import spock.lang.Specification
 
+import net.fabricmc.loom.configuration.ide.DefaultRunConfigurationSettings
 import net.fabricmc.loom.configuration.ide.RunConfigurationInternal
 import net.fabricmc.loom.configuration.ide.idea.IdeaSyncTask
 import net.fabricmc.loom.configuration.ide.idea.IntellijRunConfigWriter
@@ -85,6 +86,24 @@ class IdeaSyncTaskTest extends Specification {
 		configs[0].launchFile.get().asFile == new File(project.rootDir, ".idea/runConfigurations/Minecraft_Client.xml")
 		configs[0].runConfigXml.get() == expectedGradleRunConfigXml("Minecraft Client", ":runClient")
 		project.file("run").directory
+	}
+
+	def "runtime files and Mixin agent do not affect IDE JVM arguments"() {
+		given:
+		def project = mockJavaProject("root")
+		def run = mockRunConfig(project, "client", "Minecraft Client", true, false)
+		run.jvmArguments.set(["-Dexisting=true"])
+		run.mods.from("extra mod.jar")
+		run.mixinAgent.set(true)
+
+		when:
+		def first = DefaultRunConfigurationSettings.finialise(run, project)
+		def second = DefaultRunConfigurationSettings.finialise(run, project)
+
+		then:
+		first.jvmArguments.get() == ["-Dexisting=true"]
+		second.jvmArguments.get() == first.jvmArguments.get()
+		run.jvmArguments.get() == ["-Dexisting=true"]
 	}
 
 	def "configure exclusions"() {

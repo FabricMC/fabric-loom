@@ -64,6 +64,7 @@ public class DefaultRunConfigurationSettings {
 		run.getRunDirectory().set(project.file("run"));
 		run.getGenerateRunConfig().convention(GradleUtils.isRootProject(project));
 		run.getPreferGradleTask().convention(true);
+		run.getMixinAgent().convention(false);
 	}
 
 	// Apply any additional configuration after the user has modified the settings, but before the run config is generated.
@@ -133,6 +134,8 @@ public class DefaultRunConfigurationSettings {
 		run.getPreferGradleTask().finalizeValue();
 		run.getIdeConfigFolder().finalizeValue();
 		run.getDevLaunchMainClass().finalizeValue();
+		run.getMods().disallowChanges();
+		run.getMixinAgent().finalizeValue();
 	}
 
 	private static String encodeEscaped(String s) {

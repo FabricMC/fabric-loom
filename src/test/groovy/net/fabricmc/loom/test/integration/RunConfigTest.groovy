@@ -112,6 +112,42 @@ class RunConfigTest extends Specification implements GradleProjectTestTrait {
 		result.output.contains("Configured through the run config")
 	}
 
+	def "Gradle run builds and loads extra mods and enables the Mixin agent"() {
+		given:
+		def gradle = gradleProject(project: "runconfigs")
+		gradle.buildGradle << '''
+			def extraModJson = tasks.register("extraModJson", net.fabricmc.loom.task.FabricModJsonV1Task) {
+				outputFile = layout.buildDirectory.file("extra-mod/fabric.mod.json")
+				json {
+					modId = "extra-runtime-mod"
+					version = "1.0.0"
+				}
+			}
+
+			def extraMod = tasks.register("extraMod", Jar) {
+				archiveFileName = "extra mod.jar"
+				from(extraModJson)
+			}
+
+			loom {
+				serverOnlyMinecraftJar()
+			}
+
+			loom.runs.server {
+				mods.from(extraMod)
+				mixinAgent.set(true)
+			}
+		'''
+
+		when:
+		def result = gradle.run(task: "runServer")
+
+		then:
+		result.task(":extraMod").outcome == SUCCESS
+		result.output.contains("- extra-runtime-mod 1.0.0")
+		result.output.contains("Attempting to load Hot-Swap agent")
+	}
+
 	@RestoreSystemProperties
 	@Unroll
 	def "idea auto configuration (gradle #version)"() {

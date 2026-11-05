@@ -29,6 +29,7 @@ import java.nio.file.Paths
 import java.nio.file.attribute.FileTime
 import java.time.Duration
 import java.time.Instant
+import java.util.zip.GZIPOutputStream
 
 import io.javalin.http.HttpStatus
 import spock.lang.IgnoreIf
@@ -130,6 +131,69 @@ class DownloadFileTest extends DownloadTest {
 		requestCount == 1
 		results[0].didDownload()
 		!results[1].didDownload()
+	}
+
+	def "Corrupt cached file is downloaded again despite its ETag and max age"() {
+		given:
+		int requestCount = 0
+		def conditionalRequests = []
+		server.get("/corrupt") {
+			requestCount++
+			def clientEtag = it.header("If-None-Match")
+			conditionalRequests << clientEtag
+			it.header("ETag", "cached")
+
+			if (clientEtag == "cached") {
+				it.status(HttpStatus.NOT_MODIFIED)
+			} else {
+				it.result("Hello World")
+			}
+		}
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		Download.create("$PATH/corrupt").downloadPath(output)
+		Files.writeString(output, "Corrupt content")
+
+		when:
+		def result = Download.create("$PATH/corrupt")
+				.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
+				.maxAge(maxAge)
+				.downloadPath(output)
+
+		then:
+		result.didDownload()
+		Files.readString(output) == "Hello World"
+		requestCount == 2
+		conditionalRequests == [null, null]
+
+		where:
+		maxAge << [
+			Duration.ZERO,
+			Duration.ofDays(1)
+		]
+	}
+
+	def "File: Gzip with compressed content length"() {
+		given:
+		def content = "Hello World" * 1000
+		def compressed = new ByteArrayOutputStream()
+		try (def gzip = new GZIPOutputStream(compressed)) {
+			gzip.write(content.getBytes("UTF-8"))
+		}
+		int requestCount = 0
+		server.get("/gzip") {
+			requestCount++
+			it.header("Content-Encoding", "gzip")
+			it.header("Content-Length", compressed.size().toString())
+			it.result(compressed.toByteArray())
+		}
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+
+		when:
+		Download.create("$PATH/gzip").downloadPath(output)
+
+		then:
+		Files.readString(output) == content
+		requestCount == 1
 	}
 
 	def "Invalid Sha1"() {

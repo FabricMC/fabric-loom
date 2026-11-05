@@ -26,6 +26,7 @@ package net.fabricmc.loom.task;
 
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.Instant;
 
 import javax.inject.Inject;
 
@@ -67,7 +68,7 @@ public abstract class DownloadTask extends DefaultTask {
 	public abstract Property<String> getSha1();
 
 	/**
-	 * The maximum age of the downloaded file in days. When not provided the downloaded file will never be considered stale.
+	 * The maximum age of the downloaded file. When not provided the downloaded file will never be considered stale.
 	 */
 	@Optional
 	@Input
@@ -91,6 +92,16 @@ public abstract class DownloadTask extends DefaultTask {
 	@Inject
 	public DownloadTask() {
 		getIsOffline().set(getProject().getGradle().getStartParameter().isOffline());
+		getOutputs().upToDateWhen(task -> {
+			DownloadTask downloadTask = (DownloadTask) task;
+
+			if (downloadTask.getIsOffline().get() || !downloadTask.getMaxAge().isPresent()) {
+				return true;
+			}
+
+			Instant lastModified = Instant.ofEpochMilli(downloadTask.getOutput().get().getAsFile().lastModified());
+			return !lastModified.isBefore(Instant.now().minus(downloadTask.getMaxAge().get()));
+		});
 	}
 
 	@TaskAction
@@ -120,7 +131,7 @@ public abstract class DownloadTask extends DefaultTask {
 			DownloadBuilder builder;
 
 			try {
-				builder = Download.create(getParameters().getUrl().get()).defaultCache();
+				builder = Download.create(getParameters().getUrl().get());
 			} catch (URISyntaxException e) {
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Invalid URL", e);
 			}
@@ -135,6 +146,9 @@ public abstract class DownloadTask extends DefaultTask {
 
 			if (getParameters().getIsOffline().get()) {
 				builder.offline();
+			} else {
+				// Gradle has determined that the inputs changed or the output needs refreshing.
+				builder.forceDownload();
 			}
 
 			try {

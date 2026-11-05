@@ -169,7 +169,7 @@ public final class Download {
 	private void doDownload(Path output) throws DownloadException {
 		Optional<String> eTag = Optional.empty();
 
-		if (!forceDownload && useEtag && exists(output)) {
+		if (!forceDownload && expectedHash == null && useEtag && exists(output)) {
 			eTag = readEtag(output);
 		}
 
@@ -246,7 +246,9 @@ public final class Download {
 			throw error(e, "Failed to delete existing file");
 		}
 
-		final long length = Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
+		// Content-Length describes the encoded response, not the decoded file.
+		final boolean encoded = !response.headers().firstValue("Content-Encoding").orElse("").isEmpty();
+		final long length = encoded ? -1 : Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
 		AtomicLong totalBytes = new AtomicLong(0);
 
 		try (OutputStream outputStream = Files.newOutputStream(partFile, StandardOpenOption.CREATE_NEW)) {
@@ -331,6 +333,7 @@ public final class Download {
 			}
 
 			LOGGER.info("Found existing file ({}) to download with unexpected hash.", output);
+			return true;
 		}
 
 		//noinspection RedundantIfStatement

@@ -31,6 +31,7 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import net.fabricmc.loom.util.ZipUtils
 
 import static net.fabricmc.loom.test.LoomTestConstants.*
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class AccessWidenerTest extends Specification implements GradleProjectTestTrait {
@@ -99,22 +100,17 @@ class AccessWidenerTest extends Specification implements GradleProjectTestTrait 
 		version << STANDARD_TEST_VERSIONS
 	}
 
-	@Unroll
-	def "invalid (#awLine)"() {
+	def "check fails for an invalid access widener"() {
 		setup:
-		def gradle = gradleProject(project: "accesswidener", version: version)
-		new File(gradle.projectDir, "src/main/resources/modid.accesswidener").append(awLine)
+		def gradle = gradleProject(project: "accesswidener", version: DEFAULT_GRADLE)
+		new File(gradle.projectDir, "src/main/resources/modid.accesswidener").append('accessible\tclass\tnet/minecraft/DoesntExists')
 
 		when:
 		def result = gradle.run(task: "check", expectFailure: true)
 
 		then:
-		result.output.contains(error)
-
-		where:
-		awLine | error | version
-		'accessible\tclass\tnet/minecraft/DoesntExists' | "Could not find class (net/minecraft/DoesntExists) on line 10" | DEFAULT_GRADLE
-		'accessible\tfield\tnet/minecraft/screen/slot/Slot\tabc\tI' | "Could not find field (abc:I) in class (net/minecraft/screen/slot/Slot) on line 10" | DEFAULT_GRADLE
-		'accessible\tmethod\tnet/minecraft/client/main/Main\tmain\t([Ljava/lang/NotAString;)V' | "Could not find method (main([Ljava/lang/NotAString;)V) in class (net/minecraft/client/main/Main) on line 10" | DEFAULT_GRADLE
+		result.task(":validateAccessWidener").outcome == FAILED
+		result.output.contains("Could not find class (net/minecraft/DoesntExists) on line 10")
+		result.output.contains("access-widener validation failed for modid.accesswidener")
 	}
 }

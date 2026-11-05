@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,38 +22,36 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.unit.providers
 
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.ClassNode
 import spock.lang.Specification
-import spock.lang.Unroll
 
-import net.fabricmc.loom.test.LoomTestVersions
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.configuration.providers.minecraft.SignatureFixerApplyVisitor
 
-import static net.fabricmc.loom.test.LoomTestConstants.*
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+class SignatureFixerApplyVisitorTest extends Specification {
+	private static final String FIXED_SIGNATURE = "<T:Ljava/lang/Object;>Ljava/lang/Object;"
+	private static final String EXISTING_SIGNATURE = "<U:Ljava/lang/Object;>Ljava/lang/Object;"
 
-class ExperimentalVersionsTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "experimental versions (gradle #version)"() {
-		setup:
-		def gradle = gradleProject(project: "minimalBase", version: version)
-
-		gradle.buildGradle << """
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
-                    mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
-                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
-                }
-            """
+	def "only supplies a signature when the class has none and a fix exists"() {
+		given:
+		def node = new ClassNode()
+		def fixer = new SignatureFixerApplyVisitor(["example/Target": FIXED_SIGNATURE])
+		def visitor = fixer.insertApplyVisitor(null, node)
 
 		when:
-		def result = gradle.run(task: "build")
+		visitor.visit(Opcodes.V17, Opcodes.ACC_PUBLIC, className, originalSignature, "java/lang/Object", null)
+		visitor.visitEnd()
 
 		then:
-		result.task(":build").outcome == SUCCESS
+		node.name == className
+		node.signature == expectedSignature
 
 		where:
-		version << STANDARD_TEST_VERSIONS
+		className | originalSignature | expectedSignature
+		"example/Target" | null | FIXED_SIGNATURE
+		"example/Target" | EXISTING_SIGNATURE | EXISTING_SIGNATURE
+		"example/Other" | null | null
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2025 FabricMC
+ * Copyright (c) 2026 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,33 +22,49 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.unit.fmj
 
+import java.nio.file.Path
+
+import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
-import spock.lang.Unroll
+import spock.lang.TempDir
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.api.fmj.FabricModJsonV1Spec
+import net.fabricmc.loom.task.FabricModJsonV1Task
 
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
+class FabricModJsonV1TaskTest extends Specification {
+	@TempDir
+	Path tempDir
 
-class NestJarsApiTest extends Specification implements GradleProjectTestTrait {
-	@Unroll
-	def "nest jars using loom.nestJars() API (gradle #version)"() {
-		setup:
-		def gradle = gradleProject(project: "nestJarsApi", version: version)
+	def "worker writes the configured mod json"() {
+		given:
+		def project = ProjectBuilder.builder().build()
+		def spec = project.objects.newInstance(FabricModJsonV1Spec)
+		spec.modId.set("examplemod")
+		spec.version.set("1.0.0")
+
+		def output = tempDir.resolve("fabric.mod.json").toFile()
+		def parameters = project.objects.newInstance(FabricModJsonV1Task.FabricModJsonV1WorkParameters)
+		parameters.spec.set(spec)
+		parameters.outputFile.set(output)
+		def action = new FabricModJsonV1Task.FabricModJsonV1WorkAction() {
+					@Override
+					FabricModJsonV1Task.FabricModJsonV1WorkParameters getParameters() {
+						return parameters
+					}
+				}
 
 		when:
-		def result = gradle.run(tasks: ["remapJar"])
+		action.execute()
 
 		then:
-		result.task(":remapJar").outcome == SUCCESS
-		result.task(":createNestedMod").outcome == SUCCESS
-
-		// Assert the locally built mod jar is nested using the new API
-		gradle.hasOutputZipEntry("nestJarsApi.jar", "META-INF/jars/nested-mod.jar")
-
-		where:
-		version << STANDARD_TEST_VERSIONS
+		output.text == """
+		{
+		  "schemaVersion": 1,
+		  "id": "examplemod",
+		  "version": "1.0.0"
+		}
+		""".stripIndent().trim()
 	}
 }

@@ -32,12 +32,36 @@ import spock.lang.Unroll
 
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class MixinApAutoRefmapTest extends Specification implements GradleProjectTestTrait {
+class MixinAnnotationProcessorTest extends Specification implements GradleProjectTestTrait {
 	@Unroll
-	def "build (gradle #version)"() {
+	def "package explicitly configured refmaps (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "mixinApSimple", version: version)
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		// verify the ref-map name is correctly generated
+		def main = new JarFile(new File(gradle.projectDir, "build/devlibs/fabric-example-mod-1.0.0-dev.jar").absoluteFile)
+		main.getEntry("main-refmap0000.json") != null
+		def mixin = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin.jar").absoluteFile)
+		mixin.getEntry("default-refmap0000.json") != null
+		def mixin1 = new JarFile(gradle.getOutputFile("fabric-example-mod-1.0.0-mixin1.jar").absoluteFile)
+		mixin1.getEntry("main-refmap0000.json") == null
+		mixin1.getEntry("default-refmap0000.json") == null
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "automatically assign refmaps (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "mixinApAutoRefmap", version: version)
 

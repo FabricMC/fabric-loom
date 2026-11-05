@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2018-2025 FabricMC
+ * Copyright (c) 2021 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,11 +33,44 @@ import spock.lang.Unroll
 import net.fabricmc.loom.test.LoomTestVersions
 import net.fabricmc.loom.test.util.GradleProjectTestTrait
 
-import static net.fabricmc.loom.test.LoomTestConstants.PRE_RELEASE_GRADLE
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
+import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class LegacyProjectTest extends Specification implements GradleProjectTestTrait {
+class MinecraftVersionsTest extends Specification implements GradleProjectTestTrait {
+	@Unroll
+	def "experimental version with custom manifest #customManifest (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.buildGradle << """
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
+                    mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
+                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+                }
+            """
+
+		if (customManifest) {
+			gradle.buildGradle << """
+                loom {
+                    customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
+                }
+            """
+		}
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		[version, customManifest] << [
+			STANDARD_TEST_VERSIONS,
+			[false, true]
+		].combinations()
+	}
+
 	@Unroll
 	def "legacy build (gradle #version)"() {
 		setup:
@@ -174,5 +207,42 @@ class LegacyProjectTest extends Specification implements GradleProjectTestTrait 
 
 		then:
 		result.task(":build").outcome == SUCCESS
+	}
+
+	@Unroll
+	def "Java 16 project (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "java16", version: version)
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "signature fixes (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "minimalBase", version: version)
+
+		gradle.buildGradle << '''
+                dependencies {
+                    minecraft "com.mojang:minecraft:1.18-pre1"
+                    mappings "net.fabricmc:yarn:1.18-pre1+build.14:v2"
+                }
+            '''
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
 	}
 }

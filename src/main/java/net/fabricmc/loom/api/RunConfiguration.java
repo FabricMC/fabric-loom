@@ -154,7 +154,7 @@ public interface RunConfiguration extends Named {
 	Property<Boolean> getMixinAgent();
 
 	default void inherit(RunConfiguration parent) {
-		getJvmArguments().convention(parent.getJvmArguments());
+		getJvmArguments().addAll(parent.getJvmArguments());
 		getProgramArguments().addAll(parent.getProgramArguments());
 		getEnvironmentVars().putAll(parent.getEnvironmentVars());
 		getSystemProperties().putAll(parent.getSystemProperties());

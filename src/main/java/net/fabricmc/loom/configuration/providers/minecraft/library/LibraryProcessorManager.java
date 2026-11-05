@@ -41,6 +41,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.library.processors.Lo
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.ObjcBridgeUpgradeLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RiscVNativesLibraryProcessor;
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor;
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLwjglGraphicsLibraryProcessor;
 import net.fabricmc.loom.util.Platform;
 
 public class LibraryProcessorManager {
@@ -52,7 +53,8 @@ public class LibraryProcessorManager {
 			LWJGL2MavenLibraryProcessor::new,
 			LWJGL3UpgradeLibraryProcessor::new,
 			ObjcBridgeUpgradeLibraryProcessor::new,
-			RuntimeLog4jLibraryProcessor::new
+			RuntimeLog4jLibraryProcessor::new,
+			RuntimeLwjglGraphicsLibraryProcessor::new
 	);
 
 	private final Platform platform;

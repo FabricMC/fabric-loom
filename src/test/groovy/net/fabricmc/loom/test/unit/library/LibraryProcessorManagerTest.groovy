@@ -27,6 +27,7 @@ package net.fabricmc.loom.test.unit.library
 import net.fabricmc.loom.configuration.providers.minecraft.library.Library
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager
 import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLog4jLibraryProcessor
+import net.fabricmc.loom.configuration.providers.minecraft.library.processors.RuntimeLwjglGraphicsLibraryProcessor
 import net.fabricmc.loom.test.unit.library.processors.LibraryProcessorTest
 import net.fabricmc.loom.test.util.GradleTestUtil
 import net.fabricmc.loom.test.util.PlatformTestUtils
@@ -162,5 +163,33 @@ class LibraryProcessorManagerTest extends LibraryProcessorTest {
 		processed.find {
 			it.is("org.apache.logging.log4j") && it.target() == Library.Target.COMPILE
 		} == null
+	}
+
+	def "runtime lwjgl graphics"() {
+		given:
+		def platform = PlatformTestUtils.WINDOWS_X64
+		def (original, context) = getLibs("1.19.2", platform)
+		original = original + Library.fromMaven("org.lwjgl:lwjgl-vulkan:3.3.1", Library.Target.COMPILE)
+		def enabledProcessors = [
+			RuntimeLwjglGraphicsLibraryProcessor.class.simpleName
+		]
+		def manager = new LibraryProcessorManager(platform, GradleTestUtil.mockRepositoryHandler(), LibraryProcessorManager.DEFAULT_LIBRARY_PROCESSORS, enabledProcessors)
+		def graphicsLibraryNames = [
+			"org.lwjgl:lwjgl-opengl",
+			"org.lwjgl:lwjgl-vulkan"
+		]
+
+		when:
+		def processed = manager.processLibraries(original, context)
+
+		then:
+		for (String name : graphicsLibraryNames) {
+			def graphicsLibraries = processed.findAll {
+				it.is(name) && it.classifier() == null
+			}
+			assert !graphicsLibraries.empty
+			assert graphicsLibraries.every { it.target() == Library.Target.RUNTIME }
+		}
+		findLibrary("org.lwjgl:lwjgl", processed) == findLibrary("org.lwjgl:lwjgl", original)
 	}
 }

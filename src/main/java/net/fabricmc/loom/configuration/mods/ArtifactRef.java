@@ -53,9 +53,18 @@ public interface ArtifactRef {
 
 	@Nullable String classifier();
 
+	default boolean isChanging() {
+		return version().endsWith("-SNAPSHOT");
+	}
+
 	void applyToConfiguration(Project project, NamedDomainObjectProvider<? extends Configuration> configuration);
 
-	record ResolvedArtifactRef(ResolvedArtifact artifact, @Nullable Path sources) implements ArtifactRef {
+	record ResolvedArtifactRef(ResolvedArtifact artifact, @Nullable Path sources, boolean changing) implements ArtifactRef {
+		@Override
+		public boolean isChanging() {
+			return changing || ArtifactRef.super.isChanging();
+		}
+
 		@Override
 		public Path path() {
 			return artifact.getFile().toPath();

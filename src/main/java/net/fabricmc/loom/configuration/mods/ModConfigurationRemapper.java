@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,7 @@ import java.util.function.Supplier;
 import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.FileCollectionDependency;
 import org.gradle.api.artifacts.MutableVersionConstraint;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -273,18 +275,28 @@ public class ModConfigurationRemapper {
 
 	private static List<ArtifactRef> resolveArtifacts(Project project, Provider<? extends Configuration> configuration) {
 		final List<ArtifactRef> artifacts = new ArrayList<>();
+		final Configuration sourceConfiguration = configuration.get();
+		final Set<String> changingModules = new HashSet<>();
 
-		final Set<ResolvedArtifact> resolvedArtifacts = configuration.get().getResolvedConfiguration().getResolvedArtifacts();
+		for (ExternalModuleDependency dependency : sourceConfiguration.getAllDependencies().withType(ExternalModuleDependency.class)) {
+			if (dependency.isChanging()) {
+				changingModules.add(dependency.getGroup() + ":" + dependency.getName());
+			}
+		}
+
+		final Set<ResolvedArtifact> resolvedArtifacts = sourceConfiguration.getResolvedConfiguration().getResolvedArtifacts();
 		Map<ResolvedArtifact, Path> sourcesMap = downloadAllSources(project, resolvedArtifacts);
 
 		for (ResolvedArtifact artifact : resolvedArtifacts) {
 			Path sources = sourcesMap.get(artifact);
-			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources));
+			var module = artifact.getModuleVersion().getId();
+			boolean changing = changingModules.contains(module.getGroup() + ":" + module.getName());
+			artifacts.add(new ArtifactRef.ResolvedArtifactRef(artifact, sources, changing));
 		}
 
 		// FileCollectionDependency (files/fileTree) doesn't resolve properly,
 		// so we have to "resolve" it on our own. The naming is "abc.jar" => "unspecified:abc:unspecified".
-		for (FileCollectionDependency dependency : configuration.get().getAllDependencies().withType(FileCollectionDependency.class)) {
+		for (FileCollectionDependency dependency : sourceConfiguration.getAllDependencies().withType(FileCollectionDependency.class)) {
 			final String group = replaceIfNullOrEmpty(dependency.getGroup(), () -> MISSING_GROUP);
 			final FileCollection files = dependency.getFiles();
 

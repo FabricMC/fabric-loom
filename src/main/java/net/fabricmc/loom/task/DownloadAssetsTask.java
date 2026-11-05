@@ -27,6 +27,8 @@ package net.fabricmc.loom.task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -118,7 +120,15 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 
 		try (ProgressGroup progressGroup = new ProgressGroup("Download Assets", getProgressLoggerFactory());
 				DownloadExecutor executor = new DownloadExecutor(getDownloadThreads().get())) {
+			Set<Path> scheduledPaths = new HashSet<>();
+
 			for (AssetIndex.Object object : assetIndex.getObjects()) {
+				final Path assetPath = getAssetsPath(object, assetIndex);
+
+				if (!scheduledPaths.add(assetPath)) {
+					continue;
+				}
+
 				final String sha1 = object.hash();
 				final String url = getResourcesBaseUrl().get() + sha1.substring(0, 2) + "/" + sha1;
 
@@ -126,7 +136,7 @@ public abstract class DownloadAssetsTask extends AbstractLoomTask {
 						.download(url)
 						.sha1(sha1)
 						.progress(new GradleDownloadProgressListener(object.name(), progressGroup::createProgressLogger))
-						.downloadPathAsync(getAssetsPath(object, assetIndex), executor);
+						.downloadPathAsync(assetPath, executor);
 			}
 		}
 	}

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
@@ -66,8 +65,8 @@ public interface SpecContext {
 	// Returns all of the loom projects that are depended on in the main sourceset
 	// TODO make project isolation aware
 	static Stream<Project> getDependentProjects(ProjectView projectView) {
-		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-		final Stream<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
+		final Stream<Project> runtimeProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.RUNTIME);
+		final Stream<Project> compileProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.COMPILE);
 
 		return Stream.concat(runtimeProjects, compileProjects)
 				.distinct();

@@ -37,7 +37,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.LoomConfigurations;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Strings;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
  * This mess is created out of the need to resolve the compile/runtime dependencies, without using the actual runtime/compile classpath.
@@ -59,19 +58,20 @@ public record DebofConfiguration(String name, List<Function<SourceSet, String>> 
 	public static final List<DebofConfiguration> ALL = List.of(COMPILE, RUNTIME);
 
 	public Configuration getConfiguration(Project project, TargetSourceSet targetSourceSet) {
-		return project.getConfigurations().getByName(resolveConfigurationName(targetSourceSet));
+		return project.getConfigurations().getByName(resolveConfigurationName(targetSourceSet.getSourceSet(project)));
 	}
 
 	public List<Configuration> getConfigurations(Project project) {
 		ConfigurationContainer configurations = project.getConfigurations();
 		return TargetSourceSet.applicable(project).stream()
+				.map(target -> target.getSourceSet(project))
 				.map(this::resolveConfigurationName)
 				.map(configurations::getByName)
 				.toList();
 	}
 
-	private String resolveConfigurationName(TargetSourceSet targetSourceSet) {
-		return "%s%sDependencyResolve".formatted(targetSourceSet.name, Strings.capitalize(name()));
+	private String resolveConfigurationName(SourceSet sourceSet) {
+		return "%s%sDependencyResolve".formatted(sourceSet.getName(), Strings.capitalize(name()));
 	}
 
 	public static void create(Project project) {
@@ -86,7 +86,7 @@ public record DebofConfiguration(String name, List<Function<SourceSet, String>> 
 		for (TargetSourceSet target : TargetSourceSet.applicable(project)) {
 			SourceSet sourceSet = target.getSourceSet(project);
 
-			configurations.register(resolveConfigurationName(target), c -> {
+			configurations.register(resolveConfigurationName(sourceSet), c -> {
 				LoomConfigurations.Role.RESOLVABLE.apply(c);
 
 				for (Function<SourceSet, String> configProvider : configurationFunctions()) {
@@ -103,19 +103,19 @@ public record DebofConfiguration(String name, List<Function<SourceSet, String>> 
 	}
 
 	public enum TargetSourceSet {
-		MAIN(SourceSet.MAIN_SOURCE_SET_NAME, e -> Boolean.TRUE),
-		CLIENT("client", LoomGradleExtension::areEnvironmentSourceSetsSplit);
+		MAIN(LoomGradleExtension::getMinecraftSourceSet, e -> Boolean.TRUE),
+		CLIENT(LoomGradleExtension::getMinecraftClientSourceSet, LoomGradleExtension::areEnvironmentSourceSetsSplit);
 
-		private final String name;
+		private final Function<LoomGradleExtension, SourceSet> sourceSetGetter;
 		private final Function<LoomGradleExtension, Boolean> enabled;
 
-		TargetSourceSet(String name, Function<LoomGradleExtension, Boolean> enabled) {
-			this.name = name;
+		TargetSourceSet(Function<LoomGradleExtension, SourceSet> sourceSetGetter, Function<LoomGradleExtension, Boolean> enabled) {
+			this.sourceSetGetter = sourceSetGetter;
 			this.enabled = enabled;
 		}
 
 		public SourceSet getSourceSet(Project project) {
-			return SourceSetHelper.getSourceSetByName(this.name, project);
+			return sourceSetGetter.apply(LoomGradleExtension.get(project));
 		}
 
 		public static List<TargetSourceSet> applicable(Project project) {

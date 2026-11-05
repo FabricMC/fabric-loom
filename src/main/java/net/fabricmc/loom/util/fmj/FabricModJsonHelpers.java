@@ -33,9 +33,8 @@ import org.gradle.api.Project;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 
-import net.fabricmc.loom.api.LoomGradleExtensionAPI;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.api.LoomGradleExtensionAPI;
 
 public class FabricModJsonHelpers {
 	/**
@@ -51,10 +50,10 @@ public class FabricModJsonHelpers {
 		}
 
 		var sourceSets = new ArrayList<SourceSet>();
-		sourceSets.add(SourceSetHelper.getMainSourceSet(project));
+		sourceSets.add(extension.getMinecraftSourceSet());
 
 		if (extension.areEnvironmentSourceSetsSplit()) {
-			sourceSets.add(SourceSetHelper.getSourceSetByName("client", project));
+			sourceSets.add(extension.getMinecraftClientSourceSet());
 		}
 
 		final FabricModJson fabricModJson = FabricModJsonFactory.createFromSourceSetsNullable(project, sourceSets.toArray(SourceSet[]::new));

@@ -82,7 +82,6 @@ import net.fabricmc.loom.util.DeprecationHelper;
 import net.fabricmc.loom.util.MirrorUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
  * This class implements the public extension api.
@@ -519,7 +518,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 		final RemapConfigurationSettings configurationSettings = getProject().getObjects().newInstance(RemapConfigurationSettings.class, name);
 
 		// TODO remove in 2.0, this is a fallback to mimic the previous (Broken) behaviour
-		configurationSettings.getSourceSet().convention(SourceSetHelper.getMainSourceSet(getProject()));
+		configurationSettings.getSourceSet().convention(LoomGradleExtension.get(getProject()).getMinecraftSourceSet());
 
 		action.execute(configurationSettings);
 		RemapConfigurations.applyToProject(getProject(), configurationSettings);

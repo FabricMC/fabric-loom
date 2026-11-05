@@ -43,12 +43,16 @@ public interface ProjectView {
 	//Returns a list of Loom Projects found in the specified Configuration
 	Stream<Project> getLoomProjectDependencies(String name);
 
+	Stream<Project> getMinecraftProjectDependencies(ArtifactUsage usage);
+
 	// Returns the mods defined in the current project
 	List<FabricModJson> getMods();
 
 	boolean disableProjectDependantMods();
 
 	boolean areEnvironmentSourceSetsSplit();
+
+	String getMinecraftClientSourceSetName();
 
 	enum ArtifactUsage {
 		RUNTIME(Usage.JAVA_RUNTIME),
@@ -75,6 +79,14 @@ public interface ProjectView {
 		}
 
 		@Override
+		public Stream<Project> getMinecraftProjectDependencies(ArtifactUsage usage) {
+			final var sourceSet = extension.getMinecraftSourceSet();
+			final String configurationName = usage == ArtifactUsage.COMPILE
+					? sourceSet.getCompileClasspathConfigurationName() : sourceSet.getRuntimeClasspathConfigurationName();
+			return getLoomProjectDependencies(configurationName);
+		}
+
+		@Override
 		public Stream<Project> getLoomProjectDependencies(String name) {
 			final Configuration configuration = project.getConfigurations().getByName(name);
 			return configuration.getAllDependencies()
@@ -95,6 +107,11 @@ public interface ProjectView {
 			// TODO provide a project isolated way of doing this.
 			return extension.isProjectIsolationActive()
 					|| GradleUtils.getBooleanProperty(project, Constants.Properties.DISABLE_PROJECT_DEPENDENT_MODS);
+		}
+
+		@Override
+		public String getMinecraftClientSourceSetName() {
+			return extension.getMinecraftClientSourceSetName();
 		}
 
 		@Override

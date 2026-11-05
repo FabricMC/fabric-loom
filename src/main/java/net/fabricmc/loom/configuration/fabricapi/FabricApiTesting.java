@@ -49,7 +49,6 @@ import net.fabricmc.loom.configuration.ide.RunConfigSettings;
 import net.fabricmc.loom.task.AbstractLoomTask;
 import net.fabricmc.loom.task.LoomTasks;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 	@Inject
@@ -83,7 +82,7 @@ public abstract class FabricApiTesting extends FabricApiAbstractSourceSet {
 		if (settings.getCreateSourceSet().get()) {
 			testSourceSet = configureSourceSet(settings.getModId(), true);
 		} else {
-			testSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+			testSourceSet = extension.getMinecraftSourceSet();
 		}
 
 		Consumer<RunConfiguration> configureBase = run -> {

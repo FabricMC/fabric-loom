@@ -43,7 +43,6 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.IncludeConfigurations;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.gradle.GradleUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.SyncTaskBuildService;
 
 public abstract class RemapTaskConfiguration implements Runnable {
@@ -160,7 +159,7 @@ public abstract class RemapTaskConfiguration implements Runnable {
 		});
 
 		GradleUtils.afterSuccessfulEvaluation(getProject(), () -> {
-			final String sourcesJarTaskName = SourceSetHelper.getMainSourceSet(getProject()).getSourcesJarTaskName();
+			final String sourcesJarTaskName = LoomGradleExtension.get(getProject()).getMinecraftSourceSet().getSourcesJarTaskName();
 			final Task sourcesTask = getTasks().findByName(sourcesJarTaskName);
 
 			boolean canRemap = true;

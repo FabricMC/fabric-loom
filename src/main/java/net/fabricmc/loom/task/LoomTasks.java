@@ -141,7 +141,7 @@ public abstract class LoomTasks implements Runnable {
 
 	private void registerMigrateMappingsTasks() {
 		SourceSetHelper.getSourceSets(getProject()).all(sourceSet -> {
-			if (SourceSetHelper.isMainSourceSet(sourceSet)) {
+			if (sourceSet.getName().equals(LoomGradleExtension.get(getProject()).getMinecraftSourceSetName())) {
 				getTasks().register("migrateMappings", MigrateMappingsTask.class, t -> {
 					t.setDescription("Migrates source code mappings to a new version.");
 				});

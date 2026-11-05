@@ -49,8 +49,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.intellij.lang.annotations.Language;
-import org.jspecify.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
+import org.jspecify.annotations.Nullable;
 import org.xml.sax.InputSource;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -145,9 +145,15 @@ public final class SourceSetHelper {
 			classpath.add(resources);
 		}
 
-		// Add dev jars from dependency projects if the source set is "main".
-		if (forExport && SourceSet.MAIN_SOURCE_SET_NAME.equals(reference.sourceSet().getName()) && GradleUtils.isLoomCompanionProject(reference.project())) {
+		// Add development jars when exporting the Minecraft source set of a dependency project.
+		if (forExport && GradleUtils.isLoomCompanionProject(reference.project())) {
 			boolean isLoom = GradleUtils.isLoomProject(reference.project());
+			String sourceSetName = isLoom ? LoomGradleExtension.get(reference.project()).getMinecraftSourceSetName() : SourceSet.MAIN_SOURCE_SET_NAME;
+
+			if (!sourceSetName.equals(reference.sourceSet().getName())) {
+				return classpath;
+			}
+
 			boolean isDebof = isLoom && LoomGradleExtension.get(reference.project()).disableObfuscation();
 			String configurationName = isLoom && !isDebof
 					? Constants.Configurations.NAMED_ELEMENTS : JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME;

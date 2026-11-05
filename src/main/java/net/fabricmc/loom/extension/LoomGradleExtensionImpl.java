@@ -41,6 +41,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSet;
 import org.jspecify.annotations.Nullable;
 
 import net.fabricmc.loom.LoomGradleExtension;
@@ -57,6 +58,7 @@ import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.library.LibraryProcessorManager;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.IntermediaryMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.mapped.NamedMinecraftProvider;
@@ -64,6 +66,7 @@ import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.download.Download;
 import net.fabricmc.loom.util.download.DownloadBuilder;
 import net.fabricmc.loom.util.gradle.GradleUtils;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl implements LoomGradleExtension {
 	private final Project project;
@@ -139,6 +142,26 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	@Override
 	protected Project getProject() {
 		return project;
+	}
+
+	@Override
+	public String getMinecraftSourceSetName() {
+		return SourceSet.MAIN_SOURCE_SET_NAME;
+	}
+
+	@Override
+	public String getMinecraftClientSourceSetName() {
+		return MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME;
+	}
+
+	@Override
+	public SourceSet getMinecraftSourceSet() {
+		return SourceSetHelper.getSourceSetByName(getMinecraftSourceSetName(), project);
+	}
+
+	@Override
+	public SourceSet getMinecraftClientSourceSet() {
+		return SourceSetHelper.getSourceSetByName(getMinecraftClientSourceSetName(), project);
 	}
 
 	@Override

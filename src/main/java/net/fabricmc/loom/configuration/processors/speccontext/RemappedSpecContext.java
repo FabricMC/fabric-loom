@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPlugin;
 import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.Nullable;
 
@@ -46,7 +45,6 @@ import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.api.processor.MarkdownJavadocOption;
 import net.fabricmc.loom.api.processor.SpecContext;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
@@ -138,7 +136,7 @@ public record RemappedSpecContext(
 				projectView,
 				fmjCache,
 				projectView.getRuntimeRemapConfigurations().stream()
-						.filter(settings -> settings.getSourceSet().map(sourceSet -> !sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME)).get())
+						.filter(settings -> settings.getSourceSet().map(sourceSet -> !sourceSet.getName().equals(projectView.getMinecraftClientSourceSetName())).get())
 						.filter(settings -> settings.getApplyDependencyTransforms().get()))
 				: null;
 
@@ -188,8 +186,8 @@ public record RemappedSpecContext(
 			return Stream.empty();
 		}
 
-		final Stream<Project> runtimeProjects = projectView.getLoomProjectDependencies(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
-		final List<Project> compileProjects = projectView.getLoomProjectDependencies(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME).toList();
+		final Stream<Project> runtimeProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.RUNTIME);
+		final List<Project> compileProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.COMPILE).toList();
 
 		return runtimeProjects
 				.filter(compileProjects::contains); // Use the intersection of the two configurations.

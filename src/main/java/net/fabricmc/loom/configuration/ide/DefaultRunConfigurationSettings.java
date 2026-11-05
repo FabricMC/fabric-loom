@@ -28,7 +28,6 @@ import java.util.Locale;
 
 import org.gradle.api.JavaVersion;
 import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
@@ -46,15 +45,15 @@ public class DefaultRunConfigurationSettings {
 		run.getAppendProjectPathToDisplayName().convention(true);
 		run.getMainClass().convention(run.getRuntimeEnvironment().map(side -> RunConfigUtils.getMainClass(side, LoomGradleExtension.get(project))));
 		run.getDevLaunchMainClass().convention(Constants.DLI_ENTRYPOINT);
-		run.getSourceSet().convention(run.getRuntimeEnvironment().map(runtimeEnvironment -> MinecraftSourceSets.get(project).getSourceSetForEnv(runtimeEnvironment)));
+		run.getSourceSet().convention(run.getRuntimeEnvironment().map(runtimeEnvironment -> MinecraftSourceSets.get(project).getSourceSetForEnv(project, runtimeEnvironment)));
 		run.getDisplayName().convention(run.getSourceSet().map(sourceSet -> {
 			String configName = "";
 
 			final boolean isSplitClientSourceSet = LoomGradleExtension.get(project).areEnvironmentSourceSetsSplit()
-					&& sourceSet.equals("client")
+					&& sourceSet.equals(LoomGradleExtension.get(project).getMinecraftClientSourceSetName())
 					&& run.getRuntimeEnvironment().get().equals("client");
 
-			if (!sourceSet.equals(SourceSet.MAIN_SOURCE_SET_NAME) && !isSplitClientSourceSet) {
+			if (!sourceSet.equals(LoomGradleExtension.get(project).getMinecraftSourceSetName()) && !isSplitClientSourceSet) {
 				configName += Strings.capitalizeCamelCaseName(sourceSet) + " ";
 			}
 

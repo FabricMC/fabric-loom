@@ -86,6 +86,8 @@ class GradleTestUtil {
 		def loomFiles = mockLoomFiles()
 		when(mock.refreshDeps()).thenReturn(false)
 		when(mock.getFiles()).thenReturn(loomFiles)
+		when(mock.getMinecraftSourceSetName()).thenReturn(SourceSet.MAIN_SOURCE_SET_NAME)
+		when(mock.getMinecraftClientSourceSetName()).thenReturn("client")
 		when(mock.download(any())).thenAnswer {
 			Download.create(it.getArgument(0))
 		}

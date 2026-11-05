@@ -43,17 +43,18 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RemapConfigurationSettings;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.Strings;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public final class RemapConfigurations {
-	private static final List<ConfigurationOption> OPTIONS = List.of(
-			new ConfigurationOption(mainOnly(SourceSet::getApiConfigurationName), true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME),
-			new ConfigurationOption(SourceSet::getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
-			new ConfigurationOption(SourceSet::getCompileOnlyConfigurationName, true, false, RemapConfigurationSettings.PublishingMode.NONE),
-			new ConfigurationOption(mainOnly(SourceSet::getCompileOnlyApiConfigurationName), true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY),
-			new ConfigurationOption(SourceSet::getRuntimeOnlyConfigurationName, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
-			new ConfigurationOption(mainOnly(Constants.Configurations.LOCAL_RUNTIME), false, true, RemapConfigurationSettings.PublishingMode.NONE)
-	);
+	private static List<ConfigurationOption> getOptions(Project project) {
+		return List.of(
+				new ConfigurationOption(minecraftOnly(project, SourceSet::getApiConfigurationName), true, true, RemapConfigurationSettings.PublishingMode.COMPILE_AND_RUNTIME),
+				new ConfigurationOption(SourceSet::getImplementationConfigurationName, true, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
+				new ConfigurationOption(SourceSet::getCompileOnlyConfigurationName, true, false, RemapConfigurationSettings.PublishingMode.NONE),
+				new ConfigurationOption(minecraftOnly(project, SourceSet::getCompileOnlyApiConfigurationName), true, false, RemapConfigurationSettings.PublishingMode.COMPILE_ONLY),
+				new ConfigurationOption(SourceSet::getRuntimeOnlyConfigurationName, false, true, RemapConfigurationSettings.PublishingMode.RUNTIME_ONLY),
+				new ConfigurationOption(minecraftOnly(project, Constants.Configurations.LOCAL_RUNTIME), false, true, RemapConfigurationSettings.PublishingMode.NONE)
+		);
+	}
 
 	private RemapConfigurations() {
 	}
@@ -61,13 +62,14 @@ public final class RemapConfigurations {
 	public static void setupForSourceSet(Project project, SourceSet sourceSet) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
 
-		for (ConfigurationOption option : getValidOptions(sourceSet)) {
+		for (ConfigurationOption option : getValidOptions(project, sourceSet)) {
 			extension.addRemapConfiguration(option.name(sourceSet), configure(
 					sourceSet,
 					option.targetName(sourceSet),
 					option.compileClasspath(),
 					option.runtimeClasspath(),
-					option.publishingMode()
+					option.publishingMode(),
+					project
 			));
 		}
 	}
@@ -82,11 +84,11 @@ public final class RemapConfigurations {
 		extension.createRemapConfigurations(clientSourceSet);
 
 		final NamedDomainObjectList<RemapConfigurationSettings> configurations = extension.getRemapConfigurations();
-		SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
+		SourceSet minecraftSourceSet = extension.getMinecraftSourceSet();
 
-		// Apply the client target names to the main configurations
-		for (ConfigurationOption option : getValidOptions(mainSourceSet)) {
-			configurations.named(option.name(mainSourceSet), settings -> {
+		// Apply the client target names to the Minecraft source set configurations
+		for (ConfigurationOption option : getValidOptions(project, minecraftSourceSet)) {
+			configurations.named(option.name(minecraftSourceSet), settings -> {
 				String name = option.targetName(clientSourceSet);
 
 				if (name == null) {
@@ -145,20 +147,20 @@ public final class RemapConfigurations {
 				config.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
 			});
 
-			// The main classpath also applies to the test source set like with normal dependencies.
-			final boolean isMainSourceSet = sourceSet.getName().equals("main");
+			// The Minecraft classpath also applies to the test source set like with normal dependencies.
+			final boolean isMinecraftSourceSet = sourceSet.getName().equals(LoomGradleExtension.get(project).getMinecraftSourceSetName());
 
 			if (runtime) {
 				extendsFrom(sourceSet.getRuntimeClasspathConfigurationName(), configuration, project);
 
-				if (isMainSourceSet) {
+				if (isMinecraftSourceSet) {
 					extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, configuration, project);
 				}
 			} else {
 				extendsFrom(sourceSet.getCompileClasspathConfigurationName(), configuration, project);
 				extendsFrom(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED, configuration, project);
 
-				if (isMainSourceSet) {
+				if (isMinecraftSourceSet) {
 					extendsFrom(JavaPlugin.TEST_COMPILE_CLASSPATH_CONFIGURATION_NAME, configuration, project);
 				}
 			}
@@ -181,15 +183,15 @@ public final class RemapConfigurations {
 		}
 	}
 
-	private static Action<RemapConfigurationSettings> configure(SourceSet sourceSet, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode) {
+	private static Action<RemapConfigurationSettings> configure(SourceSet sourceSet, String targetConfiguration, boolean compileClasspath, boolean runtimeClasspath, RemapConfigurationSettings.PublishingMode publishingMode, Project project) {
 		return configuration -> {
 			configuration.getSourceSet().convention(sourceSet);
 			configuration.getTargetConfigurationName().convention(targetConfiguration);
 			configuration.getOnCompileClasspath().convention(compileClasspath);
 			configuration.getOnRuntimeClasspath().convention(runtimeClasspath);
 
-			// Publish only for the main source set.
-			if (SourceSet.MAIN_SOURCE_SET_NAME.equals(sourceSet.getName())) {
+			// Publish only for the Minecraft source set.
+			if (LoomGradleExtension.get(project).getMinecraftSourceSetName().equals(sourceSet.getName())) {
 				configuration.getPublishingMode().convention(publishingMode);
 			}
 		};
@@ -201,16 +203,16 @@ public final class RemapConfigurations {
 		});
 	}
 
-	private static Function<SourceSet, String> mainOnly(Function<SourceSet, String> function) {
-		return sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? function.apply(sourceSet) : null;
+	private static Function<SourceSet, String> minecraftOnly(Project project, Function<SourceSet, String> function) {
+		return sourceSet -> sourceSet.getName().equals(LoomGradleExtension.get(project).getMinecraftSourceSetName()) ? function.apply(sourceSet) : null;
 	}
 
-	private static Function<SourceSet, String> mainOnly(String name) {
-		return mainOnly(sourceSet -> name);
+	private static Function<SourceSet, String> minecraftOnly(Project project, String name) {
+		return minecraftOnly(project, sourceSet -> name);
 	}
 
-	private static List<ConfigurationOption> getValidOptions(SourceSet sourceSet) {
-		return OPTIONS.stream().filter(option -> option.validFor(sourceSet)).toList();
+	private static List<ConfigurationOption> getValidOptions(Project project, SourceSet sourceSet) {
+		return getOptions(project).stream().filter(option -> option.validFor(sourceSet)).toList();
 	}
 
 	private static String capitalise(String str) {

@@ -40,7 +40,6 @@ import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.fabricapi.DataGenerationSettings;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet {
 	@Inject
@@ -60,7 +59,7 @@ public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet
 		final TaskContainer taskContainer = getProject().getTasks();
 
 		DataGenerationSettings settings = getProject().getObjects().newInstance(DataGenerationSettings.class);
-		settings.getOutputDirectory().set(getProject().file("src/main/generated"));
+		settings.getOutputDirectory().set(getProject().file("src/" + extension.getMinecraftSourceSetName() + "/generated"));
 		settings.getCreateRunConfiguration().convention(true);
 		settings.getCreateSourceSet().convention(false);
 		settings.getStrictValidation().convention(false);
@@ -69,12 +68,12 @@ public abstract class FabricApiDataGeneration extends FabricApiAbstractSourceSet
 
 		action.execute(settings);
 
-		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+		final SourceSet minecraftSourceSet = extension.getMinecraftSourceSet();
 		final File outputDirectory = settings.getOutputDirectory().getAsFile().get();
 
 		if (settings.getAddToResources().get()) {
-			mainSourceSet.resources(files -> {
-				// Add the src/main/generated to the main sourceset's resources.
+			minecraftSourceSet.resources(files -> {
+				// Include generated resources in the Minecraft source set.
 				Set<File> srcDirs = new HashSet<>(files.getSrcDirs());
 				srcDirs.add(outputDirectory);
 				files.setSrcDirs(srcDirs);

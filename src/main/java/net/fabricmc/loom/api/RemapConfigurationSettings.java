@@ -39,7 +39,7 @@ import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
+import net.fabricmc.loom.LoomGradleExtension;
 
 /**
  * A {@link Named} object for configuring "proxy" configurations that remap artifacts.
@@ -141,7 +141,11 @@ public abstract class RemapConfigurationSettings implements Named {
 	}
 
 	private Provider<Boolean> defaultDependencyTransforms() {
-		return getSourceSet().map(sourceSet -> sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) || sourceSet.getName().equals(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME));
+		return getSourceSet().map(sourceSet -> {
+			final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
+			return sourceSet.getName().equals(extension.getMinecraftSourceSetName())
+					|| sourceSet.getName().equals(extension.getMinecraftClientSourceSetName());
+		});
 	}
 
 	@Override

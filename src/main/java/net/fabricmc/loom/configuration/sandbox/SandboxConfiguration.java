@@ -33,7 +33,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyFactory;
-import org.gradle.api.plugins.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +86,7 @@ public abstract class SandboxConfiguration implements Runnable {
 			return;
 		}
 
-		getProject().getDependencies().add(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME, dependency);
+		getProject().getDependencies().add(extension.getMinecraftSourceSet().getRuntimeOnlyConfigurationName(), dependency);
 
 		extension.getRuns().create("clientSandbox", settings -> {
 			RunConfiguration clientRun = extension.getRuns().getByName("client");

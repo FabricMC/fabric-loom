@@ -73,12 +73,10 @@ import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.visitor.ClassTweakerVisitor;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.ifaceinject.InterfaceInjectionProcessor;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.problem.LoomProblemReporter;
 import net.fabricmc.loom.util.problem.LoomProblems;
 import net.fabricmc.loom.util.problem.ProblemReportingOptions;
@@ -149,10 +147,10 @@ public abstract class ValidateInjectedInterfacesTask extends DefaultTask {
 			getModJar().convention(getProject().getTasks().named(RemapTaskConfiguration.REMAP_JAR_TASK_NAME, Jar.class).flatMap(Jar::getArchiveFile));
 		}
 
-		source(SourceSetHelper.getMainSourceSet(getProject()));
+		source(LoomGradleExtension.get(getProject()).getMinecraftSourceSet());
 
 		if (extension.areEnvironmentSourceSetsSplit()) {
-			source(SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
+			source(LoomGradleExtension.get(getProject()).getMinecraftClientSourceSet());
 		}
 	}
 

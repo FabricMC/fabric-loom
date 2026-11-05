@@ -26,6 +26,7 @@ package net.fabricmc.loom.test.integration.noRemap
 
 import java.util.concurrent.TimeUnit
 
+import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Specification
 import spock.lang.Timeout
 
@@ -42,13 +43,23 @@ class UnobfFabricAPITest extends Specification implements GradleProjectTestTrait
 		setup:
 		def gradle = gradleProject(
 				repo: "https://github.com/FabricMC/fabric.git",
-				commit: "0b561df1c2bdda94c7277d7c4f7e0ce5e448ce17",
+				commit: "47a39d69aa86b530b27366a92a97b6faeeb5c7d2",
 				version: PRE_RELEASE_GRADLE,
 				patch: "fabric_api_unobf",
 				warningMode: "all"
 		)
 
-		def minecraftVersion = "26.2-snapshot-8"
+		// Convention plugins need Loom on the included build's classpath.
+		def loomClasspath = GradleRunner.create().withPluginClasspath().pluginClasspath.collect { File file ->
+			"implementation files('${file.absolutePath.replace("\\", "/")}')"
+		}.join("\n")
+		new File(gradle.projectDir, "build-logic/build.gradle") << """
+			dependencies {
+				${loomClasspath}
+			}
+		"""
+
+		def minecraftVersion = "26.3"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)
 				.withMod(gradle.getOutputFile("fabric-api-999.0.0.jar"))
 

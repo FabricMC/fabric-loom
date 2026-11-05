@@ -110,7 +110,7 @@ class MicrosoftAuthServiceTest extends Specification {
 		given:
 		server.post("/xsts") { ctx ->
 			def body = new JsonSlurper().parseText(ctx.body())
-			assert body.Properties.UserTokens == ["xbox-user-token"]
+			assert body.get("Properties").UserTokens == ["xbox-user-token"]
 			ctx.result(xboxToken("xsts-token", "different-user"))
 		}
 

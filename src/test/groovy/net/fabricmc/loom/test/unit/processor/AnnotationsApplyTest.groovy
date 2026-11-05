@@ -236,6 +236,7 @@ class AnnotationsApplyTest extends Specification {
 public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass1 implements groovy/lang/GroovyObject {
 
   // compiled from: AnnotationsApplyTest.groovy
+  NESTHOST net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest
 
   @Ljava/lang/Deprecated;() // invisible
   // access flags 0x1
@@ -248,6 +249,7 @@ public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleC
 public class net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest$ExampleClass2 implements groovy/lang/GroovyObject {
 
   // compiled from: AnnotationsApplyTest.groovy
+  NESTHOST net/fabricmc/loom/test/unit/processor/AnnotationsApplyTest
 
   @Lorg/jetbrains/annotations/ApiStatus$Internal;() // invisible
   // access flags 0x1

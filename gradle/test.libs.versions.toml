@@ -1,5 +1,6 @@
 [versions]
-spock = "2.4-groovy-4.0"
+groovy = "6.0.0"
+spock = "2.5-groovy-6.0"
 junit = "6.1.1"
 javalin = "6.7.0"
 mockito = "5.23.0"
@@ -11,6 +12,12 @@ gradle-nightly = "9.9.0-20261010004848+0000"
 fabric-loader = "0.19.2"
 
 [libraries]
+groovy = { module = "org.apache.groovy:groovy", version.ref = "groovy" }
+groovy-ant = { module = "org.apache.groovy:groovy-ant", version.ref = "groovy" }
+groovy-callsite = { module = "org.apache.groovy:groovy-callsite", version.ref = "groovy" }
+groovy-json = { module = "org.apache.groovy:groovy-json", version.ref = "groovy" }
+groovy-nio = { module = "org.apache.groovy:groovy-nio", version.ref = "groovy" }
+groovy-xml = { module = "org.apache.groovy:groovy-xml", version.ref = "groovy" }
 spock = { module = "org.spockframework:spock-core", version.ref = "spock" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }

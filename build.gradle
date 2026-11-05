@@ -142,6 +142,12 @@ dependencies {
 
 	// Testing
 	testImplementation(gradleTestKit())
+	testImplementation testLibs.groovy
+	testImplementation testLibs.groovy.ant
+	testImplementation testLibs.groovy.json
+	testImplementation testLibs.groovy.nio
+	testImplementation testLibs.groovy.xml
+	testRuntimeOnly testLibs.groovy.callsite
 	testImplementation(testLibs.spock) {
 		exclude module: 'groovy-all'
 	}
@@ -165,6 +171,14 @@ dependencies {
 	testCompileOnly(testLibs.mixin) {
 		transitive = false
 	}
+}
+
+// gradleApi() includes Gradle's bundled Groovy, which must not mix with the test version.
+def bundledGroovy = configurations.detachedConfiguration(dependencies.localGroovy())
+def testGroovy = configurations.detachedConfiguration(testLibs.groovy.asProvider().get())
+sourceSets.test {
+	compileClasspath = testGroovy + compileClasspath - bundledGroovy
+	runtimeClasspath = testGroovy + runtimeClasspath - bundledGroovy
 }
 
 jar {
@@ -202,12 +216,12 @@ spotless {
 	groovy {
 		importOrder('java', 'javax', '', 'net.fabricmc', '\\#')
 		licenseHeaderFile(rootProject.file("HEADER")).yearSeparator("-")
-		// greclipse()
+		greclipse()
 	}
 
 	groovyGradle {
 		target 'src/**/*.gradle', '*.gradle'
-		// greclipse()
+		greclipse()
 	}
 
 	kotlin {

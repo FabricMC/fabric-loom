@@ -51,7 +51,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
 				builder.build()
-				)
+		)
 		then:
 		mappings.srcNamespace == "named"
 		mappings.dstNamespaces == ["intermediary", "official"]
@@ -84,7 +84,7 @@ class FileMappingLayerTest extends LayeredMappingsSpecification {
 				.fallbackNamespaces('named', 'official')
 				.mergeNamespace(MappingsNamespace.OFFICIAL)
 				.build()
-				)
+		)
 		def tiny = getTiny(mappings)
 		then:
 		mappings.srcNamespace == "named"

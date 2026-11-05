@@ -273,7 +273,7 @@ class CachedJarProcessorTest extends Specification {
 					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
 					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
-				)
+		)
 		// The second jar changes Example, so we would expect Test to be invalidated, thus causing a full decompile in this case
 		def jar2 = ZipTestUtils.createZipFromBytes(
 				[
@@ -285,7 +285,7 @@ class CachedJarProcessorTest extends Specification {
 					"net/fabricmc/other/Test\$Inner.class": newInnerClass("net/fabricmc/other/Test\$Inner", "net/fabricmc/other/Test", "Inner", ["net/fabricmc/Example"] as String[]),
 					"net/fabricmc/other/Test\$1.class": newInnerClass("net/fabricmc/other/Test\$1", "net/fabricmc/other/Test"),
 				]
-				)
+		)
 
 		def cache = new CachedFileStoreImpl<>(testPath.resolve("cache"), CachedData.SERIALIZER, new CachedFileStoreImpl.CacheRules(50_000, Duration.ofDays(90)))
 		def processor = new CachedJarProcessor(cache, "abc123")

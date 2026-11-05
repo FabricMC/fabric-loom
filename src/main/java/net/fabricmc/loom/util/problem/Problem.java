@@ -120,7 +120,7 @@ public record Problem(ProblemId id, String message, @Nullable String details, Se
 			} else if (details != null) {
 				message = details;
 			} else {
-				message = problemId.getDisplayName();
+				message = problemId.getName();
 			}
 
 			return new Problem(problemId, message, details, severity, contextualLabel, solution, fileLocation, cause);

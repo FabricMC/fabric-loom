@@ -83,7 +83,7 @@ class KotlinRemapperClassloaderTest extends Specification {
 			return Set.of(
 					kotlin.toURI().toURL(),
 					metadata.toURI().toURL()
-					)
+			)
 		}
 	}
 

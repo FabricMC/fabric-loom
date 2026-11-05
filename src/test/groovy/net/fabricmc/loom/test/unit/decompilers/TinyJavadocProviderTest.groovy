@@ -60,7 +60,7 @@ class TinyJavadocProviderTest extends Specification {
 				Mockito.mock(StructContext),
 				Mockito.mock(ClassesProcessor),
 				null
-				)
+		)
 	}
 
 	def cleanup() {

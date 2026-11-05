@@ -162,7 +162,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 						"127.0.0.1",
 						8050,
 						timeout
-						)
+				)
 			} catch (ConnectException e) {
 				Thread.sleep(timeout * 1000)
 				if (i == maxTimeout) {
@@ -195,18 +195,18 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 					0,
 					null,
 					null
-					)
+			)
 
 			// Wait for the breakpoint to be installed
 			return breakpoint.install().thenCompose {
 				// Then compose with the first result
 				return breakpointEvents()
-				.filter { event ->
-					event.location().sourcePath().replaceAll("[\\\\/]", ".") == className + ".java" &&
-					event.location().lineNumber() == lineNumber
-				}
-				.firstElement()
-				.to(toCompletionStage())
+						.filter { event ->
+							event.location().sourcePath().replaceAll("[\\\\/]", ".") == className + ".java" &&
+									event.location().lineNumber() == lineNumber
+						}
+						.firstElement()
+						.to(toCompletionStage())
 			}
 		}
 

@@ -109,9 +109,9 @@ public final class LoomProblemReporter {
 				case ADVICE -> GithubActionsAnnotations.notice(message);
 				};
 
-				if (!message.equals(problem.id().getDisplayName())) {
-					// We have details in the body so we can put the short context-free display name in the title.
-					builder.title(problem.id().getDisplayName());
+				if (!message.equals(problem.id().getName())) {
+					// We have details in the body so we can put the short context-free problem name in the title.
+					builder.title(problem.id().getName());
 				}
 
 				if (problem.fileLocation() != null) {
@@ -129,7 +129,7 @@ public final class LoomProblemReporter {
 	 * @param contextProblem the problem used as the exception detail message when multiple issues are found
 	 */
 	public void reportAndThrow(ProblemId contextProblem) {
-		reportAndThrow(contextProblem.getDisplayName());
+		reportAndThrow(contextProblem.getName());
 	}
 
 	/**

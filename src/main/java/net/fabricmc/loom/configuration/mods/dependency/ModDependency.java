@@ -35,6 +35,7 @@ import org.jspecify.annotations.Nullable;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.mods.ArtifactMetadata;
 import net.fabricmc.loom.configuration.mods.ArtifactRef;
+import net.fabricmc.loom.util.Checksum;
 
 public abstract sealed class ModDependency permits SplitModDependency, SimpleModDependency {
 	private final ArtifactRef artifact;
@@ -45,6 +46,8 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	@Nullable
 	private final String classifier;
 	private final ModDependencyOptions options;
+	@Nullable
+	private final String inputHash;
 
 	public ModDependency(ArtifactRef artifact, ArtifactMetadata metadata, ModDependencyOptions options) {
 		this.artifact = artifact;
@@ -54,6 +57,12 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 		this.version = artifact.version();
 		this.classifier = artifact.classifier();
 		this.options = options;
+
+		if (artifact.isChanging() || getSnapshotVersion() != null) {
+			this.inputHash = Checksum.of(artifact.path()).sha256().hex(16);
+		} else {
+			this.inputHash = null;
+		}
 	}
 
 	/**
@@ -103,7 +112,11 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 	}
 
 	protected String getName() {
-		return "%s-%s".formatted(name, options.getCacheKey());
+		if (inputHash == null) {
+			return "%s-%s".formatted(name, options.getCacheKey());
+		}
+
+		return "%s-%s-%s".formatted(name, options.getCacheKey(), inputHash);
 	}
 
 	protected String getGroup() {

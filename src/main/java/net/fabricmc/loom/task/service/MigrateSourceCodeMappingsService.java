@@ -93,6 +93,13 @@ public final class MigrateSourceCodeMappingsService extends Service<MigrateSourc
 			throw new IllegalArgumentException("Could not find input directory: " + inputDir.toAbsolutePath());
 		}
 
+		final Path canonicalInputDir = inputDir.toFile().getCanonicalFile().toPath();
+		final Path canonicalOutputDir = outputDir.toFile().getCanonicalFile().toPath();
+
+		if (canonicalInputDir.startsWith(canonicalOutputDir) || canonicalOutputDir.startsWith(canonicalInputDir)) {
+			throw new IllegalArgumentException("Input and output directories must not overlap: " + inputDir + " and " + outputDir);
+		}
+
 		if (Files.exists(outputDir)) {
 			DeletingFileVisitor.deleteDirectory(outputDir);
 		}

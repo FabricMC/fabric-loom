@@ -97,7 +97,7 @@ public final class SourceSetHelper {
 	}
 
 	/**
-	 * Attempts to compute the owning project for the {@link SourceSet}
+	 * Attempts to compute the owning project for the {@link SourceSet}.
 	 *
 	 * <p>A bit of a hack, would be nice for this to be added to the Gradle API.
 	 */

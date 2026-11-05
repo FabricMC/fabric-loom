@@ -149,7 +149,7 @@ class MinecraftMetadataProviderTest extends DownloadTest {
 		return new MinecraftMetadataProvider(
 				options(version, customUrl),
 				Download.&create
-				)
+		)
 	}
 
 	private MinecraftMetadataProvider.Options options(String version, String customUrl) {
@@ -163,7 +163,7 @@ class MinecraftMetadataProviderTest extends DownloadTest {
 				customUrl,
 				testDir,
 				testDir
-				)
+		)
 	}
 
 	@Language("json")

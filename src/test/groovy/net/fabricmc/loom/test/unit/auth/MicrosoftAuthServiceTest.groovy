@@ -210,7 +210,7 @@ class MicrosoftAuthServiceTest extends Specification {
 				URI.create("$base/minecraft-login"),
 				URI.create("$base/entitlements"),
 				URI.create("$base/profile")
-				)
+		)
 	}
 
 	private static String xboxToken(String token, String userHash) {

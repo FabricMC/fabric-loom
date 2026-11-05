@@ -108,7 +108,7 @@ class MinecraftJarMergerRunner {
 				id: version.id(),
 				clientJar: clientJar,
 				serverJar: serverJar
-				)
+		)
 	}
 
 	static Path download(MinecraftVersionMeta.Download download, DownloadExecutor executor) {

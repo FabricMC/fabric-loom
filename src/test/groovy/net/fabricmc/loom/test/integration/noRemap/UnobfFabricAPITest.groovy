@@ -46,7 +46,7 @@ class UnobfFabricAPITest extends Specification implements GradleProjectTestTrait
 				version: PRE_RELEASE_GRADLE,
 				patch: "fabric_api_unobf",
 				warningMode: "all"
-				)
+		)
 
 		def minecraftVersion = "26.2-snapshot-8"
 		def server = ServerRunner.create(gradle.projectDir, minecraftVersion)

@@ -45,7 +45,7 @@ class UnobfBenchmark implements GradleProjectTestTrait {
 				version: LoomTestConstants.PRE_RELEASE_GRADLE,
 				projectDir: new File(dir, "project"),
 				gradleHomeDir: new File(dir, "gradlehome")
-				)
+		)
 
 		gradle.buildGradle << """
                 dependencies {

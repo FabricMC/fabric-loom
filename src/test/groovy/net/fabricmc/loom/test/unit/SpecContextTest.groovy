@@ -90,7 +90,7 @@ class SpecContextTest extends Specification {
 				implementation: [],
 				runtimeOnly: [],
 				compileOnly: []
-				)
+		)
 
 		when:
 		def specContext = RemappedSpecContext.create(projectView)
@@ -109,7 +109,7 @@ class SpecContextTest extends Specification {
 				implementation: [mod("test1")],
 				runtimeOnly: [],
 				compileOnly: []
-				)
+		)
 
 		when:
 		def specContext = RemappedSpecContext.create(projectView)
@@ -128,7 +128,7 @@ class SpecContextTest extends Specification {
 				implementation: [],
 				runtimeOnly: [mod("test1")],
 				compileOnly: []
-				)
+		)
 
 		when:
 		def specContext = RemappedSpecContext.create(projectView)
@@ -147,7 +147,7 @@ class SpecContextTest extends Specification {
 				implementation: [],
 				runtimeOnly: [],
 				compileOnly: [mod("test1")]
-				)
+		)
 
 		when:
 		def specContext = RemappedSpecContext.create(projectView)
@@ -167,7 +167,7 @@ class SpecContextTest extends Specification {
 				implementation: [],
 				runtimeOnly: [test1],
 				compileOnly: [test1]
-				)
+		)
 
 		when:
 		def specContext = RemappedSpecContext.create(projectView)

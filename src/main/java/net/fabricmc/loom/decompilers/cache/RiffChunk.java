@@ -30,7 +30,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Write a RIFF chunk to a file channel
+ * Write a RIFF chunk to a file channel.
  *
  * <p>Works by writing the chunk header and then reserving space for the chunk size.
  * The chunk size is then written after the chunk data has been written.

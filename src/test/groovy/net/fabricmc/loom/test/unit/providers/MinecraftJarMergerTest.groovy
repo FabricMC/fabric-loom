@@ -115,7 +115,7 @@ class MinecraftJarMergerTest extends Specification {
 		return new Jars(
 				clientJar: jars.clientJar,
 				serverJar: unpackedJar
-				)
+		)
 	}
 
 	static Jars downloadJars(String id) {
@@ -148,7 +148,7 @@ class MinecraftJarMergerTest extends Specification {
 		return new Jars(
 				clientJar: clientJar,
 				serverJar: serverJar
-				)
+		)
 	}
 
 	static Path download(MinecraftVersionMeta.Download download, DownloadExecutor executor) {

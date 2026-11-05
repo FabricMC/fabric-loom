@@ -33,6 +33,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSet;
 import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.Nullable;
 
@@ -61,6 +62,14 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 	}
 
 	LoomFiles getFiles();
+
+	String getMinecraftSourceSetName();
+
+	String getMinecraftClientSourceSetName();
+
+	SourceSet getMinecraftSourceSet();
+
+	SourceSet getMinecraftClientSourceSet();
 
 	ConfigurableFileCollection getUnmappedModCollection();
 

@@ -41,7 +41,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -148,10 +147,10 @@ public class TinyRemapperService extends Service<TinyRemapperService.Options> im
 		}
 
 		if (classpathLibraries == ClasspathLibraries.INCLUDE) {
-			return project.files(configurations.named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+			return project.files(configurations.named(extension.getMinecraftSourceSet().getCompileClasspathConfigurationName()));
 		}
 
-		return project.files(configurations.named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+		return project.files(configurations.named(extension.getMinecraftSourceSet().getCompileClasspathConfigurationName()))
 				.minus(project.files(configurations.named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES)))
 				.minus(project.files(configurations.named(Constants.Configurations.MINECRAFT_RUNTIME_LIBRARIES)));
 	}

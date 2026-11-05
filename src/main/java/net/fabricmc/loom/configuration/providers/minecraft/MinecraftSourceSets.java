@@ -47,7 +47,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 	public abstract void applyDependencies(BiConsumer<String, MinecraftJar.Type> consumer, List<MinecraftJar.Type> targets);
 
-	public abstract String getSourceSetForEnv(String env);
+	public abstract String getSourceSetForEnv(Project project, String env);
 
 	protected abstract List<ConfigurationName> getConfigurations();
 
@@ -106,8 +106,8 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		@Override
-		public String getSourceSetForEnv(String env) {
-			return SourceSet.MAIN_SOURCE_SET_NAME;
+		public String getSourceSetForEnv(Project project, String env) {
+			return LoomGradleExtension.get(project).getMinecraftSourceSetName();
 		}
 
 		@Override
@@ -160,8 +160,9 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 		}
 
 		@Override
-		public String getSourceSetForEnv(String env) {
-			return env.equals("client") ? CLIENT_ONLY_SOURCE_SET_NAME : SourceSet.MAIN_SOURCE_SET_NAME;
+		public String getSourceSetForEnv(Project project, String env) {
+			final LoomGradleExtension extension = LoomGradleExtension.get(project);
+			return env.equals("client") ? extension.getMinecraftClientSourceSetName() : extension.getMinecraftSourceSetName();
 		}
 
 		@Override
@@ -174,13 +175,13 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			registerConfigurations(project);
 			final ConfigurationContainer configurations = project.getConfigurations();
 
-			// Register our new client only source set, main becomes common only, with their respective jars.
-			final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(project);
-			final SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(CLIENT_ONLY_SOURCE_SET_NAME, project);
+			// Create the client-only source set and configure the common source set.
+			final SourceSet commonSourceSet = LoomGradleExtension.get(project).getMinecraftSourceSet();
+			final SourceSet clientOnlySourceSet = SourceSetHelper.createSourceSet(LoomGradleExtension.get(project).getMinecraftClientSourceSetName(), project);
 
-			// Add Minecraft to the main and client source sets.
-			extendsFrom(project, mainSourceSet.getCompileClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.compile());
-			extendsFrom(project, mainSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
+			// Add Minecraft to the common and client source sets.
+			extendsFrom(project, commonSourceSet.getCompileClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.compile());
+			extendsFrom(project, commonSourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_COMMON_NAMED.runtime());
 			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.compile());
 			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), MINECRAFT_CLIENT_ONLY_NAMED.runtime());
 
@@ -193,15 +194,15 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			clientOnlySourceSet.setCompileClasspath(
 					clientOnlySourceSet.getCompileClasspath()
-							.plus(mainSourceSet.getOutput())
+							.plus(commonSourceSet.getOutput())
 			);
 			clientOnlySourceSet.setRuntimeClasspath(
 					clientOnlySourceSet.getRuntimeClasspath()
-							.plus(mainSourceSet.getOutput())
+							.plus(commonSourceSet.getOutput())
 			);
 
-			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), mainSourceSet.getCompileClasspathConfigurationName());
-			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), mainSourceSet.getRuntimeClasspathConfigurationName());
+			extendsFrom(project, clientOnlySourceSet.getCompileClasspathConfigurationName(), commonSourceSet.getCompileClasspathConfigurationName());
+			extendsFrom(project, clientOnlySourceSet.getRuntimeClasspathConfigurationName(), commonSourceSet.getRuntimeClasspathConfigurationName());
 
 			// Test source set depends on client
 			final SourceSet testSourceSet = SourceSetHelper.getSourceSetByName(SourceSet.TEST_SOURCE_SET_NAME, project);
@@ -212,7 +213,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 			RemapConfigurations.configureClientConfigurations(project, clientOnlySourceSet);
 
 			// Include the client only output in the jars
-			project.getTasks().named(mainSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
+			project.getTasks().named(commonSourceSet.getJarTaskName(), Jar.class).configure(jar -> {
 				jar.from(clientOnlySourceSet.getOutput().getClassesDirs());
 				jar.from(clientOnlySourceSet.getOutput().getResourcesDir());
 
@@ -228,7 +229,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			// The sources task can be registered at a later time.
 			project.getTasks().configureEach(task -> {
-				if (!mainSourceSet.getSourcesJarTaskName().equals(task.getName()) || !(task instanceof Jar jar)) {
+				if (!commonSourceSet.getSourcesJarTaskName().equals(task.getName()) || !(task instanceof Jar jar)) {
 					// Not the sources task we are looking for.
 					return;
 				}
@@ -239,7 +240,7 @@ public abstract sealed class MinecraftSourceSets permits MinecraftSourceSets.Sin
 
 			project.getTasks().withType(AbstractRemapJarTask.class, task -> {
 				// Set the default client only source set name
-				task.getClientOnlySourceSetName().convention(CLIENT_ONLY_SOURCE_SET_NAME);
+				task.getClientOnlySourceSetName().convention(LoomGradleExtension.get(project).getMinecraftClientSourceSetName());
 			});
 		}
 

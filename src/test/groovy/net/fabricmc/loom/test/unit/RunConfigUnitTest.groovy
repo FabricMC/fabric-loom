@@ -98,7 +98,10 @@ class RunConfigUnitTest extends Specification {
 		parent.mixinAgent.set(true)
 
 		then:
-		child.mods.files == [project.file("build/mod.jar"), project.file("child.jar")] as Set
+		child.mods.files == [
+			project.file("build/mod.jar"),
+			project.file("child.jar")
+		] as Set
 		child.mods.buildDependencies.getDependencies(null) == [producer.get()] as Set
 		child.mixinAgent.get()
 
@@ -140,7 +143,9 @@ class RunConfigUnitTest extends Specification {
 		def mixinJar = new File(repository, "net/fabricmc/sponge-mixin/2.0/sponge-mixin-2.0.jar")
 
 		expect:
-		RunConfigUtils.getAdditionalGradleJvmArguments(run, project).get() == ["-javaagent:" + mixinJar.absolutePath]
+		RunConfigUtils.getAdditionalGradleJvmArguments(run, project).get() == [
+			"-javaagent:" + mixinJar.absolutePath
+		]
 	}
 
 	def "missing mixin agent gives an actionable error"() {
@@ -158,5 +163,4 @@ class RunConfigUnitTest extends Specification {
 		def exception = thrown(GradleException)
 		exception.message == "Expected one Mixin jar on the runtime classpath for run 'client', found 0"
 	}
-
 }

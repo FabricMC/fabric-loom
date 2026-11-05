@@ -36,7 +36,6 @@ import org.gradle.api.plugins.JavaPlugin;
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.LoomVersions;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public abstract class LoomConfigurations implements Runnable {
 	@Inject
@@ -96,7 +95,7 @@ public abstract class LoomConfigurations implements Runnable {
 			extendsFrom(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
 			extendsFrom(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME, Constants.Configurations.MAPPINGS_FINAL);
 
-			extension.createRemapConfigurations(SourceSetHelper.getMainSourceSet(getProject()));
+			extension.createRemapConfigurations(extension.getMinecraftSourceSet());
 		} else {
 			registerNonTransitive(Constants.Configurations.ANNOTATIONS, Role.RESOLVABLE);
 		}

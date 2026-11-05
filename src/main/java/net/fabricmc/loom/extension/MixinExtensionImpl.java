@@ -48,6 +48,8 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.util.PatternSet;
 import org.jetbrains.annotations.ApiStatus;
 
+import net.fabricmc.loom.LoomGradleExtension;
+
 public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinExtension {
 	private boolean isDefault;
 	private final Property<String> defaultRefmapName;
@@ -132,7 +134,7 @@ public class MixinExtensionImpl extends MixinExtensionApiImpl implements MixinEx
 
 	private void initDefault() {
 		project.getExtensions().getByType(JavaPluginExtension.class).getSourceSets().forEach(sourceSet -> {
-			if (sourceSet.getName().equals("main")) {
+			if (sourceSet.getName().equals(LoomGradleExtension.get(project).getMinecraftSourceSetName())) {
 				add(sourceSet);
 			} else {
 				add(sourceSet, getDefaultRefmapName().map(defaultRefmapName -> "%s-%s".formatted(sourceSet.getName(), defaultRefmapName)), x -> { });

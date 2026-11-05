@@ -37,11 +37,9 @@ import org.gradle.jvm.tasks.Jar;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.configuration.IncludeConfigurations;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.task.service.ClientEntriesService;
 import net.fabricmc.loom.task.service.JarManifestService;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 
 /**
@@ -87,10 +85,7 @@ public class NonRemappedJarTaskConfiguration {
 			return Collections.emptyList();
 		}
 
-		final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(
-				MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME,
-				project
-		);
+		final SourceSet clientSourceSet = extension.getMinecraftClientSourceSet();
 		final Provider<ClientEntriesService.Classes.Options> optionsProvider = ClientEntriesService.Classes.createOptions(project, clientSourceSet);
 
 		try (var serviceFactory = new ScopedServiceFactory()) {

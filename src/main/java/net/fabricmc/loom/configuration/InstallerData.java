@@ -33,7 +33,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.plugins.JavaPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,7 @@ public record InstallerData(String version, JsonObject installerJson) {
 	private void applyDependendencies(JsonArray jsonArray, Project project) {
 		LoomGradleExtension extension = LoomGradleExtension.get(project);
 		Configuration loaderDepsConfig = project.getConfigurations().getByName(Constants.Configurations.LOADER_DEPENDENCIES);
-		Configuration annotationProcessor = project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME);
+		Configuration annotationProcessor = project.getConfigurations().getByName(extension.getMinecraftSourceSet().getAnnotationProcessorConfigurationName());
 
 		for (JsonElement jsonElement : jsonArray) {
 			final JsonObject jsonObject = jsonElement.getAsJsonObject();

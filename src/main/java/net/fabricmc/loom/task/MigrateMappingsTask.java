@@ -39,6 +39,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.api.tasks.options.Option;
 
+import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.task.service.MigrateSourceCodeMappingsService;
 import net.fabricmc.loom.util.DeletingFileVisitor;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -59,7 +60,7 @@ public abstract class MigrateMappingsTask extends AbstractMigrateMappingsTask {
 	protected abstract Property<MigrateSourceCodeMappingsService.Options> getMigrationServiceOptions();
 
 	public MigrateMappingsTask() {
-		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/main/java"));
+		getInputDir().convention(getProject().getLayout().getProjectDirectory().dir("src/" + LoomGradleExtension.get(getProject()).getMinecraftSourceSetName() + "/java"));
 		getOutputDir().convention(getProject().getLayout().getProjectDirectory().dir("remappedSrc"));
 		getMigrationServiceOptions().set(MigrateSourceCodeMappingsService.createOptions(getProject(), getMappings(), getInputDir(), getOutputDir()));
 	}

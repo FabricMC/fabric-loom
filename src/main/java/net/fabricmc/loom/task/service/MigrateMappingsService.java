@@ -33,7 +33,6 @@ import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
@@ -73,7 +72,7 @@ public final class MigrateMappingsService extends Service<MigrateMappingsService
 		final Provider<String> to = project.provider(() -> "named");
 
 		ConfigurableFileCollection classpath = project.getObjects().fileCollection();
-		classpath.from(project.getConfigurations().named(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME));
+		classpath.from(project.getConfigurations().named(extension.getMinecraftSourceSet().getCompileClasspathConfigurationName()));
 		// Question: why are both of these needed?
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.INTERMEDIARY));
 		classpath.from(extension.getMinecraftJars(MappingsNamespace.NAMED));

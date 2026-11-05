@@ -81,7 +81,6 @@ import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.ServiceFactory;
@@ -100,8 +99,8 @@ public abstract class CompileConfiguration implements Runnable {
 		LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 
 		getTasks().named(JavaPlugin.JAVADOC_TASK_NAME, Javadoc.class).configure(javadoc -> {
-			final SourceSet main = SourceSetHelper.getMainSourceSet(getProject());
-			javadoc.setClasspath(main.getOutput().plus(main.getCompileClasspath()));
+			final SourceSet minecraftSourceSet = extension.getMinecraftSourceSet();
+			javadoc.setClasspath(minecraftSourceSet.getOutput().plus(minecraftSourceSet.getCompileClasspath()));
 		});
 
 		afterEvaluationWithService((serviceFactory) -> {

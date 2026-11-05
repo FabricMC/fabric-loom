@@ -33,7 +33,6 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 
 import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
 import net.fabricmc.loom.util.gradle.SourceSetHelper;
@@ -46,7 +45,7 @@ abstract class FabricApiAbstractSourceSet {
 
 	protected SourceSet configureSourceSet(Property<String> modId, boolean isClient) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
-		final SourceSet mainSourceSet = SourceSetHelper.getMainSourceSet(getProject());
+		final SourceSet minecraftSourceSet = extension.getMinecraftSourceSet();
 
 		final boolean isClientAndSplit = extension.areEnvironmentSourceSetsSplit() && isClient;
 
@@ -54,10 +53,10 @@ abstract class FabricApiAbstractSourceSet {
 
 		// Create the new sourceset, depend on the main or client sourceset.
 		SourceSet sourceSet = sourceSets.create(getSourceSetName(), ss -> {
-			dependsOn(ss, mainSourceSet);
+			dependsOn(ss, minecraftSourceSet);
 
 			if (isClientAndSplit) {
-				dependsOn(ss, SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, getProject()));
+				dependsOn(ss, extension.getMinecraftClientSourceSet());
 			}
 		});
 

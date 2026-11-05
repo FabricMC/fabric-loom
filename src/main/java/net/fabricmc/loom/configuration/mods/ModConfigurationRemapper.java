@@ -55,7 +55,6 @@ import org.gradle.api.artifacts.result.ComponentArtifactsResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.jvm.JvmLibrary;
@@ -71,13 +70,11 @@ import net.fabricmc.loom.configuration.RemapConfigurations;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependency;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyFactory;
 import net.fabricmc.loom.configuration.mods.dependency.ModDependencyOptions;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.Constants;
 import net.fabricmc.loom.util.ExceptionUtil;
 import net.fabricmc.loom.util.SourceRemapper;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 @SuppressWarnings("UnstableApiUsage")
@@ -128,14 +125,14 @@ public class ModConfigurationRemapper {
 				// If our remap configuration entry targets the client source set as well,
 				// let's set up a collector for it too.
 				if (entry.getClientSourceConfigurationName().isPresent()) {
-					final SourceSet clientSourceSet = SourceSetHelper.getSourceSetByName(MinecraftSourceSets.Split.CLIENT_ONLY_SOURCE_SET_NAME, project);
+					final SourceSet clientSourceSet = LoomGradleExtension.get(project).getMinecraftClientSourceSet();
 					final NamedDomainObjectProvider<? extends Configuration> clientTarget = RemapConfigurations.getOrRegisterCollectorConfiguration(project, clientSourceSet, runtime);
 					clientConfigsToRemap.put(sourceCopy, clientTarget);
 				}
 			});
 
 			// Export to other projects.
-			if (entry.getTargetConfigurationName().get().equals(JavaPlugin.API_CONFIGURATION_NAME)) {
+			if (entry.getTargetConfigurationName().get().equals(extension.getMinecraftSourceSet().getApiConfigurationName())) {
 				// Note: legacy (pre-1.1) behavior is kept for this remapping since
 				// we don't have a modApiElements/modRuntimeElements kind of configuration.
 				// TODO: Expose API/runtime usage attributes for namedElements to make it work like normal project dependencies.

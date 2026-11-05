@@ -90,7 +90,9 @@ public record CachedFileStoreImpl<T>(Path root, EntrySerializer<T> entrySerializ
 
 		// Delete the oldest files to get under the max file limit
 		if (entries.size() > cacheRules.maxFiles) {
-			for (int i = 0; i < cacheRules.maxFiles; i++) {
+			final long filesToRemove = entries.size() - cacheRules.maxFiles;
+
+			for (int i = 0; i < filesToRemove; i++) {
 				PathEntry toRemove = entries.remove(0);
 				Files.delete(toRemove.path);
 			}

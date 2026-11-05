@@ -221,6 +221,10 @@ public abstract class GenerateSourcesTask extends AbstractLoomTask {
 		dependsOn(decompilerOptions.getClasspath().getBuiltBy());
 
 		getMinecraftCompileLibraries().from(getProject().getConfigurations().named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
+		getMinecraftCompileLibraries().from(getInputJarName().map(inputJarName -> getExtension().getNamedMinecraftProvider().getMinecraftJars().stream()
+				.filter(minecraftJar -> !minecraftJar.getName().equals(inputJarName))
+				.map(AbstractMappedMinecraftProvider::getBackupJarPath)
+				.toList()));
 		getDecompileCacheFile().set(getExtension().getFiles().getDecompileCache(CACHE_VERSION));
 
 		getUseCache().convention(true);

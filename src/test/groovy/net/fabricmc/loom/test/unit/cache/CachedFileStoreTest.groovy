@@ -76,13 +76,13 @@ class CachedFileStoreTest extends Specification {
 		unknownEntry == null
 	}
 
-	def "pruneManyFiles"() {
+	def "pruneManyFiles (#fileCount)"() {
 		given:
 		def cacheRules = new CachedFileStoreImpl.CacheRules(250, Duration.ofDays(7))
 		def store = new CachedFileStoreImpl(root, BYTE_ARRAY_SERIALIZER, cacheRules)
 		when:
 
-		for (i in 0..<500) {
+		for (i in 0..<fileCount) {
 			def key = "test_" + i
 			store.putEntry(key, "Hello world".bytes)
 			// Higher files are older and should be removed.
@@ -92,9 +92,12 @@ class CachedFileStoreTest extends Specification {
 		store.prune()
 
 		then:
-		Files.exists(root.resolve("test_0"))
-		Files.exists(root.resolve("test_100"))
-		Files.notExists(root.resolve("test_300"))
+		for (i in 0..<fileCount) {
+			assert Files.exists(root.resolve("test_" + i)) == (i < 250)
+		}
+
+		where:
+		fileCount << [249, 250, 251, 500, 751]
 	}
 
 	def "pruneOldFiles"() {

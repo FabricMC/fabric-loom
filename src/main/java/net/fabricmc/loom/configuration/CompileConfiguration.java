@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
@@ -442,6 +443,17 @@ public abstract class CompileConfiguration implements Runnable {
 				long sleptMs = 0;
 
 				while (Files.exists(lockFile.file)) {
+					try {
+						if ("disowned".equals(Files.readString(lockFile.file))) {
+							logger.lifecycle("Previous process has disowned the lock due to abrupt termination.");
+							Files.deleteIfExists(lockFile.file);
+							disowned = true;
+							break;
+						}
+					} catch (NoSuchFileException e) {
+						break;
+					}
+
 					try {
 						Thread.sleep(100);
 					} catch (final InterruptedException e) {

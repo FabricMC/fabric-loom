@@ -24,6 +24,8 @@
 
 package net.fabricmc.loom.test.unit.processor
 
+import java.util.stream.Stream
+
 import groovy.transform.CompileStatic
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.ClassNode
@@ -35,10 +37,69 @@ import org.spongepowered.asm.mixin.injection.Inject
 import spock.lang.Specification
 
 import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinReferenceRemapper
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinReferenceRemapperImpl
+import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinRefmapInlinerApplyVisitorProvider
 import net.fabricmc.loom.configuration.mods.dependency.refmap.MixinRefmapInlinerClassVisitor
+import net.fabricmc.loom.util.fmj.mixin.MixinRefmap
+import net.fabricmc.tinyremapper.InputTag
+import net.fabricmc.tinyremapper.TinyRemapper
 
 class MixinRefmapInlinerTest extends Specification {
 	static String className = "net/fabricmc/loom/test/unit/processor/MixinRefmapInlinerClassVisitorTest\$ExampleClass"
+
+	def "Missing refmaps leave references unchanged"() {
+		when:
+		def remapper = MixinReferenceRemapperImpl.createFromRefmaps("named", "intermediary", Stream.of(null))
+
+		then:
+		remapper.remapReference("ExampleMixin", "exampleMethod") == "exampleMethod"
+	}
+
+	def "Missing refmaps do not prevent other refmaps from being applied"() {
+		given:
+		def references = new MixinRefmap.ReferenceMappingData([exampleMethod: "method_123"])
+		def mappings = new MixinRefmap.MixinMappingData([ExampleMixin: references])
+		def refmap = new MixinRefmap("example.refmap.json", mappings, [:])
+
+		when:
+		def remapper = MixinReferenceRemapperImpl.createFromRefmaps("named", "intermediary", Stream.of(null, refmap, null))
+
+		then:
+		remapper.remapReference("ExampleMixin", "exampleMethod") == "method_123"
+		remapper.remapReference("ExampleMixin", "unmappedMethod") == "unmappedMethod"
+	}
+
+	def "Refmaps are inlined only for selected input tags: #tagNames"() {
+		given:
+		def tinyRemapper = TinyRemapper.newRemapper().build()
+		def selectedTag = tinyRemapper.createInputTag()
+		def unselectedTag = tinyRemapper.createInputTag()
+		def tags = [selected: selectedTag, unselected: unselectedTag]
+		def inputTags = tagNames.collect { tags[it] } as InputTag[]
+		def remapper = Stub(MixinReferenceRemapper)
+		def provider = new MixinRefmapInlinerApplyVisitorProvider(remapper, {
+			it == selectedTag
+		})
+		def next = new ClassNode()
+
+		when:
+		def visitor = provider.insertApplyVisitor(null, next, inputTags)
+
+		then:
+		(visitor instanceof MixinRefmapInlinerClassVisitor) == shouldInline
+		shouldInline || visitor.is(next)
+
+		cleanup:
+		tinyRemapper.finish()
+
+		where:
+		tagNames | shouldInline
+		["selected"] | true
+		["unselected"] | false
+		["selected", "unselected"] | true
+		["unselected", "selected"] | true
+		[] | false
+	}
 
 	def "MixinRefmapInlinerClassVisitor"() {
 		given:

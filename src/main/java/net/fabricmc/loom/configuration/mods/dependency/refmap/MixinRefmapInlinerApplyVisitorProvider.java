@@ -34,8 +34,7 @@ import net.fabricmc.tinyremapper.api.TrClass;
 
 public record MixinRefmapInlinerApplyVisitorProvider(
 		MixinReferenceRemapper remapper,
-		// A set of input tags that do NOT need their refmaps inlined
-		Predicate<InputTag> staticRemappedMixins) implements TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
+		Predicate<InputTag> applyPredicate) implements TinyRemapper.ApplyVisitorProvider, TinyRemapper.Extension {
 	@Override
 	public ClassVisitor insertApplyVisitor(TrClass cls, ClassVisitor next) {
 		return new MixinRefmapInlinerClassVisitor(remapper, next);
@@ -44,13 +43,12 @@ public record MixinRefmapInlinerApplyVisitorProvider(
 	@Override
 	public ClassVisitor insertApplyVisitor(TrClass cls, ClassVisitor next, InputTag[] inputTags) {
 		for (InputTag tag : inputTags) {
-			if (staticRemappedMixins.test(tag)) {
-				// No need to inline the refmaps for this tag, as we know this was originally a statically remapped mixin with no refmap
-				return next;
+			if (applyPredicate.test(tag)) {
+				return new MixinRefmapInlinerClassVisitor(remapper, next);
 			}
 		}
 
-		return new MixinRefmapInlinerClassVisitor(remapper, next);
+		return next;
 	}
 
 	@Override

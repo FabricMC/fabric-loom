@@ -41,6 +41,7 @@ public record MixinReferenceRemapperImpl(Map<String, MixinRefmap.ReferenceMappin
 		MixinRefmap.NamespacePair namespaces = new MixinRefmap.NamespacePair(from, to);
 
 		Map<String, MixinRefmap.ReferenceMappingData> data = refmaps
+				.filter(Objects::nonNull)
 				.map(refmap -> refmap.getData(namespaces))
 				.filter(Objects::nonNull)
 				.map(MixinRefmap.MixinMappingData::data)

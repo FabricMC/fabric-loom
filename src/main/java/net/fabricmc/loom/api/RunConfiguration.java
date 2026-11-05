@@ -26,6 +26,7 @@ package net.fabricmc.loom.api;
 
 import org.gradle.api.Action;
 import org.gradle.api.Named;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
@@ -134,6 +135,24 @@ public interface RunConfiguration extends Named {
 	@ApiStatus.Experimental
 	Property<String> getDevLaunchMainClass();
 
+	/**
+	 * Additional mods to load through Fabric Loader's {@code fabric.addMods} system property.
+	 * These files are only used at runtime and do not become compile dependencies.
+	 * Task outputs are built before Gradle launches.
+	 * Loader handles runtime remapping of production mods in development environments.
+	 *
+	 * <p>Only supported by Gradle runs. This does not affect IDE runs that launch Java directly.
+	 */
+	ConfigurableFileCollection getMods();
+
+	/**
+	 * Whether to attach the run's Mixin jar as a Java agent to enable Mixin hot swapping.
+	 * Defaults to false. Supported edits depend on Mixin and the running JVM.
+	 *
+	 * <p>Only supported by Gradle runs. This does not affect IDE runs that launch Java directly.
+	 */
+	Property<Boolean> getMixinAgent();
+
 	default void inherit(RunConfiguration parent) {
 		getJvmArguments().convention(parent.getJvmArguments());
 		getProgramArguments().addAll(parent.getProgramArguments());
@@ -148,6 +167,8 @@ public interface RunConfiguration extends Named {
 		getPreferGradleTask().convention(parent.getPreferGradleTask());
 		getIdeConfigFolder().convention(parent.getIdeConfigFolder());
 		getDevLaunchMainClass().convention(parent.getDevLaunchMainClass());
+		getMods().from(parent.getMods());
+		getMixinAgent().convention(parent.getMixinAgent());
 	}
 
 	/**

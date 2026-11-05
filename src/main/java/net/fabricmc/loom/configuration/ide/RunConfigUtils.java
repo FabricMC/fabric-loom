@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,8 @@ import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.gradle.api.Project;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,9 +127,36 @@ public class RunConfigUtils {
 		RunConfigurationInternal runConfiguration = project.getObjects().newInstance(RunConfigurationInternal.class, runConfig.getName());
 		runConfiguration.inherit(runConfig);
 		runConfiguration.getDisplayName().convention(runConfig.getDisplayName());
+		runConfiguration.getMods().setFrom(runConfig.getMods().getFiles());
 		runConfiguration.getIsFinalised().set(true);
 		DefaultRunConfigurationSettings.finialiseValues(runConfiguration);
 		return runConfiguration;
+	}
+
+	public static Provider<List<String>> getAdditionalGradleJvmArguments(RunConfiguration run, Project project) {
+		ListProperty<String> arguments = project.getObjects().listProperty(String.class);
+
+		arguments.addAll(run.getMods().getElements().map(files -> {
+			if (files.isEmpty()) {
+				return List.of();
+			}
+
+			String mods = files.stream()
+					.map(file -> file.getAsFile().getAbsolutePath())
+					.collect(Collectors.joining(File.pathSeparator));
+			return List.of("-Dfabric.addMods=" + mods);
+		}));
+
+		arguments.addAll(project.provider(() -> {
+			if (!run.getMixinAgent().getOrElse(false)) {
+				return List.of();
+			}
+
+			File mixinJar = RuntimeLibraries.getMixinJar(project, run);
+			return List.of("-javaagent:" + mixinJar.getAbsolutePath());
+		}));
+
+		return arguments;
 	}
 
 	public static String getDisplayName(RunConfiguration run, Project project) {

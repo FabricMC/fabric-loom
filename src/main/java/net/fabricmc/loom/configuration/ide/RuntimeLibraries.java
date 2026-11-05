@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.configuration.ide;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,15 +33,19 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier;
+import org.gradle.api.file.FileCollection;
 
 import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.api.RunConfiguration;
 import net.fabricmc.loom.configuration.providers.BundleMetadata;
 import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 public class RuntimeLibraries {
 	public static List<String> getExcludedLibraryPaths(Project project, RunConfiguration runConfiguration) {
@@ -66,6 +71,27 @@ public class RuntimeLibraries {
 		}
 
 		return clientOnlyLibraries;
+	}
+
+	public static File getMixinJar(Project project, RunConfiguration run) {
+		String configurationName = SourceSetHelper.getSourceSetByName(run.getSourceSet().get(), project).getRuntimeClasspathConfigurationName();
+		FileCollection mixinJars = project.getConfigurations().getByName(configurationName).getIncoming().artifactView(view -> {
+			view.componentFilter(component -> {
+				if (!(component instanceof ModuleComponentIdentifier module)) {
+					return false;
+				}
+
+				boolean fabricMixin = module.getModule().equals("sponge-mixin");
+				boolean upstreamMixin = module.getGroup().equals("org.spongepowered") && module.getModule().equals("mixin");
+				return fabricMixin || upstreamMixin;
+			});
+		}).getFiles();
+
+		if (mixinJars.getFiles().size() != 1) {
+			throw new GradleException("Expected one Mixin jar on the runtime classpath for run '%s', found %d".formatted(run.getName(), mixinJars.getFiles().size()));
+		}
+
+		return mixinJars.getSingleFile();
 	}
 
 	private static Set<ResolvedArtifact> getArtifacts(Project project, String configuration) {

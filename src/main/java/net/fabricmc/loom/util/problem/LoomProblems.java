@@ -26,7 +26,6 @@ package net.fabricmc.loom.util.problem;
 
 import org.gradle.api.problems.ProblemGroup;
 import org.gradle.api.problems.ProblemId;
-import org.gradle.util.GradleVersion;
 
 /**
  * Contains the Loom problem group for the Gradle Problem API.
@@ -35,15 +34,6 @@ public final class LoomProblems {
 	public static final ProblemGroup PROBLEM_GROUP = ProblemGroup.create("loom", "Loom");
 
 	private LoomProblems() {
-	}
-
-	public static String displayName(ProblemId problemId) {
-		// Gradle 9.10 returns the display name from getName() and deprecates getDisplayName().
-		if (GradleVersion.current().getBaseVersion().compareTo(GradleVersion.version("9.10")) >= 0) {
-			return problemId.getName();
-		}
-
-		return problemId.getDisplayName();
 	}
 
 	public static ProblemId problemId(String name, String displayName) {

@@ -35,8 +35,10 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -171,37 +173,41 @@ public class MinecraftJarMerger implements AutoCloseable {
 
 	public void merge() throws IOException {
 		try (ExecutorService service = Executors.newFixedThreadPool(2)) {
-			service.submit(() -> readToMap(entriesClient, inputClient));
-			service.submit(() -> readToMap(entriesServer, inputServer));
+			CompletableFuture<Void> client = CompletableFuture.runAsync(() -> readToMap(entriesClient, inputClient), service);
+			CompletableFuture<Void> server = CompletableFuture.runAsync(() -> readToMap(entriesServer, inputServer), service);
+			CompletableFuture.allOf(client, server).join();
 		}
 
 		entriesAll.addAll(entriesClient.keySet());
 		entriesAll.addAll(entriesServer.keySet());
 
 		try (ExecutorService service = Executors.newWorkStealingPool()) {
+			List<CompletableFuture<Void>> futures = new ArrayList<>();
+
 			for (String entry : entriesAll) {
-				processEntry(entry, service);
+				futures.add(processEntry(entry, service));
 			}
+
+			CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 		}
 	}
 
-	private void processEntry(String entry, Executor executor) {
+	private CompletableFuture<Void> processEntry(String entry, Executor executor) {
 		boolean isClass = entry.endsWith(".class");
 		boolean isMinecraft = entriesClient.containsKey(entry) || entry.startsWith("net/minecraft") || !entry.contains("/");
 		Result r = getResult(entry, isClass);
 
 		if (isClass && !isMinecraft && "SERVER".equals(r.side())) {
 			// Server bundles libraries, client doesn't - skip them
-			return;
+			return CompletableFuture.completedFuture(null);
 		}
 
 		if (isMinecraft && isClass) {
-			CompletableFuture.supplyAsync(() -> mergeClass(entry, r), executor)
+			return CompletableFuture.supplyAsync(() -> mergeClass(entry, r), executor)
 					.thenAccept(this::add);
-			return;
 		}
 
-		CompletableFuture.runAsync(() -> add(r.entry), executor);
+		return CompletableFuture.runAsync(() -> add(r.entry), executor);
 	}
 
 	private Result getResult(String entry, boolean isClass) {

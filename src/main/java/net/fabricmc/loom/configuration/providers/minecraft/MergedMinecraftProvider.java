@@ -108,6 +108,14 @@ public final class MergedMinecraftProvider extends MinecraftProvider {
 		try (var jarMerger = new MinecraftJarMerger(clientJar, serverJar, mergedJar)) {
 			jarMerger.enableSyntheticParamsOffset();
 			jarMerger.merge();
+		} catch (IOException | RuntimeException | Error e) {
+			try {
+				Files.deleteIfExists(mergedJar.toPath());
+			} catch (IOException cleanupException) {
+				e.addSuppressed(cleanupException);
+			}
+
+			throw e;
 		}
 	}
 

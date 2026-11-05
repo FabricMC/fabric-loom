@@ -118,12 +118,21 @@ public abstract sealed class ModDependency permits SplitModDependency, SimpleMod
 		return artifact.path();
 	}
 
-	public Path getWorkingFile(Project project, @Nullable String classifier) {
+	public Path getWorkingFile(Project project, @Nullable String variant) {
 		final LoomGradleExtension extension = LoomGradleExtension.get(project);
-		final String fileName = classifier == null ? String.format("%s-%s-%s.jar", getGroup(), getName(), version)
-													: String.format("%s-%s-%s-%s.jar", getGroup(), getName(), version, classifier);
+		String artifactName = getName();
 
-		return extension.getFiles().getProjectBuildCache().toPath().resolve("remapped_working").resolve(fileName);
+		if (classifier != null) {
+			artifactName += "-" + classifier;
+		}
+
+		String fileName = "%s-%s-%s".formatted(getGroup(), artifactName, version);
+
+		if (variant != null) {
+			fileName += "-" + variant;
+		}
+
+		return extension.getFiles().getProjectBuildCache().toPath().resolve("remapped_working").resolve(fileName + ".jar");
 	}
 
 	public ModDependencyOptions getOptions() {

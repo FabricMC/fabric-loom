@@ -329,7 +329,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		return args;
 	}
 
-	private void writeArgFile() {
+	protected void writeArgFile() {
 		final String content = "-classpath\n" + this.getInternalClasspath().getFiles().stream()
 				.map(File::getAbsolutePath)
 				.map(AbstractRunTask::quoteArg)

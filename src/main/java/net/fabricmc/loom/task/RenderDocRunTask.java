@@ -67,6 +67,10 @@ public abstract class RenderDocRunTask extends RunGameTask {
 
 	@Override
 	public void exec() {
+		if (getUseArgFile().get()) {
+			writeArgFile();
+		}
+
 		ExecResult result = getExecOperations().exec(exec -> {
 			exec.workingDir(getInternalRunDir());
 			exec.environment(getInternalEnvironmentVars().get());

@@ -25,12 +25,10 @@
 package net.fabricmc.loom.configuration;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
@@ -57,7 +55,6 @@ public abstract class MavenPublication implements Runnable {
 			JavaPlugin.API_ELEMENTS_CONFIGURATION_NAME, "compile",
 			JavaPlugin.RUNTIME_ELEMENTS_CONFIGURATION_NAME, "runtime"
 	);
-	private static final Set<Publication> EXCLUDED_PUBLICATIONS = Collections.newSetFromMap(new WeakHashMap<>());
 
 	@Inject
 	protected abstract Project getProject();
@@ -97,7 +94,7 @@ public abstract class MavenPublication implements Runnable {
 					continue;
 				}
 
-				if (hasSoftwareComponent(publication) || EXCLUDED_PUBLICATIONS.contains(publication)) {
+				if (hasSoftwareComponent(publication) || LoomGradleExtension.get(getProject()).isDeprecatedPomGenerationDisabled(mavenPublication)) {
 					continue;
 				} else if (!reportedDeprecation.get()) {
 					DeprecationHelper deprecationHelper = LoomGradleExtension.get(getProject()).getDeprecationHelper();
@@ -150,9 +147,5 @@ public abstract class MavenPublication implements Runnable {
 				}));
 			}
 		});
-	}
-
-	public static void excludePublication(Publication publication) {
-		EXCLUDED_PUBLICATIONS.add(publication);
 	}
 }

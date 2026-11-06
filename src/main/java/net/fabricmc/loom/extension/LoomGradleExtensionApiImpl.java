@@ -26,6 +26,7 @@ package net.fabricmc.loom.extension;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,6 +112,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 	private final Property<MinecraftJarConfiguration<?, ?, ?>> minecraftJarConfiguration;
 	private final Property<Boolean> splitEnvironmentalSourceSet;
 	private final InterfaceInjectionExtensionAPI interfaceInjectionExtension;
+	private final Set<MavenPublication> excludedPublications = new HashSet<>();
 
 	private final NamedDomainObjectContainer<RunConfigSettings> runConfigs;
 	private final NamedDomainObjectContainer<DecompilerOptions> decompilers;
@@ -434,7 +436,11 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public void disableDeprecatedPomGeneration(MavenPublication publication) {
-		net.fabricmc.loom.configuration.MavenPublication.excludePublication(publication);
+		excludedPublications.add(publication);
+	}
+
+	public boolean isDeprecatedPomGenerationDisabled(MavenPublication publication) {
+		return excludedPublications.contains(publication);
 	}
 
 	@Override

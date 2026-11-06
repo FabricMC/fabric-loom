@@ -91,7 +91,7 @@ class MicrosoftAuthTasksTest extends Specification {
 				"new-refresh-token",
 				profile,
 				new MicrosoftAuthService.MinecraftEntitlements(true, true)
-				)
+		)
 		when(store.read()).thenThrow(new IOException("invalid stored account"))
 		when(loginService.login(eq("client-id"), any(Consumer))).thenReturn(result)
 		def task = loginTask(accountFile, "client-id", store, loginService, accessTokenProvider)
@@ -121,7 +121,7 @@ class MicrosoftAuthTasksTest extends Specification {
 				"new-refresh-token",
 				profile,
 				new MicrosoftAuthService.MinecraftEntitlements(true, true)
-				)
+		)
 		when(store.read()).thenReturn(account)
 		when(accessTokenProvider.getAccessToken(eq("stored-client-id"), eq("expired-refresh-token"), any(Consumer)))
 				.thenThrow(new IOException("refresh token expired"))
@@ -163,7 +163,7 @@ class MicrosoftAuthTasksTest extends Specification {
 				"refresh-token",
 				profile,
 				new MicrosoftAuthService.MinecraftEntitlements(true, true)
-				)
+		)
 		when(loginService.login(eq("client-id"), any(Consumer))).thenReturn(result)
 		def task = loginTask(tempDir.resolve("missing.json"), "client-id", store, loginService)
 

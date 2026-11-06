@@ -102,7 +102,7 @@ final class MicrosoftAuthManualTest {
 				login.refreshToken(),
 				login.profile().id(),
 				login.profile().name()
-				)
+		)
 		accountStore.write(account)
 		println "Stored encrypted login in ${STORED_LOGIN_FILE.toAbsolutePath()}"
 		return account

@@ -1,45 +1,48 @@
-diff --git a/build.gradle b/build.gradle
---- a/build.gradle	(revision dfa883a2e9348fc4a877252be6dbafc264f19006)
-+++ b/build.gradle	(date 1779491895630)
-@@ -2,14 +2,14 @@
- 	id "java-library"
- 	id "eclipse"
- 	id "maven-publish"
--	id "net.fabricmc.fabric-loom" version "1.16.2" apply false
-+	id "net.fabricmc.fabric-loom" apply false
- 	id "com.diffplug.spotless" version "8.5.1"
- 	id "me.modmuss50.remotesign" version "0.5.0" apply false
- 	id "me.modmuss50.mod-publish-plugin" version "2.0.0-beta.1"
+diff --git a/build-logic/build.gradle b/build-logic/build.gradle
+index 8555800..922e558 100644
+--- a/build-logic/build.gradle
++++ b/build-logic/build.gradle
+@@ -14,7 +14,6 @@ repositories {
  }
-
- def branchProvider = providers.of(GitBranchValueSource.class) {}
--version = project.version + "+" + (providers.environmentVariable("CI").present ? branchProvider.get().replace("/", "_") : "local")
-+version = "999.0.0"
- logger.lifecycle("Building Fabric: " + version)
-
- def metaProjects = [
-@@ -37,22 +37,8 @@
- import java.net.http.HttpRequest
- import java.net.http.HttpResponse
-
--def getSubprojectVersion(Project project) {
--	// Get the version from the gradle.properties file
--	def version = project.properties["${project.name}-version"]
+ 
+ dependencies {
+-	implementation libs.fabric.loom
+ 	implementation "com.diffplug.spotless:com.diffplug.spotless.gradle.plugin:${libs.versions.spotless.get()}"
+ 	implementation "me.modmuss50.remotesign:me.modmuss50.remotesign.gradle.plugin:${libs.versions.remote.sign.get()}"
+ 	implementation "me.modmuss50.mod-publish-plugin:me.modmuss50.mod-publish-plugin.gradle.plugin:${libs.versions.mod.publish.get()}"
+diff --git a/build-logic/src/main/java/net/fabricmc/fabric/impl/build/FabricApiBuildUtils.java b/build-logic/src/main/java/net/fabricmc/fabric/impl/build/FabricApiBuildUtils.java
+index 7c55a60..0d02420 100644
+--- a/build-logic/src/main/java/net/fabricmc/fabric/impl/build/FabricApiBuildUtils.java
++++ b/build-logic/src/main/java/net/fabricmc/fabric/impl/build/FabricApiBuildUtils.java
+@@ -81,29 +81,11 @@ public final class FabricApiBuildUtils {
+ 	}
+ 
+ 	public static String rootVersion(Project project) {
+-		Provider<String> branchProvider = project.getProviders().of(GitBranchValueSource.class, spec -> { });
+-		String suffix = project.getProviders().environmentVariable("CI").isPresent()
+-				? branchProvider.get().replace("/", "_")
+-				: "local";
+-		return project.findProperty("version") + "+" + suffix;
++		return "999.0.0";
+ 	}
+ 
+ 	public static String moduleVersion(Project project) {
+-		Object version = project.findProperty(project.getName() + "-version");
 -
--	if (!version) {
--		throw new NullPointerException("Could not find version for " + project.name)
--	}
+-		if (version == null) {
+-			throw new NullPointerException("Could not find version for " + project.getName());
+-		}
 -
--	if (!project.providers.environmentVariable("CI").present) {
--		return version + "+local"
--	}
+-		if (!project.getProviders().environmentVariable("CI").isPresent()) {
+-			return version + "+local";
+-		}
 -
--	def hashProvider = project.providers.of(CommitHashValueSource.class) {
--		parameters.directory = project.name
--	}
--	return version + "+" + hashProvider.get().substring(0, 8) + DigestUtils.sha256Hex(project.rootProject.minecraft_version).substring(0, 2)
-+def getSubprojectVersion(project) {
-+	return "999.0.0"
- }
-
- def moduleDependencies(project, List<String> depNames) {
+-		Provider<String> hashProvider = project.getProviders().of(CommitHashValueSource.class, spec -> {
+-			spec.getParameters().getDirectory().set(project.getName());
+-		});
+-
+-		return version + "+" + hashProvider.get().substring(0, 8) + sha256Hex(project.getRootProject().property("minecraft_version").toString()).substring(0, 2);
++		return "999.0.0";
+ 	}
+ 
+ 	public static String version(Project project, String alias) {

@@ -123,7 +123,7 @@ class TestPlugin implements Plugin<Project> {
 				false,
 				NativeServices.NativeServicesMode.NOT_SET,
 				daemonPriority
-				) as DefaultDaemonContext
+		) as DefaultDaemonContext
 	}
 
 	class TestIncomingConnectionHandler implements IncomingConnectionHandler, Runnable, AutoCloseable {

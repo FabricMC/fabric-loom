@@ -19,17 +19,17 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: 25
           distribution: 'temurin'
-      - uses: actions/checkout@v6
-      - uses: gradle/actions/wrapper-validation@v6
+      - uses: actions/checkout@v7.0.1
+      - uses: gradle/actions/wrapper-validation@v6.4.1
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
-      - uses: FabricMCBot/publish-checkstyle-report@v3
+      - uses: FabricMCBot/publish-checkstyle-report@v3.0.0
         if: failure()
         with:
           reports: |
@@ -41,13 +41,13 @@ jobs:
 
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: 25
           distribution: 'temurin'
-      - uses: gradle/actions/wrapper-validation@v6
+      - uses: gradle/actions/wrapper-validation@v6.4.1
       - run: ./gradlew build check -x test --stacktrace --warning-mode fail
 
   # This job is used to feed the test matrix of next job to allow the tests to run in parallel
@@ -55,15 +55,15 @@ jobs:
     # Lets wait to ensure it builds before going running tests
     needs: build
 
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: 25
           distribution: 'temurin'
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - run: ./gradlew writeActionsTestMatrix --stacktrace --warning-mode fail
       -
         id: set-matrix
@@ -80,12 +80,12 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare_test_matrix.outputs.matrix) }}
 
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: 25
           distribution: 'temurin'
@@ -95,12 +95,12 @@ jobs:
           EXTENDED_TESTS: ${{ github.event.inputs.extended_tests }}
         id: test
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
           name: ${{ steps.test.outputs.test }} Results
           path: build/reports/
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
           name: ${{ steps.test.outputs.test }} Heap Dump
@@ -119,9 +119,9 @@ jobs:
     runs-on: windows-2025
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
       - name: setup jdk
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6.2.0
         with:
           java-version: 25
           distribution: 'temurin'
@@ -130,12 +130,12 @@ jobs:
           TEST_WARNING_MODE: fail
         id: test
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
-          name: ${{ steps.test.outputs.test }} (${{ matrix.java }}) Results (Windows)
+          name: ${{ steps.test.outputs.test }} Results (Windows)
           path: build/reports/
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
           name: ${{ steps.test.outputs.test }} Heap Dump (Windows)
@@ -149,19 +149,19 @@ jobs:
       fail-fast: false
       matrix:
         java: [ 25 ]
-        os: [ windows-2025, ubuntu-24.04, macos-26 ]
+        os: [ windows-2025, ubuntu-26.04, macos-26 ]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.2.0
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
 
       - run: ./gradlew test --tests *ReproducibleBuildTest --stacktrace --warning-mode fail
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v7.0.2
         if: ${{ failure() }}
         with:
           name: Reproducible Build ${{ matrix.os }} (${{ matrix.java }}) Results

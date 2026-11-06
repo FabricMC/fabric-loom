@@ -80,7 +80,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 				args: [
 					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
 				]
-				)
+		)
 
 		then:
 		result.task(":build").outcome == SUCCESS
@@ -128,7 +128,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 				args: [
 					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
 				]
-				)
+		)
 
 		then:
 		result.task(":build").outcome == SUCCESS
@@ -178,7 +178,7 @@ class SimpleDevOnlyRemapTest extends Specification implements GradleProjectTestT
 				args: [
 					"-Ploom.test.devOnlyRemapIntermediary.mappingPath=${mappings}"
 				]
-				)
+		)
 
 		then:
 		result.task(":build").outcome == SUCCESS

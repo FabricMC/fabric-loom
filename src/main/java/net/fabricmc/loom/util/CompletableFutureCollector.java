@@ -63,11 +63,10 @@ public final class CompletableFutureCollector<X, T extends CompletableFuture<X>>
 
 	@Override
 	public Function<List<T>, CompletableFuture<List<X>>> finisher() {
-		return ls -> CompletableFuture.allOf(ls.toArray(CompletableFuture[]::new))
-				.thenApply(v -> ls
-						.stream()
-						.map(CompletableFuture::join)
-						.toList());
+		return ls -> {
+			return CompletableFuture.allOf(ls.toArray(CompletableFuture[]::new))
+					.thenApply(v -> ls.stream().map(CompletableFuture::join).toList());
+		};
 	}
 
 	@Override

@@ -79,7 +79,7 @@ class MicrosoftGameAuthenticationTest extends Specification {
 		]
 		accountStore.read() == new MicrosoftAccountStore.Account(
 				"client-id", "new-refresh-token", "0123456789abcdef0123456789abcdef", "Player"
-				)
+		)
 	}
 
 	def "does nothing when no stored account exists"() {
@@ -174,7 +174,7 @@ class MicrosoftGameAuthenticationTest extends Specification {
 	private void writeAccount() {
 		accountStore.write(new MicrosoftAccountStore.Account(
 						"client-id", "old-refresh-token", "0123456789abcdef0123456789abcdef", "Player"
-						))
+				))
 	}
 
 	private static final class ReversibleTestKeyStore implements EncryptionKeyStore {

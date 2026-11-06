@@ -37,7 +37,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
 				buildMojangMappingsSpec(true)
-				)
+		)
 		def tiny = getTiny(mappings)
 		then:
 		mappings.srcNamespace == "named"
@@ -58,7 +58,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		def mappings = getLayeredMappings(
 				new IntermediaryMappingsSpec(),
 				buildMojangMappingsSpec(false)
-				)
+		)
 		def tiny = getTiny(mappings)
 		then:
 		mappings.srcNamespace == "named"
@@ -79,7 +79,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		def mappings = getLayeredMappingsDropNoneIntermediaryRoots(
 				new IntermediaryMappingsSpec(),
 				buildMojangMappingsSpec(true)
-				)
+		)
 		def tiny = getTiny(mappings)
 		then:
 		mappings.srcNamespace == "named"
@@ -100,7 +100,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		def mappings = getLayeredMappingsDropNoneIntermediaryRoots(
 				new IntermediaryMappingsSpec(),
 				buildMojangMappingsSpec(false)
-				)
+		)
 		def tiny = getTiny(mappings)
 		then:
 		mappings.srcNamespace == "named"
@@ -119,7 +119,7 @@ class MojangMappingLayerTest extends LayeredMappingsSpecification {
 		when:
 		def mappings = getLayeredMappings(
 				buildMojangMappingsSpec(true)
-				)
+		)
 		def tiny = getTiny(mappings)
 		def intermediaryId = mappings.getNamespaceId("intermediary")
 		def officialId = mappings.getNamespaceId("official")

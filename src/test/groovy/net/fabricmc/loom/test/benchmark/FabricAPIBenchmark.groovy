@@ -46,7 +46,7 @@ class FabricAPIBenchmark implements GradleProjectTestTrait {
 				repo: "https://github.com/FabricMC/fabric-api.git",
 				commit: "7053354728ece4a68d098b07b2526eb4303fbac1",
 				patch: "fabric_api_unobf"
-				)
+		)
 
 		def timeStart = new Date()
 

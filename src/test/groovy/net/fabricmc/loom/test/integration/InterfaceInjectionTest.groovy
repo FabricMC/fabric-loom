@@ -180,7 +180,7 @@ class InterfaceInjectionTest extends Specification implements GradleProjectTestT
 				.anyMatch {
 					// Note: the final .+ is for catching the rest of the message. We don't care about the exact
 					// message contents in this test.
-					it.matches("::error file=.+TestItf\\.java,line=1,title=Abstract method in injected interface::Method TestItf\\.foo\\(\\)V is abstract\\..+")
+					it.matches("::error file=.+TestItf\\.java,line=1,title=abstract-method-in-injected-interface::Method TestItf\\.foo\\(\\)V is abstract\\..+")
 				}
 
 		where:

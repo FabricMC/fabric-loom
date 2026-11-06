@@ -57,7 +57,7 @@ trait GradleProjectTestTrait {
 				projectDir: projectDir.absolutePath,
 				gradleHomeDir: gradleHomeDir.absolutePath,
 				warningMode: warningMode
-				)
+		)
 	}
 
 	private void setupProject(Map options, File projectDir) {

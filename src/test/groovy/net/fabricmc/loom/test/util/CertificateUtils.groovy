@@ -75,7 +75,7 @@ class CertificateUtils {
 				notAfter,
 				subjectName,
 				keyPair.getPublic()
-				)
+		)
 
 		def contentSigner = SIGNER_BUILDER.build(keyPair.getPrivate())
 		return CERT_CONVERTER.getCertificate(builder.build(contentSigner))
@@ -126,8 +126,8 @@ class CertificateUtils {
 				}
 				.collectMany { distPoint ->
 					GeneralNames.getInstance(distPoint.getDistributionPoint().getName()).getNames()
-					.findAll { it.tagNo == GeneralName.uniformResourceIdentifier }
-					.collect { DERIA5String.getInstance(it.name).getString() }
+							.findAll { it.tagNo == GeneralName.uniformResourceIdentifier }
+							.collect { DERIA5String.getInstance(it.name).getString() }
 				}
 	}
 }

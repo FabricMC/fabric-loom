@@ -6,6 +6,12 @@
 	<property name="localeLanguage" value="en"/>
 	<property name="localeCountry" value="US"/>
 
+	<!-- Preserve support for Javadoc containing only block tags. -->
+	<module name="SuppressionSingleFilter">
+		<property name="checks" value="SummaryJavadoc"/>
+		<property name="message" value="^Summary javadoc is missing\.$"/>
+	</module>
+
 	<module name="NewlineAtEndOfFile"/>
 
 	<!-- disallow trailing whitespace -->
@@ -160,7 +166,7 @@
 
 		<!--<module name="InvalidJavadocPosition"/>-->
 		<module name="JavadocParagraph"/>
-		<module name="JavadocStyle"/>
+		<module name="SummaryJavadoc"/>
 		<module name="AtclauseOrder">
 			<property name="tagOrder" value="@param,@return,@throws,@deprecated"/>
 		</module>

@@ -36,7 +36,7 @@ class MicrosoftLoginFlowTest extends Specification {
 		def auth = Mock(MicrosoftAuthService)
 		def deviceCode = new MicrosoftAuthService.DeviceCode(
 				"device-code", "ABCD-EFGH", URI.create("https://microsoft.com/devicelogin"), 900, 1, "Sign in"
-				)
+		)
 		def microsoftToken = new MicrosoftAuthService.MicrosoftToken.Success("microsoft-token", "refresh-token", "Bearer", 3600)
 		def xboxUser = new MicrosoftAuthService.XboxToken("xbox-user", "user-hash")
 		def xsts = new MicrosoftAuthService.XboxToken("xsts", "user-hash")

@@ -136,7 +136,7 @@ class ServerRunner {
 					}
 				}),
 				new ForwardingAppendable([System.err, out])
-				)
+		)
 
 		addShutdownHook {
 			if (process.alive) {

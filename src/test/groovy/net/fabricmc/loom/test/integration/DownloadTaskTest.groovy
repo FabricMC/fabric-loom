@@ -41,88 +41,35 @@ class DownloadTaskTest extends DownloadTest implements GradleProjectTestTrait {
 		}
 
 		def gradle = gradleProject(project: "minimalBase", version: version)
-		gradle.buildGradle << """
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.21.4"
-                    mappings "net.fabricmc:yarn:1.21.4+build.8:v2"
+		gradle.buildGradle.text = """
+                plugins {
+                    id 'net.fabricmc.fabric-loom-remap' apply false
                 }
 
                 tasks.register("download", net.fabricmc.loom.task.DownloadTask) {
                     url = "${PATH}/simpleFile"
                     output = file("out.txt")
                 }
-            """
-		when:
-		def result = gradle.run(task: "download")
-		def output = new File(gradle.projectDir, "out.txt")
 
-		then:
-		result.task(":download").outcome == SUCCESS
-		output.text == "Hello World"
-
-		where:
-		version << STANDARD_TEST_VERSIONS
-	}
-
-	@Unroll
-	def "download sha1 (gradle #version)"() {
-		setup:
-		server.get("/simpleFile") {
-			it.result("Hello World")
-		}
-
-		def gradle = gradleProject(project: "minimalBase", version: version)
-		gradle.buildGradle << """
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.21.4"
-                    mappings "net.fabricmc:yarn:1.21.4+build.8:v2"
-                }
-
-                tasks.register("download", net.fabricmc.loom.task.DownloadTask) {
+                tasks.register("downloadWithOptions", net.fabricmc.loom.task.DownloadTask) {
                     url = "${PATH}/simpleFile"
                     sha1 = "0a4d55a8d778e5022fab701977c5d840bbc486d0"
-                    output = file("out.txt")
-                }
-            """
-		when:
-		def result = gradle.run(task: "download")
-		def output = new File(gradle.projectDir, "out.txt")
-
-		then:
-		result.task(":download").outcome == SUCCESS
-		output.text == "Hello World"
-
-		where:
-		version << STANDARD_TEST_VERSIONS
-	}
-
-	@Unroll
-	def "download max age (gradle #version)"() {
-		setup:
-		server.get("/simpleFile") {
-			it.result("Hello World")
-		}
-
-		def gradle = gradleProject(project: "minimalBase", version: version)
-		gradle.buildGradle << """
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.21.4"
-                    mappings "net.fabricmc:yarn:1.21.4+build.8:v2"
-                }
-
-                tasks.register("download", net.fabricmc.loom.task.DownloadTask) {
-                    url = "${PATH}/simpleFile"
                     maxAge = Duration.ofDays(1)
-                    output = file("out.txt")
+                    output = file("with-options.txt")
                 }
             """
 		when:
-		def result = gradle.run(task: "download")
+		def result = gradle.run(tasks: [
+			"download",
+			"downloadWithOptions"
+		])
 		def output = new File(gradle.projectDir, "out.txt")
 
 		then:
 		result.task(":download").outcome == SUCCESS
+		result.task(":downloadWithOptions").outcome == SUCCESS
 		output.text == "Hello World"
+		new File(gradle.projectDir, "with-options.txt").text == "Hello World"
 
 		where:
 		version << STANDARD_TEST_VERSIONS

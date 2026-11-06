@@ -84,4 +84,23 @@ class IncludedJarsTest extends Specification implements GradleProjectTestTrait {
 		where:
 		version << STANDARD_TEST_VERSIONS
 	}
+
+	@Unroll
+	def "nest jars using loom.nestJars() API (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "nestJarsApi", version: version)
+
+		when:
+		def result = gradle.run(tasks: ["remapJar"])
+
+		then:
+		result.task(":remapJar").outcome == SUCCESS
+		result.task(":createNestedMod").outcome == SUCCESS
+
+		// Assert the locally built mod jar is nested using the new API
+		gradle.hasOutputZipEntry("nestJarsApi.jar", "META-INF/jars/nested-mod.jar")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

@@ -98,4 +98,26 @@ class MavenProjectTest extends Specification implements MockMavenServerTrait, Gr
 		getLatestSnapshotVersion("com.example", "fabric-example-lib", "2.0.0-SNAPSHOT") | DEFAULT_GRADLE
 		getLatestSnapshotVersion("com.example", "fabric-example-lib", "2.0.0-SNAPSHOT") | PRE_RELEASE_GRADLE
 	}
+
+	@Unroll
+	def "exclude local runtime dependencies from publication (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "localRuntime", version: version)
+
+		when:
+		def result = gradle.run(tasks: [
+			"build",
+			"publishToMavenLocal"
+		])
+
+		then:
+		result.task(":build").outcome == SUCCESS
+		def pomFile = new File(gradle.getProjectDir(), "build/publications/mavenJava/pom-default.xml")
+		def pom = pomFile.text
+		!pom.contains("fabric-api")
+		!pom.contains("enigma")
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 }

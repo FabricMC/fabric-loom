@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2021 FabricMC
+ * Copyright (c) 2023 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,27 +33,57 @@ import net.fabricmc.loom.test.util.GradleProjectTestTrait
 import static net.fabricmc.loom.test.LoomTestConstants.*
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
-class CustomManifestTest extends Specification implements GradleProjectTestTrait {
+class DependencyResolutionTest extends Specification implements GradleProjectTestTrait {
+	// Regression test for a bug introduced in 1.1 development where
+	// if Fabric Loader is resolved after another mod dependency,
+	// Gradle will crash because loaderLibraries has been resolved before
+	// Loader's dependencies have been added to it.
 	@Unroll
-	def "customManifest (gradle #version)"() {
+	def "build with loader as the second dependency (gradle #version)"() {
 		setup:
 		def gradle = gradleProject(project: "minimalBase", version: version)
 		gradle.buildGradle << """
-                loom {
-                    customMinecraftManifest = "https://maven.fabricmc.net/net/minecraft/1_18_experimental-snapshot-1.json"
-                }
+            dependencies {
+                minecraft 'com.mojang:minecraft:1.19.3'
+                mappings 'net.fabricmc:yarn:1.19.3+build.5:v2'
+                modApi 'net.fabricmc.fabric-api:fabric-api:0.73.0+1.19.3'
+                modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
+            }
+            """.stripIndent()
+		when:
+		def result = gradle.run(task: "build")
+		then:
+		result.task(":build").outcome == SUCCESS
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
 
-                dependencies {
-                    minecraft "com.mojang:minecraft:1.18_experimental-snapshot-1"
-                    mappings "net.fabricmc:yarn:1.18_experimental-snapshot-1+build.2:v2"
-                    modImplementation "${LoomTestVersions.FABRIC_LOADER.mavenNotation()}"
-                }
-            """
+	@Unroll
+	def "local file dependencies (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "localFileDependency", version: version)
+
 		when:
 		def result = gradle.run(task: "build")
 
 		then:
 		result.task(":build").outcome == SUCCESS
+
+		where:
+		version << STANDARD_TEST_VERSIONS
+	}
+
+	@Unroll
+	def "settings dependency resolution management (gradle #version)"() {
+		setup:
+		def gradle = gradleProject(project: "dependencyResolutionManagement", version: version)
+
+		when:
+		def result = gradle.run(task: "build")
+
+		then:
+		result.task(":basic:build").outcome == SUCCESS
+		result.task(":projmap:build").outcome == SUCCESS
 
 		where:
 		version << STANDARD_TEST_VERSIONS

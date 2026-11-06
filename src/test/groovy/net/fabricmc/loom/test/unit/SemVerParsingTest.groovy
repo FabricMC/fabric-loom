@@ -1,7 +1,7 @@
 /*
  * This file is part of fabric-loom, licensed under the MIT License (MIT).
  *
- * Copyright (c) 2025 FabricMC
+ * Copyright (c) 2024 FabricMC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,53 +22,49 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.test.integration
+package net.fabricmc.loom.test.unit
 
 import spock.lang.Specification
 import spock.lang.Unroll
 
-import net.fabricmc.loom.test.util.GradleProjectTestTrait
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask
 
-import static net.fabricmc.loom.test.LoomTestConstants.STANDARD_TEST_VERSIONS
-import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
-
-class FabricModJsonTask extends Specification implements GradleProjectTestTrait {
+class SemVerParsingTest extends Specification {
 	@Unroll
-	def "Generate FMJ"() {
-		setup:
-		def gradle = gradleProject(project: "minimalBase", version: version)
-
-		gradle.buildGradle << '''
-			dependencies {
-				minecraft "com.mojang:minecraft:1.21.8"
-				mappings "net.fabricmc:yarn:1.21.8+build.1:v2"
-			}
-
-			tasks.register("generateModJson", net.fabricmc.loom.task.FabricModJsonV1Task) {
-				outputFile = file("fabric.mod.json")
-
-				json {
-					modId = "examplemod"
-					version = "1.0.0"
-				}
-			}
-		'''
-
-		when:
-		// Run the task twice to ensure its up to date
-		def result = gradle.run(task: "generateModJson")
-
-		then:
-		result.task(":generateModJson").outcome == SUCCESS
-		new File(gradle.projectDir, "fabric.mod.json").text == """
-		{
-		  "schemaVersion": 1,
-		  "id": "examplemod",
-		  "version": "1.0.0"
-		}
-		""".stripIndent().trim()
+	def "test valid Semantic Versioning strings"() {
+		expect:
+		NestableJarGenerationTask.validSemVer(version) == true
 
 		where:
-		version << STANDARD_TEST_VERSIONS
+		version | _
+		"1.0.0" | _
+		"2.5.3" | _
+		"3.0.0-beta.2" | _
+		"4.2.1-alpha+001" | _
+		"5.0.0-rc.1+build.1" | _
+	}
+
+	@Unroll
+	def "test non-Semantic Versioning strings"() {
+		expect:
+		NestableJarGenerationTask.validSemVer(version) == false
+
+		where:
+		version | _
+		"1.0" | _
+		"3.0.0.Beta1-120922-126" | _
+		"3.0.2.Final" | _
+		"4.2.1.4.RELEASE" | _
+	}
+
+	@Unroll
+	def "test '.Final' suffixed SemVer"() {
+		expect:
+		NestableJarGenerationTask.getVersion(metadata) == expectedVersion
+
+		where:
+		metadata | expectedVersion
+		new NestableJarGenerationTask.Metadata("group", "name", "1.0.0.Final", null) | "1.0.0"
+		new NestableJarGenerationTask.Metadata("group", "name", "2.5.3.final", null) | "2.5.3"
 	}
 }

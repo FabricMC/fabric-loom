@@ -122,7 +122,7 @@ public final class FabricModJsonFactory {
 
 		try {
 			JsonObject modJson = readFmjJsonObject(file);
-			return create(modJson, new FabricModJsonSource.SourceSetSource(project, sourceSets));
+			return create(modJson, new FabricModJsonSource.SourceSetSource(file.toPath(), SourceSetHelper.getResourceRoots(sourceSets)));
 		} catch (JsonSyntaxException e) {
 			LOGGER.warn("Failed to parse fabric.mod.json: {}", file.getAbsolutePath());
 			return null;

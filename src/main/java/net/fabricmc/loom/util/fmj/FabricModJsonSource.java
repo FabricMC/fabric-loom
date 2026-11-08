@@ -24,20 +24,16 @@
 
 package net.fabricmc.loom.util.fmj;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import org.gradle.api.Project;
-import org.gradle.api.tasks.SourceSet;
+import java.util.List;
 
 import net.fabricmc.loom.util.ZipUtils;
-import net.fabricmc.loom.util.gradle.SourceSetHelper;
 
 /**
- * A mod may be a zip, directory or Gradle {@link SourceSet}
+ * A mod may be a zip, directory or a set of source resource roots.
  * This abstraction allows easily reading a contained file from the mod.
  */
 public interface FabricModJsonSource {
@@ -57,20 +53,30 @@ public interface FabricModJsonSource {
 		}
 	}
 
-	record SourceSetSource(Project project, SourceSet... sourceSets) implements FabricModJsonSource {
-		@Override
-		public byte[] read(String path) throws IOException {
-			return Files.readAllBytes(findFile(path).toPath());
+	record SourceSetSource(Path fabricModJsonPath, List<Path> resourceRoots) implements FabricModJsonSource {
+		public SourceSetSource {
+			resourceRoots = List.copyOf(resourceRoots);
 		}
 
-		private File findFile(String path) throws IOException {
-			final File file = SourceSetHelper.findFirstFileInResource(path, project, sourceSets);
+		@Override
+		public byte[] read(String path) throws IOException {
+			return Files.readAllBytes(resolve(path));
+		}
 
-			if (file == null) {
-				throw new FileNotFoundException("Could not find: " + path);
+		private Path resolve(String path) throws IOException {
+			if (FabricModJsonFactory.FABRIC_MOD_JSON.equals(path)) {
+				return fabricModJsonPath;
 			}
 
-			return file;
+			for (Path resourceRoot : resourceRoots) {
+				Path file = resourceRoot.resolve(path);
+
+				if (Files.exists(file)) {
+					return file;
+				}
+			}
+
+			throw new FileNotFoundException("Could not find: " + path);
 		}
 	}
 }

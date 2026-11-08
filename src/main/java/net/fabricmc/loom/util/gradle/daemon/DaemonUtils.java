@@ -24,8 +24,6 @@
 
 package net.fabricmc.loom.util.gradle.daemon;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
@@ -37,8 +35,6 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
 import org.gradle.cache.FileLockManager;
 import org.gradle.internal.file.Chmod;
-import org.gradle.internal.remote.Address;
-import org.gradle.internal.remote.internal.ConnectCompletion;
 import org.gradle.internal.remote.internal.RemoteConnection;
 import org.gradle.internal.remote.internal.inet.TcpOutgoingConnector;
 import org.gradle.internal.serialize.Serializers;
@@ -90,7 +86,8 @@ public final class DaemonUtils {
 		try {
 			// Gradle communicates with the daemon using a TCP connection, and a custom binary protocol.
 			// We connect to the daemon using the daemon's address, and then send a StopWhenIdle message.
-			connection = connect(daemonInfo).create(Serializers.stateful(DaemonMessageSerializer.create(null)));
+			TcpOutgoingConnector connector = new TcpOutgoingConnector();
+			connection = connector.connect(daemonInfo.getAddress(), daemonInfo.getToken()).create(Serializers.stateful(DaemonMessageSerializer.create(null)));
 			DaemonClientConnection daemonClientConnection = new DaemonClientConnection(connection, daemonInfo, null);
 			new StopDispatcher().dispatch(daemonClientConnection, new StopWhenIdle(UUID.randomUUID(), daemonInfo.getToken()));
 		} finally {
@@ -101,24 +98,6 @@ public final class DaemonUtils {
 
 		LOGGER.warn("Requested Gradle daemon to stop on exit.");
 		return true;
-	}
-
-	private static ConnectCompletion connect(DaemonInfo daemonInfo) {
-		TcpOutgoingConnector connector = new TcpOutgoingConnector();
-		Method connect;
-
-		try {
-			// Gradle 9.9 adds the daemon token to the connection handshake.
-			connect = TcpOutgoingConnector.class.getMethod("connect", Address.class, byte[].class);
-		} catch (NoSuchMethodException e) {
-			return connector.connect(daemonInfo.getAddress());
-		}
-
-		try {
-			return (ConnectCompletion) connect.invoke(connector, daemonInfo.getAddress(), daemonInfo.getToken());
-		} catch (IllegalAccessException | InvocationTargetException e) {
-			throw new RuntimeException("Failed to connect to the Gradle daemon", e);
-		}
 	}
 
 	@Nullable

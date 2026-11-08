@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.10"
+kotlin = "2.4.21"
 asm = "9.10.1"
 gson = "2.14.0"
 

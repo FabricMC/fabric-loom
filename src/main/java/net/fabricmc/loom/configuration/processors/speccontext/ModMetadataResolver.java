@@ -67,7 +67,11 @@ public final class ModMetadataResolver {
 		for (ModuleDependency dependency : source.getAllDependencies().withType(ModuleDependency.class)) {
 			ModuleDependency copy = dependency.copy();
 			copy.getArtifacts().clear();
-			copy.setTargetConfiguration(null);
+
+			if (copy.getTargetConfiguration() != null) {
+				copy.setTargetConfiguration(null);
+			}
+
 			metadataConfiguration.getDependencies().add(copy);
 		}
 

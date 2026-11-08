@@ -26,12 +26,14 @@ package net.fabricmc.loom.test.unit
 
 import java.nio.file.Path
 
+import org.gradle.api.attributes.Attribute
 import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.Specification
 import spock.lang.TempDir
 
 import net.fabricmc.loom.LoomGradleExtension
 import net.fabricmc.loom.configuration.processors.speccontext.ModMetadata
+import net.fabricmc.loom.configuration.processors.speccontext.ModMetadataResolver
 import net.fabricmc.loom.util.gradle.SourceSetHelper
 
 class ModMetadataTest extends Specification {
@@ -119,6 +121,43 @@ class ModMetadataTest extends Specification {
 
 		expect:
 		project.configurations.getByName("loomSourceModMetadata").outgoing.artifacts.empty
+	}
+
+	def "metadata resolution accepts dependencies with #selection"() {
+		given:
+		def project = ProjectBuilder.builder().withProjectDir(projectDir.toFile()).build()
+		def configuration = project.configurations.create("dependencies")
+		def dependency = project.dependencies.create("example:producer:1.0.0")
+
+		switch (selection) {
+			case "attributes":
+				dependency.attributes {
+					attribute(Attribute.of("example.variant", String), "extra")
+				}
+				break
+			case "capabilities":
+				dependency.capabilities {
+					requireCapability("example:producer-extra")
+				}
+				break
+			case "target configuration":
+				dependency.targetConfiguration = "namedElements"
+				break
+		}
+
+		configuration.dependencies.add(dependency)
+		def resolver = new ModMetadataResolver(project)
+
+		expect:
+		resolver.resolve(configuration).empty
+		dependency.targetConfiguration == (selection == "target configuration" ? "namedElements" : null)
+
+		where:
+		selection << [
+			"attributes",
+			"capabilities",
+			"target configuration"
+		]
 	}
 
 	private void writeFile(String path, String contents) {

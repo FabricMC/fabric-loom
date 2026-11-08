@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -315,6 +316,18 @@ public final class SourceSetHelper {
 		}
 
 		return null;
+	}
+
+	public static List<Path> getResourceRoots(SourceSet... sourceSets) {
+		List<Path> resourceRoots = new ArrayList<>();
+
+		for (SourceSet sourceSet : sourceSets) {
+			for (File resourceRoot : sourceSet.getResources().getSrcDirs()) {
+				resourceRoots.add(resourceRoot.toPath());
+			}
+		}
+
+		return resourceRoots;
 	}
 
 	public static File getFirstSrcDir(SourceSet sourceSet) {

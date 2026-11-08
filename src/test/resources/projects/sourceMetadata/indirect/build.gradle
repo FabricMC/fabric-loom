@@ -1,0 +1,19 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' apply false
+	id 'net.fabricmc.fabric-loom-remap' apply false
+}
+
+def remapped = providers.gradleProperty('remapped').isPresent()
+apply plugin: remapped ? 'net.fabricmc.fabric-loom-remap' : 'net.fabricmc.fabric-loom'
+
+if (remapped) {
+	loom.fabricModJsonPath = file('metadata/remapped.json')
+}
+
+dependencies {
+	minecraft(remapped ? 'com.mojang:minecraft:1.20.4' : 'com.mojang:minecraft:26.1.2')
+
+	if (remapped) {
+		mappings loom.officialMojangMappings()
+	}
+}

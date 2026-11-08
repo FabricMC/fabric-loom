@@ -62,7 +62,8 @@ public interface RemappedProjectView extends ProjectView {
 				final Configuration configuration = settings.getSourceConfiguration().get().copyRecursive();
 				configuration.setCanBeConsumed(false);
 				configuration.attributes(attributes -> attributes.attribute(Usage.USAGE_ATTRIBUTE, usage));
-				return configuration.resolve().stream().map(File::toPath);
+				return configuration.getIncoming().artifactView(ProjectView::excludeProjectComponents)
+						.getFiles().getFiles().stream().map(File::toPath);
 			};
 		}
 

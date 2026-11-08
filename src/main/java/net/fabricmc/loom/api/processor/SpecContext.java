@@ -28,11 +28,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import org.gradle.api.Project;
 import org.jetbrains.annotations.ApiStatus;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
-import net.fabricmc.loom.configuration.processors.speccontext.ProjectView;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 
 public interface SpecContext {
@@ -60,16 +58,6 @@ public interface SpecContext {
 
 	default List<FabricModJson> allMods() {
 		return Stream.concat(modDependencies().stream(), localMods().stream()).toList();
-	}
-
-	// Returns all of the loom projects that are depended on in the main sourceset
-	// TODO make project isolation aware
-	static Stream<Project> getDependentProjects(ProjectView projectView) {
-		final Stream<Project> runtimeProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.RUNTIME);
-		final Stream<Project> compileProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.COMPILE);
-
-		return Stream.concat(runtimeProjects, compileProjects)
-				.distinct();
 	}
 
 	// Sort to ensure stable caching

@@ -29,13 +29,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import net.fabricmc.loom.util.ZipUtils;
 
-/**
- * A mod may be a zip, directory or a set of source resource roots.
- * This abstraction allows easily reading a contained file from the mod.
- */
+/// Reads resources from a mod stored as a ZIP, directory, source resource roots,
+/// or an explicit mapping of resource names to files.
 public interface FabricModJsonSource {
 	byte[] read(String path) throws IOException;
 
@@ -53,6 +52,24 @@ public interface FabricModJsonSource {
 		}
 	}
 
+	/// Reads only the explicitly mapped resources, independently of the producer's resource directories.
+	record FileMapSource(Map<String, Path> resources) implements FabricModJsonSource {
+		public FileMapSource {
+			resources = Map.copyOf(resources);
+		}
+
+		@Override
+		public byte[] read(String path) throws IOException {
+			Path file = resources.get(path);
+
+			if (file == null) {
+				throw new FileNotFoundException("Could not find: " + path);
+			}
+
+			return Files.readAllBytes(file);
+		}
+	}
+
 	record SourceSetSource(Path fabricModJsonPath, List<Path> resourceRoots) implements FabricModJsonSource {
 		public SourceSetSource {
 			resourceRoots = List.copyOf(resourceRoots);
@@ -63,7 +80,8 @@ public interface FabricModJsonSource {
 			return Files.readAllBytes(resolve(path));
 		}
 
-		private Path resolve(String path) throws IOException {
+		/// Resolves a resource using the captured metadata path and resource-root order.
+		public Path resolve(String path) throws IOException {
 			if (FabricModJsonFactory.FABRIC_MOD_JSON.equals(path)) {
 				return fabricModJsonPath;
 			}

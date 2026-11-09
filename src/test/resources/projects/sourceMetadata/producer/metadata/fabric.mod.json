@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "producer",
+  "version": "${version}",
+  "accessWidener": "tweakers/producer.accesswidener",
+  "custom": {
+    "loom:injected_interfaces": {"net/minecraft/resources/Identifier": ["example/InjectedInterface"]},
+    "loom:provided_javadoc": "docs/docs.tiny"
+  }
+}

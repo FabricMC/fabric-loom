@@ -1,0 +1,4 @@
+tiny	2	0	official
+	markdown
+c	net/minecraft/resources/Identifier
+	c	Metadata from producer.

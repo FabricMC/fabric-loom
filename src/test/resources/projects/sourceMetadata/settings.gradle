@@ -1,0 +1,2 @@
+rootProject.name = 'source-metadata-test'
+include 'producer', 'consumer', 'indirect', 'plain'

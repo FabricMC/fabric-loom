@@ -48,7 +48,6 @@ import net.fabricmc.loom.api.processor.SpecContext;
 import net.fabricmc.loom.util.AsyncCache;
 import net.fabricmc.loom.util.fmj.FabricModJson;
 import net.fabricmc.loom.util.fmj.FabricModJsonFactory;
-import net.fabricmc.loom.util.fmj.FabricModJsonHelpers;
 
 /**
  * @param modDependencies External mods that are depended on
@@ -67,20 +66,22 @@ public record RemappedSpecContext(
 	@VisibleForTesting
 	public static RemappedSpecContext create(RemappedProjectView projectView) {
 		AsyncCache<List<FabricModJson>> fmjCache = new AsyncCache<>();
+		ProjectDependencyMods projectMods = ProjectDependencyMods.create(projectView);
 		return new RemappedSpecContext(
-				getDependentMods(projectView, fmjCache),
+				getDependentMods(projectView, fmjCache, projectMods),
 				projectView.getMods(),
-				getCompileRuntimeMods(projectView, fmjCache),
+				getCompileRuntimeMods(projectView, fmjCache, projectMods),
 				projectView.getProductionNamespace()
 		);
 	}
 
 	// Returns a list of mods found on both the compile and/or runtime classpaths
-	private static List<FabricModJson> getDependentMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+	private static List<FabricModJson> getDependentMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, ProjectDependencyMods projectMods) {
 		var futures = new ArrayList<CompletableFuture<List<FabricModJson>>>();
 
 		for (RemapConfigurationSettings entry : projectView.getRemapConfigurations()) {
-			final Set<File> artifacts = entry.getSourceConfiguration().get().resolve();
+			final Set<File> artifacts = entry.getSourceConfiguration().get().getIncoming()
+					.artifactView(ProjectView::excludeProjectComponents).getFiles().getFiles();
 
 			for (File artifact : artifacts) {
 				futures.add(fmjCache.get(artifact.toPath().toAbsolutePath().toString(), () -> {
@@ -91,28 +92,17 @@ public record RemappedSpecContext(
 			}
 		}
 
-		if (!projectView.disableProjectDependantMods()) {
-			// Add all the dependent projects
-			for (Project dependentProject : SpecContext.getDependentProjects(projectView).toList()) {
-				futures.add(fmjCache.get(dependentProject.getPath(), () -> FabricModJsonHelpers.getModsInProject(dependentProject)));
-			}
-		}
-
-		return SpecContext.distinctSorted(AsyncCache.joinList(futures));
+		List<FabricModJson> mods = new ArrayList<>(AsyncCache.joinList(futures));
+		mods.addAll(projectMods.all());
+		return SpecContext.distinctSorted(mods);
 	}
 
 	// Returns a list of mods that are on both to compile and runtime classpath
-	private static List<ModHolder> getCompileRuntimeMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache) {
+	private static List<ModHolder> getCompileRuntimeMods(RemappedProjectView projectView, AsyncCache<List<FabricModJson>> fmjCache, ProjectDependencyMods projectMods) {
 		var mods = new ArrayList<>(getCompileRuntimeModsFromRemapConfigs(projectView, fmjCache));
 
-		for (Project dependentProject : getCompileRuntimeProjectDependencies(projectView).toList()) {
-			List<FabricModJson> projectMods = fmjCache.getBlocking(dependentProject.getPath(), () -> {
-				return FabricModJsonHelpers.getModsInProject(dependentProject);
-			});
-
-			for (FabricModJson mod : projectMods) {
-				mods.add(new ModHolder(mod));
-			}
+		for (FabricModJson mod : projectMods.compileRuntime()) {
+			mods.add(new ModHolder(mod, !projectMods.clientOnly().contains(mod)));
 		}
 
 		return Collections.unmodifiableList(mods);
@@ -180,19 +170,6 @@ public record RemappedSpecContext(
 		};
 	}
 
-	// Returns a list of Loom Projects found in both the runtime and compile classpath
-	private static Stream<Project> getCompileRuntimeProjectDependencies(ProjectView projectView) {
-		if (projectView.disableProjectDependantMods()) {
-			return Stream.empty();
-		}
-
-		final Stream<Project> runtimeProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.RUNTIME);
-		final List<Project> compileProjects = projectView.getMinecraftProjectDependencies(ProjectView.ArtifactUsage.COMPILE).toList();
-
-		return runtimeProjects
-				.filter(compileProjects::contains); // Use the intersection of the two configurations.
-	}
-
 	@Override
 	public List<FabricModJson> modDependenciesCompileRuntime() {
 		return compileRuntimeMods.stream()
@@ -214,8 +191,5 @@ public record RemappedSpecContext(
 	}
 
 	private record ModHolder(FabricModJson mod, boolean common) {
-		ModHolder(FabricModJson mod) {
-			this(mod, true);
-		}
 	}
 }

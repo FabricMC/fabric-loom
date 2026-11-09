@@ -78,9 +78,13 @@ public abstract class MinecraftProvider {
 		return true;
 	}
 
+	/// Prepares Minecraft JARs; library dependencies are registered separately by [#provideLibraries()].
 	public void provide() throws Exception {
 		provideJars();
+	}
 
+	/// Registers Minecraft libraries on the consuming project after its JARs have been prepared.
+	public void provideLibraries() {
 		final MinecraftLibraryProvider libraryProvider = new MinecraftLibraryProvider(this, configContext.project());
 		libraryProvider.provide();
 	}
@@ -90,6 +94,12 @@ public abstract class MinecraftProvider {
 	}
 
 	public void provideJars(JavaVersion javaVersion) throws Exception {
+		synchronized (MinecraftCacheLocks.getCacheLock(workingDir().toPath())) {
+			provideJarsLocked(javaVersion);
+		}
+	}
+
+	private void provideJarsLocked(JavaVersion javaVersion) throws Exception {
 		initFiles();
 
 		verifyJavaVersion(javaVersion);
@@ -168,6 +178,12 @@ public abstract class MinecraftProvider {
 
 	// Returns true when a file was downloaded
 	private boolean downloadJars() throws IOException {
+		synchronized (MinecraftCacheLocks.getGlobalLock()) {
+			return downloadJarsLocked();
+		}
+	}
+
+	private boolean downloadJarsLocked() throws IOException {
 		AtomicBoolean didDownload = new AtomicBoolean(false);
 
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");

@@ -70,6 +70,7 @@ import net.fabricmc.loom.configuration.providers.mappings.LayeredMappingsFactory
 import net.fabricmc.loom.configuration.providers.mappings.MappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.NoRemapMappingConfiguration;
 import net.fabricmc.loom.configuration.providers.mappings.RemapMappingConfiguration;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftCacheLocks;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftMetadataProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
@@ -87,8 +88,6 @@ import net.fabricmc.loom.util.service.ScopedServiceFactory;
 import net.fabricmc.loom.util.service.ServiceFactory;
 
 public abstract class CompileConfiguration implements Runnable {
-	private static final Object GLOBAL_LOCK = "fabric.loom.internal.global.lock".intern();
-
 	@Inject
 	protected abstract Project getProject();
 
@@ -128,9 +127,22 @@ public abstract class CompileConfiguration implements Runnable {
 				final MinecraftProvider minecraftProvider;
 				final MappingConfigurationSetup mappingConfigurationSetup;
 
-				synchronized (getGlobalLockObject()) {
+				// Version manifests are shared across Minecraft caches.
+				synchronized (MinecraftCacheLocks.getGlobalLock()) {
+					metadataProvider.getVersionMeta();
 					minecraftProvider = createMinecraftProvider(configContext, metadataProvider);
-					mappingConfigurationSetup = provideMinecraft(configContext, minecraftProvider);
+				}
+
+				final Object cacheLock = MinecraftCacheLocks.getCacheLock(minecraftProvider.workingDir().toPath());
+
+				synchronized (cacheLock) {
+					minecraftProvider.provide();
+				}
+
+				minecraftProvider.provideLibraries();
+
+				synchronized (cacheLock) {
+					mappingConfigurationSetup = provideMappings(configContext, minecraftProvider);
 				}
 
 				if (mappingConfigurationSetup != null) {
@@ -139,13 +151,12 @@ public abstract class CompileConfiguration implements Runnable {
 				}
 
 				createMappedMinecraftProviders(configContext);
+				// Processor discovery can configure dependency projects, so it must run outside the cache lock.
 				registerGameProcessors(configContext);
 				final MinecraftJarProcessorManager minecraftJarProcessorManager = MinecraftJarProcessorManager.create(getProject());
 				createProcessedNamedMinecraftProvider(configContext, minecraftJarProcessorManager);
 
-				synchronized (getGlobalLockObject()) {
-					provideMappedMinecraft(configContext);
-				}
+				provideMappedMinecraft(configContext, cacheLock);
 
 				var dependencyManager = new LoomDependencyManager(getProject(), serviceFactory, extension);
 				dependencyManager.handleDependencies();
@@ -195,12 +206,9 @@ public abstract class CompileConfiguration implements Runnable {
 	}
 
 	@Nullable
-	private MappingConfigurationSetup provideMinecraft(ConfigContext configContext, MinecraftProvider minecraftProvider) throws Exception {
+	private MappingConfigurationSetup provideMappings(ConfigContext configContext, MinecraftProvider minecraftProvider) throws Exception {
 		final Project project = configContext.project();
 		final LoomGradleExtension extension = configContext.extension();
-
-		// Provide the vanilla mc jars
-		minecraftProvider.provide();
 
 		if (!extension.disableObfuscation()) {
 			// Realise the dependencies without actually resolving them, this forces any lazy providers to be created, populating the layered mapping factories.
@@ -254,18 +262,26 @@ public abstract class CompileConfiguration implements Runnable {
 		extension.setNamedMinecraftProvider(namedMinecraftProvider);
 	}
 
-	private void provideMappedMinecraft(ConfigContext configContext) throws Exception {
+	private void provideMappedMinecraft(ConfigContext configContext, Object cacheLock) throws Exception {
 		final LoomGradleExtension extension = configContext.extension();
 		final IntermediaryMinecraftProvider<?> intermediaryMinecraftProvider = extension.disableObfuscation() ? null : extension.getIntermediaryMinecraftProvider();
 		final NamedMinecraftProvider<?> namedMinecraftProvider = extension.getNamedMinecraftProvider();
 
-		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(true, extension.refreshDeps(), configContext);
+		final var provideContext = new AbstractMappedMinecraftProvider.ProvideContext(false, extension.refreshDeps(), configContext);
 
-		if (intermediaryMinecraftProvider != null) {
-			intermediaryMinecraftProvider.provide(provideContext);
+		synchronized (cacheLock) {
+			if (intermediaryMinecraftProvider != null) {
+				intermediaryMinecraftProvider.provide(provideContext);
+			}
+
+			namedMinecraftProvider.provide(provideContext);
 		}
 
-		namedMinecraftProvider.provide(provideContext);
+		if (intermediaryMinecraftProvider != null) {
+			intermediaryMinecraftProvider.applyDependencies();
+		}
+
+		namedMinecraftProvider.applyDependencies();
 	}
 
 	private void registerGameProcessors(ConfigContext configContext) {
@@ -550,11 +566,5 @@ public abstract class CompileConfiguration implements Runnable {
 				throw new UncheckedIOException(e);
 			}
 		});
-	}
-
-	// We need a lock that works across classloaders, a regular synchronized method will not work here.
-	// Interned strings are shared across classloaders, ensuring that all instances of loom use the same lock.
-	private static Object getGlobalLockObject() {
-		return GLOBAL_LOCK;
 	}
 }

@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.configuration.providers.minecraft.MinecraftCacheLocks;
 import net.fabricmc.loom.util.download.DownloadException;
 
 public record CertificateRevocationList(Collection<X509CRL> crls, boolean downloadFailure) {
@@ -87,12 +88,14 @@ public record CertificateRevocationList(Collection<X509CRL> crls, boolean downlo
 
 		LOGGER.info("Downloading CRL from {} to {}", url, path);
 
-		extension.download(url)
-				.allowInsecureProtocol()
-				.maxAge(Duration.ofDays(7)) // Cache the CRL for a week
-				.downloadPath(path);
+		synchronized (MinecraftCacheLocks.getGlobalLock()) {
+			extension.download(url)
+					.allowInsecureProtocol()
+					.maxAge(Duration.ofDays(7)) // Cache the CRL for a week
+					.downloadPath(path);
 
-		return parse(path);
+			return parse(path);
+		}
 	}
 
 	static X509CRL parse(Path path) throws IOException {

@@ -28,9 +28,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +48,7 @@ public class DebofInstallerData {
 	public static void findAndApply(Project project) {
 		for (DebofConfiguration debofConfiguration : DebofConfiguration.ALL) {
 			for (Configuration configuration : debofConfiguration.getConfigurations(project)) {
-				Optional<InstallerData> installerData = configuration.getFiles().parallelStream()
-						.filter(File::isFile)
-						.map(DebofInstallerData::getInstaller)
-						.filter(Objects::nonNull)
-						.findFirst();
+				Optional<InstallerData> installerData = findInstaller(configuration.getFiles());
 
 				if (installerData.isPresent()) {
 					LOGGER.info("Applying installer data from configuration '{}'", configuration.getName());
@@ -61,6 +59,27 @@ public class DebofInstallerData {
 		}
 
 		LOGGER.info("No installer data found in any configuration.");
+	}
+
+	@VisibleForTesting
+	public static Optional<InstallerData> findInstaller(Set<File> files) {
+		Optional<InstallerData> loaderInstaller = files.stream()
+				.filter(file -> file.getName().contains("fabric-loader"))
+				.filter(File::isFile)
+				.map(DebofInstallerData::getInstaller)
+				.filter(Objects::nonNull)
+				.findFirst();
+
+		if (loaderInstaller.isPresent()) {
+			return loaderInstaller;
+		}
+
+		return files.parallelStream()
+				.filter(file -> !file.getName().contains("fabric-loader"))
+				.filter(File::isFile)
+				.map(DebofInstallerData::getInstaller)
+				.filter(Objects::nonNull)
+				.findFirst();
 	}
 
 	@Nullable

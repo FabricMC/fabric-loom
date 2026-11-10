@@ -115,6 +115,12 @@ public abstract sealed class IntermediaryMinecraftProvider<M extends MinecraftPr
 		}
 
 		@Override
+		public void applyDependencies() {
+			server.applyDependencies();
+			client.applyDependencies();
+		}
+
+		@Override
 		public List<RemappedJars> getRemappedJars() {
 			// The delegate providers will handle the remapping
 			throw new UnsupportedOperationException("LegacyMergedImpl does not support getRemappedJars");

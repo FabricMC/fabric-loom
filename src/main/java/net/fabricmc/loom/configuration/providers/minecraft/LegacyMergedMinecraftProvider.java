@@ -67,6 +67,12 @@ public final class LegacyMergedMinecraftProvider extends MinecraftProvider {
 	}
 
 	@Override
+	public void provideLibraries() {
+		serverMinecraftProvider.provideLibraries();
+		clientMinecraftProvider.provideLibraries();
+	}
+
+	@Override
 	public List<Path> getMinecraftJars() {
 		return List.of(
 			serverMinecraftProvider.getMinecraftEnvOnlyJar(),

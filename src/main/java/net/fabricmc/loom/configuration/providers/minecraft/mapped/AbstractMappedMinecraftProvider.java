@@ -116,17 +116,22 @@ public abstract class AbstractMappedMinecraftProvider<M extends MinecraftProvide
 		}
 
 		if (context.applyDependencies()) {
-			final List<MinecraftJar.Type> dependencyTargets = getDependencyTypes();
-
-			if (!dependencyTargets.isEmpty()) {
-				MinecraftSourceSets.get(getProject()).applyDependencies(
-						(configuration, type) -> getProject().getDependencies().add(configuration, getDependencyNotation(type)),
-						dependencyTargets
-				);
-			}
+			applyDependencies();
 		}
 
 		return minecraftJars;
+	}
+
+	/// Adds the prepared Minecraft artifacts to the consuming project's configurations.
+	public void applyDependencies() {
+		final List<MinecraftJar.Type> dependencyTargets = getDependencyTypes();
+
+		if (!dependencyTargets.isEmpty()) {
+			MinecraftSourceSets.get(getProject()).applyDependencies(
+					(configuration, type) -> getProject().getDependencies().add(configuration, getDependencyNotation(type)),
+					dependencyTargets
+			);
+		}
 	}
 
 	// Create two copies of the remapped jar, the backup jar is used as the input of genSources

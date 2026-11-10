@@ -41,7 +41,6 @@ import net.fabricmc.loom.configuration.providers.minecraft.LegacyMergedMinecraft
 import net.fabricmc.loom.configuration.providers.minecraft.MergedMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftJar;
 import net.fabricmc.loom.configuration.providers.minecraft.MinecraftProvider;
-import net.fabricmc.loom.configuration.providers.minecraft.MinecraftSourceSets;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarEnvType;
 import net.fabricmc.loom.configuration.providers.minecraft.SingleJarMinecraftProvider;
 import net.fabricmc.loom.configuration.providers.minecraft.SplitMinecraftProvider;
@@ -112,19 +111,6 @@ public abstract class ProcessedNamedMinecraftProvider<M extends MinecraftProvide
 	@Override
 	public List<MinecraftJar.Type> getDependencyTypes() {
 		return parentMinecraftProvider.getDependencyTypes();
-	}
-
-	private void applyDependencies() {
-		final List<MinecraftJar.Type> dependencyTargets = getDependencyTypes();
-
-		if (dependencyTargets.isEmpty()) {
-			return;
-		}
-
-		MinecraftSourceSets.get(getProject()).applyDependencies(
-				(configuration, name) -> getProject().getDependencies().add(configuration, getDependencyNotation(name)),
-				dependencyTargets
-		);
 	}
 
 	private void deleteSimilarJars(Path jar) throws IOException {

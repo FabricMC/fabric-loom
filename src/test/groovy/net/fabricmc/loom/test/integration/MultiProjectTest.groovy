@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.test.integration
 
+import org.gradle.testkit.runner.GradleRunner
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -56,6 +57,55 @@ class MultiProjectTest extends Specification implements GradleProjectTestTrait {
 
 		where:
 		version << STANDARD_TEST_VERSIONS
+	}
+
+	def "build with different sibling plugin classpaths"() {
+		given:
+		def gradle = gradleProject(project: "minimalBase")
+		gradle.buildGradle.text = ''
+		new File(gradle.projectDir, 'settings.gradle').text = "include 'first', 'second'"
+		def loomClasspath = GradleRunner.create().withPluginClasspath().pluginClasspath.collect { File file ->
+			"'${file.absolutePath.replace("\\", "/")}'"
+		}.join(', ')
+
+		for (String name : ['first', 'second']) {
+			def childDirectory = new File(gradle.projectDir, name)
+			def extraClasspath = new File(childDirectory, 'extra-classpath')
+			extraClasspath.mkdirs()
+			// Different plugin classpaths make Gradle load Loom separately for each sibling.
+			new File(extraClasspath, 'marker.txt').text = name
+			new File(childDirectory, 'build.gradle').text = """
+                buildscript {
+                    dependencies {
+                        classpath files(${loomClasspath})
+                        classpath files('extra-classpath')
+                    }
+                }
+
+                apply plugin: 'net.fabricmc.fabric-loom-remap'
+
+                version = '1.0.0'
+                dependencies {
+                    minecraft 'com.mojang:minecraft:1.16.5'
+                    mappings 'net.fabricmc:yarn:1.16.5+build.5:v2'
+                }
+            """
+			def source = new File(childDirectory, 'src/main/java/Example.java')
+			source.parentFile.mkdirs()
+			source.text = 'public class Example {}'
+		}
+
+		when:
+		// Keep Loom off the common parent classpath so each sibling loads its own copy.
+		def result = GradleRunner.create()
+				.withProjectDir(gradle.projectDir)
+				.withArguments('build', '--max-workers=1', '--stacktrace', '--gradle-user-home', gradle.gradleHomeDir.absolutePath)
+				.build()
+
+		then:
+		result.task(':first:remapJar').outcome == SUCCESS
+		result.task(':second:remapJar').outcome == SUCCESS
+		result.output.count('Loom is loaded by multiple classloaders;') == 1
 	}
 
 	@Unroll

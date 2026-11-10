@@ -42,6 +42,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
@@ -217,22 +220,6 @@ public final class Download {
 				writeEtag(output, responseETag);
 			}
 		}
-
-		if (expectedHash != null) {
-			// Ensure we downloaded the expected hash.
-			if (!isHashValid(output)) {
-				String downloadedHash;
-
-				try {
-					downloadedHash = Checksum.of(output).sha1().hex();
-					Files.deleteIfExists(output);
-				} catch (IOException e) {
-					downloadedHash = "unknown hash";
-				}
-
-				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
-			}
-		}
 	}
 
 	private void downloadToPath(Path output, HttpResponse<InputStream> response) throws DownloadException {
@@ -251,8 +238,20 @@ public final class Download {
 		final long length = encoded ? -1 : Long.parseLong(response.headers().firstValue("Content-Length").orElse("-1"));
 		AtomicLong totalBytes = new AtomicLong(0);
 
-		try (OutputStream outputStream = Files.newOutputStream(partFile, StandardOpenOption.CREATE_NEW)) {
-			copyWithCallback(decodeOutput(response), outputStream, value -> {
+		MessageDigest digest = null;
+
+		if (expectedHash != null) {
+			try {
+				digest = MessageDigest.getInstance("SHA-1");
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
+		}
+
+		try (InputStream inputStream = decodeOutput(response);
+				OutputStream fileStream = Files.newOutputStream(partFile, StandardOpenOption.CREATE_NEW);
+				OutputStream outputStream = digest == null ? fileStream : new DigestOutputStream(fileStream, digest)) {
+			copyWithCallback(inputStream, outputStream, value -> {
 				if (length < 0) {
 					return;
 				}
@@ -279,6 +278,14 @@ public final class Download {
 			}
 		}
 
+		if (digest != null) {
+			String downloadedHash = new Checksum.Result(digest.digest()).hex();
+
+			if (!expectedHash.equalsIgnoreCase("sha1:" + downloadedHash)) {
+				throw error("Failed to download (%s) with expected hash: %s got %s", url, expectedHash, downloadedHash);
+			}
+		}
+
 		try {
 			// Once the file has been fully read, move it to the destination file.
 			// This ensures that the output file only exists in fully populated state.
@@ -289,7 +296,7 @@ public final class Download {
 	}
 
 	private void copyWithCallback(InputStream is, OutputStream os, IntConsumer consumer) throws IOException {
-		byte[] buffer = new byte[1024];
+		byte[] buffer = new byte[8192];
 		int length;
 
 		while ((length = is.read(buffer)) > 0) {

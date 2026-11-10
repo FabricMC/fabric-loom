@@ -34,7 +34,7 @@ public final class MinecraftCacheLocks {
 	private MinecraftCacheLocks() {
 	}
 
-	/// Serializes downloads and shared version-manifest access.
+	/// Serializes shared version-manifest access.
 	public static Object getGlobalLock() {
 		return GLOBAL_LOCK;
 	}

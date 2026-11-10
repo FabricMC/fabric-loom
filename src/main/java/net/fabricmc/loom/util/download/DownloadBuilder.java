@@ -44,6 +44,7 @@ public class DownloadBuilder {
 	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
+	private @Nullable DownloadCache cache;
 	private @Nullable String expectedHash = null;
 	private boolean useEtag = true;
 	private boolean forceDownload = false;
@@ -60,6 +61,12 @@ public class DownloadBuilder {
 
 	static DownloadBuilder create(String url) throws URISyntaxException {
 		return new DownloadBuilder(new URI(url));
+	}
+
+	/** Coordinates file downloads using a cache owned by the current build. */
+	public DownloadBuilder cache(DownloadCache cache) {
+		this.cache = cache;
+		return this;
 	}
 
 	public DownloadBuilder sha1(String sha1) {
@@ -125,6 +132,11 @@ public class DownloadBuilder {
 	}
 
 	public DownloadResult downloadPath(Path path) throws DownloadException {
+		if (cache != null) {
+			return cache.download(path, expectedHash, forceDownload, offline,
+					() -> withRetries(download -> download.downloadPath(path)));
+		}
+
 		return withRetries((download) -> download.downloadPath(path));
 	}
 
@@ -134,7 +146,11 @@ public class DownloadBuilder {
 
 	public String downloadString(Path cache) throws DownloadException {
 		return withRetries((download) -> {
-			download.downloadPath(cache);
+			if (this.cache != null) {
+				this.cache.download(cache, expectedHash, forceDownload, offline, () -> download.downloadPath(cache));
+			} else {
+				download.downloadPath(cache);
+			}
 
 			try {
 				return Files.readString(cache, StandardCharsets.UTF_8);

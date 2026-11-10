@@ -36,6 +36,7 @@ import spock.lang.IgnoreIf
 
 import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.download.Download
+import net.fabricmc.loom.util.download.DownloadCache
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
@@ -189,11 +190,74 @@ class DownloadFileTest extends DownloadTest {
 		def output = new File(File.createTempDir(), "file.txt").toPath()
 
 		when:
-		Download.create("$PATH/gzip").downloadPath(output)
+		Download.create("$PATH/gzip").sha1(Checksum.of(content).sha1().hex()).downloadPath(output)
 
 		then:
 		Files.readString(output) == content
 		requestCount == 1
+	}
+
+	def "Shared verification trusts cached content until the next build"() {
+		given:
+		def requests = new java.util.concurrent.atomic.AtomicInteger()
+		server.get("/shared-corrupt") {
+			requests.incrementAndGet()
+			it.result("Hello World")
+		}
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def cache = new DownloadCache()
+		def download = {
+			Download.create("$PATH/shared-corrupt")
+					.cache(cache)
+					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
+					.downloadPath(output)
+		}
+		download()
+		def modified = Files.getLastModifiedTime(output)
+		Files.writeString(output, "Hullo World")
+		Files.setLastModifiedTime(output, modified)
+
+		when:
+		download()
+
+		then:
+		requests.get() == 1
+		Files.readString(output) == "Hullo World"
+
+		when:
+		Download.create("$PATH/shared-corrupt")
+				.cache(new DownloadCache())
+				.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
+				.downloadPath(output)
+
+		then:
+		requests.get() == 2
+		Files.readString(output) == "Hello World"
+	}
+
+	def "Shared verification retries bad content and deduplicates refresh"() {
+		given:
+		def requests = new java.util.concurrent.atomic.AtomicInteger()
+		server.get("/retry-hash") {
+			it.result(requests.incrementAndGet() == 1 ? "bad content" : "Hello World")
+		}
+		def output = new File(File.createTempDir(), "file.txt").toPath()
+		def cache = new DownloadCache()
+		def download = {
+			Download.create("$PATH/retry-hash")
+					.cache(cache)
+					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
+					.forceDownload()
+					.downloadPath(output)
+		}
+
+		when:
+		download()
+		download()
+
+		then:
+		requests.get() == 2
+		Files.readString(output) == "Hello World"
 	}
 
 	def "Invalid Sha1"() {

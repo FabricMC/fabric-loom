@@ -33,8 +33,20 @@ public abstract class DownloadService implements BuildService<BuildServiceParame
 	private final DownloadCache cache = new DownloadCache();
 
 	public static DownloadService get(Project project) {
-		return project.getGradle().getSharedServices()
+		BuildService<?> service = project.getGradle().getSharedServices()
 				.registerIfAbsent("loomDownloadService", DownloadService.class, spec -> { })
+				.get();
+
+		if (service instanceof DownloadService downloadService) {
+			return downloadService;
+		}
+
+		// Projects with different plugin classpaths may load incompatible service classes.
+		String serviceName = "loomDownloadService:" + System.identityHashCode(DownloadService.class);
+		return project.getGradle().getSharedServices()
+				.registerIfAbsent(serviceName, DownloadService.class, spec -> {
+					project.getLogger().warn("Loom is loaded by multiple classloaders; Minecraft download verification caches will not be shared between them, which may reduce performance.");
+				})
 				.get();
 	}
 

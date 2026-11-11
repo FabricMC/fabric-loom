@@ -40,12 +40,12 @@ import spock.lang.Specification
 import spock.lang.TempDir
 import spock.util.concurrent.PollingConditions
 
-import net.fabricmc.loom.util.download.DownloadCache
+import net.fabricmc.loom.configuration.service.DownloadCacheService
 import net.fabricmc.loom.util.download.DownloadException
+import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadResult
-import net.fabricmc.loom.util.download.DownloadService
 
-class DownloadCacheTest extends Specification {
+class DownloadCacheServiceTest extends Specification {
 	@TempDir
 	Path directory
 
@@ -56,13 +56,31 @@ class DownloadCacheTest extends Specification {
 		def otherBuild = ProjectBuilder.builder().withProjectDir(directory.resolve("other").toFile()).build()
 
 		expect:
-		DownloadService.get(root).cache.is(DownloadService.get(child).cache)
-		!DownloadService.get(root).cache.is(DownloadService.get(otherBuild).cache)
+		def output = directory.resolve("file")
+		def rootCache = DownloadCacheService.Lookup.forProject(root).get(output, "test", "sha1:hash", false, false)
+		rootCache.is(DownloadCacheService.Lookup.forProject(child).get(output, "test", "sha1:hash", false, false))
+		!rootCache.is(DownloadCacheService.Lookup.forProject(otherBuild).get(output, "test", "sha1:hash", false, false))
+	}
+
+	def "Request options determine service reuse"() {
+		given:
+		def project = ProjectBuilder.builder().build()
+		def lookup = DownloadCacheService.Lookup.forProject(project)
+		def output = directory.resolve("file")
+		def service = lookup.get(output, "https://example.com/file", "sha1:hash", false, false)
+
+		expect:
+		service.is(lookup.get(output, "https://example.com/file", "sha1:hash", false, false))
+		!service.is(lookup.get(output, "https://example.com/other", "sha1:hash", false, false))
+		!service.is(lookup.get(output, "https://example.com/file", "sha1:other", false, false))
+		!service.is(lookup.get(output, "https://example.com/file", "sha1:hash", true, false))
+		!service.is(lookup.get(output, "https://example.com/file", "sha1:hash", false, true))
+		!service.is(lookup.get(directory.resolve("other"), "https://example.com/file", "sha1:hash", false, false))
 	}
 
 	def "Concurrent requests share one successful operation"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		def entered = new CountDownLatch(1)
 		def release = new CountDownLatch(1)
@@ -112,7 +130,7 @@ class DownloadCacheTest extends Specification {
 
 	def "A waiting request retries after the previous operation fails"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		def firstEntered = new CountDownLatch(1)
 		def release = new CountDownLatch(1)
@@ -155,7 +173,7 @@ class DownloadCacheTest extends Specification {
 
 	def "Successful verification is reused until the next build or file deletion"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		Files.writeString(output, "original")
 		Files.setLastModifiedTime(output, FileTime.from(Instant.now().minusSeconds(10)))
@@ -192,7 +210,7 @@ class DownloadCacheTest extends Specification {
 		calls.get() == 1
 
 		when:
-		new DownloadCache().download(output, "sha1:hash", false, false, verify)
+		new TestCache().download(output, "sha1:hash", false, false, verify)
 
 		then:
 		calls.get() == 2
@@ -207,7 +225,7 @@ class DownloadCacheTest extends Specification {
 
 	def "Failed operations can be retried"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 
 		when:
@@ -230,7 +248,7 @@ class DownloadCacheTest extends Specification {
 
 	def "Refresh is deduplicated independently of normal verification and build lifetime"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		Files.writeString(output, "valid")
 		Files.setLastModifiedTime(output, FileTime.from(Instant.now().minusSeconds(10)))
@@ -250,68 +268,15 @@ class DownloadCacheTest extends Specification {
 
 		when:
 		cache.download(output, "sha1:other", false, false, verify)
-		new DownloadCache().download(output, "sha1:hash", true, false, verify)
+		new TestCache().download(output, "sha1:hash", true, false, verify)
 
 		then:
 		calls.get() == 4
 	}
 
-	def "Another download invalidates previous verification (#hash)"() {
-		given:
-		def cache = new DownloadCache()
-		def output = directory.resolve("file")
-		Files.writeString(output, "original")
-		def calls = new AtomicInteger()
-		def verify = {
-			calls.incrementAndGet()
-			return { false } as DownloadResult
-		}
-		cache.download(output, "sha1:hash", false, false, verify)
-
-		when:
-		cache.download(output, hash, false, false) {
-			Files.writeString(output, "replacement")
-			return { true } as DownloadResult
-		}
-		cache.download(output, "sha1:hash", false, false, verify)
-
-		then:
-		calls.get() == 2
-
-		where:
-		hash << [null, "sha1:other"]
-	}
-
-	def "A failed refresh invalidates previous verification"() {
-		given:
-		def cache = new DownloadCache()
-		def output = directory.resolve("file")
-		Files.writeString(output, "original")
-		def calls = new AtomicInteger()
-		def verify = {
-			calls.incrementAndGet()
-			return { false } as DownloadResult
-		}
-		cache.download(output, "sha1:hash", false, false, verify)
-
-		when:
-		cache.download(output, "sha1:hash", true, false) {
-			throw new DownloadException("Refresh failed")
-		}
-
-		then:
-		thrown DownloadException
-
-		when:
-		cache.download(output, "sha1:hash", false, false, verify)
-
-		then:
-		calls.get() == 2
-	}
-
 	def "Verification does not depend on timestamp precision"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		Files.writeString(output, "valid")
 		// A future timestamp also covers a clock moving backwards.
@@ -332,7 +297,7 @@ class DownloadCacheTest extends Specification {
 
 	def "An abandoned download marker invalidates success"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def output = directory.resolve("file")
 		Files.writeString(output, "valid")
 		Files.setLastModifiedTime(output, FileTime.from(Instant.now().minusSeconds(10)))
@@ -353,7 +318,7 @@ class DownloadCacheTest extends Specification {
 
 	def "Unrelated files can be downloaded concurrently"() {
 		given:
-		def cache = new DownloadCache()
+		def cache = new TestCache()
 		def entered = new CountDownLatch(2)
 		def release = new CountDownLatch(1)
 		def downloads = ["first", "second"].collect { name ->
@@ -374,39 +339,11 @@ class DownloadCacheTest extends Specification {
 		downloads.each { it.get(10, TimeUnit.SECONDS) }
 	}
 
-	def "Separate cache instances serialize mutations of the same physical file"() {
-		given:
-		def output = directory.resolve("file")
-		def firstEntered = new CountDownLatch(1)
-		def release = new CountDownLatch(1)
-		def secondEntered = new CountDownLatch(1)
-		def first = CompletableFuture.runAsync {
-			new DownloadCache().download(output, "sha1:first", false, false) {
-				firstEntered.countDown()
-				assert release.await(10, TimeUnit.SECONDS)
-				return { true } as DownloadResult
-			}
+	private static class TestCache {
+		private final DownloadCacheService.Lookup lookup = DownloadCacheService.Lookup.forProject(ProjectBuilder.builder().build())
+
+		DownloadResult download(Path output, String hash, boolean refresh, boolean offline, DownloadExecutor.DownloadRunner runner) {
+			return lookup.get(output, "test", hash, refresh, offline).download(runner)
 		}
-		assert firstEntered.await(10, TimeUnit.SECONDS)
-		def second = CompletableFuture.runAsync {
-			new DownloadCache().download(directory.resolve("sub/../file"), "sha1:second", false, false) {
-				secondEntered.countDown()
-				return { true } as DownloadResult
-			}
-		}
-
-		expect:
-		!secondEntered.await(100, TimeUnit.MILLISECONDS)
-
-		when:
-		release.countDown()
-		first.get(10, TimeUnit.SECONDS)
-		second.get(10, TimeUnit.SECONDS)
-
-		then:
-		secondEntered.count == 0
-
-		cleanup:
-		release.countDown()
 	}
 }

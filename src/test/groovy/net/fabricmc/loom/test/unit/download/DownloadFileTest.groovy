@@ -32,17 +32,20 @@ import java.time.Instant
 import java.util.zip.GZIPOutputStream
 
 import io.javalin.http.HttpStatus
+import org.gradle.api.Project
+import org.gradle.testfixtures.ProjectBuilder
 import spock.lang.IgnoreIf
 
 import net.fabricmc.loom.util.Checksum
 import net.fabricmc.loom.util.download.Download
-import net.fabricmc.loom.util.download.DownloadCache
 import net.fabricmc.loom.util.download.DownloadException
 import net.fabricmc.loom.util.download.DownloadExecutor
 import net.fabricmc.loom.util.download.DownloadProgressListener
 import net.fabricmc.loom.util.download.DownloadResult
 
 class DownloadFileTest extends DownloadTest {
+	private final Project cacheProject = ProjectBuilder.builder().build()
+
 	@IgnoreIf({ os.windows }) // Requires admin on windows.
 	def "Directory: Symlink"() {
 		setup:
@@ -205,10 +208,9 @@ class DownloadFileTest extends DownloadTest {
 			it.result("Hello World")
 		}
 		def output = new File(File.createTempDir(), "file.txt").toPath()
-		def cache = new DownloadCache()
 		def download = {
 			Download.create("$PATH/shared-corrupt")
-					.cache(cache)
+					.globalCache(cacheProject)
 					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
 					.downloadPath(output)
 		}
@@ -226,7 +228,7 @@ class DownloadFileTest extends DownloadTest {
 
 		when:
 		Download.create("$PATH/shared-corrupt")
-				.cache(new DownloadCache())
+				.globalCache(ProjectBuilder.builder().build())
 				.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
 				.downloadPath(output)
 
@@ -242,10 +244,9 @@ class DownloadFileTest extends DownloadTest {
 			it.result(requests.incrementAndGet() == 1 ? "bad content" : "Hello World")
 		}
 		def output = new File(File.createTempDir(), "file.txt").toPath()
-		def cache = new DownloadCache()
 		def download = {
 			Download.create("$PATH/retry-hash")
-					.cache(cache)
+					.globalCache(cacheProject)
 					.sha1("0a4d55a8d778e5022fab701977c5d840bbc486d0")
 					.forceDownload()
 					.downloadPath(output)

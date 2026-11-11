@@ -45,9 +45,7 @@ import net.fabricmc.loom.configuration.providers.minecraft.verify.MinecraftJarVe
 import net.fabricmc.loom.configuration.providers.minecraft.verify.SignatureVerificationFailure;
 import net.fabricmc.loom.util.Check;
 import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.download.DownloadCache;
 import net.fabricmc.loom.util.download.DownloadExecutor;
-import net.fabricmc.loom.util.download.DownloadService;
 import net.fabricmc.loom.util.download.GradleDownloadProgressListener;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.ProgressGroup;
@@ -180,7 +178,6 @@ public abstract class MinecraftProvider {
 
 	// Returns true when a file was downloaded
 	private boolean downloadJars() throws IOException {
-		DownloadCache downloadCache = DownloadService.get(getProject()).getCache();
 		AtomicBoolean didDownload = new AtomicBoolean(false);
 
 		try (ProgressGroup progressGroup = new ProgressGroup(getProject(), "Download Minecraft jars");
@@ -188,7 +185,7 @@ public abstract class MinecraftProvider {
 			if (provideClient()) {
 				final MinecraftVersionMeta.Download client = getVersionInfo().download("client");
 				getExtension().download(client.url())
-						.cache(downloadCache)
+						.globalCache(getProject())
 						.sha1(client.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft client", progressGroup::createProgressLogger))
 						.downloadPathAsync(minecraftClientJar.toPath(), executor)
@@ -202,7 +199,7 @@ public abstract class MinecraftProvider {
 			if (provideServer()) {
 				final MinecraftVersionMeta.Download server = getVersionInfo().download("server");
 				getExtension().download(server.url())
-						.cache(downloadCache)
+						.globalCache(getProject())
 						.sha1(server.sha1())
 						.progress(new GradleDownloadProgressListener("Minecraft server", progressGroup::createProgressLogger))
 						.downloadPathAsync(minecraftServerJar.toPath(), executor)

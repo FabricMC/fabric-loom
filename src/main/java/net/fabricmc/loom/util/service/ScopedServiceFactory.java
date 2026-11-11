@@ -31,8 +31,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import org.jetbrains.annotations.VisibleForTesting;
-
 import net.fabricmc.loom.util.gradle.GradleTypeAdapter;
 
 /**
@@ -70,7 +68,6 @@ public class ScopedServiceFactory implements ServiceFactory, Closeable {
 		return service;
 	}
 
-	@VisibleForTesting
 	protected ServiceFactory getEffectiveServiceFactory() {
 		return this;
 	}

@@ -37,14 +37,17 @@ import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+import org.gradle.api.Project;
 import org.jspecify.annotations.Nullable;
+
+import net.fabricmc.loom.configuration.service.DownloadCacheService;
 
 @SuppressWarnings("UnusedReturnValue")
 public class DownloadBuilder {
 	private static final Duration ONE_DAY = Duration.ofDays(1);
 
 	private final URI url;
-	private @Nullable DownloadCache cache;
+	private DownloadCacheService.@Nullable Lookup globalCache;
 	private @Nullable String expectedHash = null;
 	private boolean useEtag = true;
 	private boolean forceDownload = false;
@@ -63,9 +66,9 @@ public class DownloadBuilder {
 		return new DownloadBuilder(new URI(url));
 	}
 
-	/** Coordinates file downloads using a cache owned by the current build. */
-	public DownloadBuilder cache(DownloadCache cache) {
-		this.cache = cache;
+	/// Shares verified downloads for the lifetime of the project's Gradle build.
+	public DownloadBuilder globalCache(Project project) {
+		this.globalCache = DownloadCacheService.Lookup.forProject(project);
 		return this;
 	}
 
@@ -132,9 +135,9 @@ public class DownloadBuilder {
 	}
 
 	public DownloadResult downloadPath(Path path) throws DownloadException {
-		if (cache != null) {
-			return cache.download(path, expectedHash, forceDownload, offline,
-					() -> withRetries(download -> download.downloadPath(path)));
+		if (globalCache != null) {
+			DownloadCacheService service = globalCache.get(path, url.toString(), expectedHash, forceDownload, offline);
+			return service.download(() -> withRetries(download -> download.downloadPath(path)));
 		}
 
 		return withRetries((download) -> download.downloadPath(path));
@@ -146,8 +149,9 @@ public class DownloadBuilder {
 
 	public String downloadString(Path cache) throws DownloadException {
 		return withRetries((download) -> {
-			if (this.cache != null) {
-				this.cache.download(cache, expectedHash, forceDownload, offline, () -> download.downloadPath(cache));
+			if (globalCache != null) {
+				DownloadCacheService service = globalCache.get(cache, url.toString(), expectedHash, forceDownload, offline);
+				service.download(() -> download.downloadPath(cache));
 			} else {
 				download.downloadPath(cache);
 			}

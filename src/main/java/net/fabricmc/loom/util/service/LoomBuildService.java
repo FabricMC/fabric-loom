@@ -22,35 +22,54 @@
  * SOFTWARE.
  */
 
-package net.fabricmc.loom.util.download;
+package net.fabricmc.loom.util.service;
+
+import java.io.IOException;
 
 import org.gradle.api.Project;
 import org.gradle.api.services.BuildService;
 import org.gradle.api.services.BuildServiceParameters;
 
-/** Shares successful hash-verified downloads for the lifetime of one Gradle build. */
-public abstract class DownloadService implements BuildService<BuildServiceParameters.None> {
-	private final DownloadCache cache = new DownloadCache();
+/// Shares Loom services across projects for the lifetime of one Gradle build.
+public abstract class LoomBuildService implements BuildService<BuildServiceParameters.None>, ServiceFactory, AutoCloseable {
+	private final ScopedServiceFactory serviceFactory = new ScopedServiceFactory() {
+		@Override
+		protected ServiceFactory getEffectiveServiceFactory() {
+			return LoomBuildService.this;
+		}
+	};
 
-	public static DownloadService get(Project project) {
+	public static LoomBuildService get(Project project) {
 		BuildService<?> service = project.getGradle().getSharedServices()
-				.registerIfAbsent("loomDownloadService", DownloadService.class, spec -> { })
+				.registerIfAbsent("loomBuildService", LoomBuildService.class, spec -> { })
 				.get();
 
-		if (service instanceof DownloadService downloadService) {
-			return downloadService;
+		if (service instanceof LoomBuildService loomBuildService) {
+			return loomBuildService;
 		}
 
 		// Projects with different plugin classpaths may load incompatible service classes.
-		String serviceName = "loomDownloadService:" + System.identityHashCode(DownloadService.class);
+		String serviceName = "loomBuildService:" + System.identityHashCode(LoomBuildService.class);
 		return project.getGradle().getSharedServices()
-				.registerIfAbsent(serviceName, DownloadService.class, spec -> {
-					project.getLogger().warn("Loom is loaded by multiple classloaders; Minecraft download verification caches will not be shared between them, which may reduce performance.");
+				.registerIfAbsent(serviceName, LoomBuildService.class, spec -> {
+					project.getLogger().warn("Loom is loaded by multiple classloaders; build services will not be shared between them, which may reduce performance.");
 				})
 				.get();
 	}
 
-	public DownloadCache getCache() {
-		return cache;
+	@Override
+	public synchronized <O extends Service.Options, S extends Service<O>> S get(O options) {
+		S service = serviceFactory.get(options);
+
+		if (!(service instanceof GlobalService)) {
+			throw new IllegalArgumentException("Service " + service.getClass().getName() + " must implement GlobalService to be shared across projects");
+		}
+
+		return service;
+	}
+
+	@Override
+	public synchronized void close() throws IOException {
+		serviceFactory.close();
 	}
 }

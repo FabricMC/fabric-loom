@@ -235,11 +235,17 @@ public abstract class LoomGradleExtensionImpl extends LoomGradleExtensionApiImpl
 	}
 
 	@Override
-	public FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace) {
+	public FileCollection getMinecraftJars(MappingsNamespace mappingsNamespace) {
 		return getProject().files(
-			getProject().provider(() ->
-				getProject().files(getMinecraftJars(mappingsNamespace).stream().map(Path::toFile).toList())
-			)
+			getProject().provider(() -> {
+				final List<Path> jars = switch (mappingsNamespace) {
+				case NAMED -> getNamedMinecraftProvider().getMinecraftJarPaths();
+				case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJarPaths();
+				case OFFICIAL, CLIENT_OFFICIAL, SERVER_OFFICIAL -> getMinecraftProvider().getMinecraftJars();
+				};
+
+				return getProject().files(jars.stream().map(Path::toFile).toList());
+			})
 		);
 	}
 

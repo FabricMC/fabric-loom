@@ -186,12 +186,12 @@ public class SourceRemapper {
 			}
 		}
 
-		for (Path productionJar : extension.getMinecraftJars(prodNamespace)) {
-			mercury.getClassPath().add(productionJar);
+		for (File productionJar : extension.getMinecraftJars(prodNamespace)) {
+			mercury.getClassPath().add(productionJar.toPath());
 		}
 
-		for (Path intermediaryJar : extension.getMinecraftJars(MappingsNamespace.NAMED)) {
-			mercury.getClassPath().add(intermediaryJar);
+		for (File namedJar : extension.getMinecraftJars(MappingsNamespace.NAMED)) {
+			mercury.getClassPath().add(namedJar.toPath());
 		}
 
 		Set<File> files = project.getConfigurations()

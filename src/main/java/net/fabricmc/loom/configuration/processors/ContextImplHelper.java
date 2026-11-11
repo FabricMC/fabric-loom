@@ -24,9 +24,9 @@
 
 package net.fabricmc.loom.configuration.processors;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 
 import net.fabricmc.loom.api.mappings.layered.MappingsNamespace;
 import net.fabricmc.loom.configuration.ConfigContext;
@@ -43,8 +43,8 @@ public final class ContextImplHelper {
 			try {
 				TinyRemapper tinyRemapper = TinyRemapperHelper.getTinyRemapper(configContext.project(), configContext.serviceFactory(), from.toString(), to.toString());
 
-				for (Path minecraftJar : configContext.extension().getMinecraftJars(from)) {
-					tinyRemapper.readClassPath(minecraftJar);
+				for (File minecraftJar : configContext.extension().getMinecraftJars(from)) {
+					tinyRemapper.readClassPath(minecraftJar.toPath());
 				}
 
 				return tinyRemapper;

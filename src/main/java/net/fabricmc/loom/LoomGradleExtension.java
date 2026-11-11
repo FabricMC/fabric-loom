@@ -24,7 +24,6 @@
 
 package net.fabricmc.loom;
 
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -107,15 +106,7 @@ public interface LoomGradleExtension extends LoomGradleExtensionAPI {
 
 	Provider<ArtifactMetadata.MixinRemapType> getDefaultMixinRemapTypeEnum();
 
-	default List<Path> getMinecraftJars(MappingsNamespace mappingsNamespace) {
-		return switch (mappingsNamespace) {
-		case NAMED -> getNamedMinecraftProvider().getMinecraftJarPaths();
-		case INTERMEDIARY -> getIntermediaryMinecraftProvider().getMinecraftJarPaths();
-		case OFFICIAL, CLIENT_OFFICIAL, SERVER_OFFICIAL -> getMinecraftProvider().getMinecraftJars();
-		};
-	}
-
-	FileCollection getMinecraftJarsCollection(MappingsNamespace mappingsNamespace);
+	FileCollection getMinecraftJars(MappingsNamespace mappingsNamespace);
 
 	@Override
 	MixinExtension getMixin();

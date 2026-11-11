@@ -137,7 +137,7 @@ public class UnpickService extends Service<UnpickService.Options> {
 			options.getUnpickClasspath().setFrom(configurations.named(Constants.Configurations.MINECRAFT_COMPILE_LIBRARIES));
 			options.getUnpickClasspath().from(configurations.named(Constants.Configurations.MOD_COMPILE_CLASSPATH_MAPPED));
 			options.getLenient().set(unpickMetadata instanceof UnpickMetadata.V1);
-			extension.getMinecraftJars(runtimeNamespace).forEach(options.getUnpickClasspath()::from);
+			options.getUnpickClasspath().from(extension.getMinecraftJars(runtimeNamespace));
 			return true;
 		});
 	}

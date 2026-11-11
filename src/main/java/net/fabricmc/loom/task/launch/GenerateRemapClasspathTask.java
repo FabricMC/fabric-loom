@@ -27,7 +27,6 @@ package net.fabricmc.loom.task.launch;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,9 +63,7 @@ public abstract class GenerateRemapClasspathTask extends AbstractLoomTask {
 				.map(configurations::named)
 				.forEach(getRemapClasspath()::from);
 
-		for (Path minecraftJar : getExtension().getMinecraftJars(getExtension().getProductionNamespaceEnum().get())) {
-			getRemapClasspath().from(minecraftJar.toFile());
-		}
+		getRemapClasspath().from(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJars));
 
 		getRemapClasspathFile().set(getExtension().getFiles().getRemapClasspathFile());
 	}

@@ -116,7 +116,7 @@ public abstract class ValidateModProvidedJavadocTask extends AbstractLoomTask {
 	private final ProblemReportingOptions problemReportingOptions;
 
 	public ValidateModProvidedJavadocTask() {
-		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJarsCollection));
+		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJars));
 		getExpectedNamespace().convention(getExtension().getProductionNamespace());
 		problemReportingOptions = getProject().getObjects().newInstance(ProblemReportingOptions.class);
 

@@ -24,6 +24,7 @@
 
 package net.fabricmc.loom.task.tool;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -92,7 +93,8 @@ public abstract class ModEnigmaTask extends AbstractLoomTask {
 	protected abstract Problems getProblems();
 
 	public ModEnigmaTask() {
-		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(getExtension()::getMinecraftJars));
+		getMinecraftJars().convention(getExtension().getProductionNamespaceEnum().map(namespace ->
+				getExtension().getMinecraftJars(namespace).getFiles().stream().map(File::toPath).toList()));
 		getToolClasspath().from(getEnigmaClasspath(getProject()));
 	}
 

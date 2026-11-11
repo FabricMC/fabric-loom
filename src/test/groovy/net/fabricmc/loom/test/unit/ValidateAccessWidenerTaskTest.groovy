@@ -59,7 +59,7 @@ class ValidateAccessWidenerTaskTest extends Specification {
 		accessWidener.set(tempDir.resolve("test.accesswidener").toFile())
 		def extension = Stub(LoomGradleExtension) {
 			getAccessWidenerPath() >> accessWidener
-			getMinecraftJarsCollection(MappingsNamespace.NAMED) >> project.files(targetJar.toFile())
+			getMinecraftJars(MappingsNamespace.NAMED) >> project.files(targetJar.toFile())
 		}
 		project.extensions.add("loom", extension)
 		task = project.tasks.register("validateAccessWidener", TestValidateAccessWidenerTask).get()

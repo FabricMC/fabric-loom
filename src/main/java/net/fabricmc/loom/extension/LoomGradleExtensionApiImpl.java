@@ -570,9 +570,7 @@ public abstract class LoomGradleExtensionApiImpl implements LoomGradleExtensionA
 
 	@Override
 	public FileCollection getNamedMinecraftJars() {
-		final ConfigurableFileCollection jars = getProject().getObjects().fileCollection();
-		jars.from(getProject().provider(() -> LoomGradleExtension.get(getProject()).getMinecraftJars(MappingsNamespace.NAMED)));
-		return jars;
+		return LoomGradleExtension.get(getProject()).getMinecraftJars(MappingsNamespace.NAMED);
 	}
 
 	@Override

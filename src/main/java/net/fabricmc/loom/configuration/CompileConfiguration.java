@@ -29,9 +29,11 @@ import static net.fabricmc.loom.util.Constants.Configurations;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -414,9 +416,18 @@ public abstract class CompileConfiguration implements Runnable {
 		}
 	}
 
-	// Returns true if our process already owns the lock
-	@SuppressWarnings("BusyWait")
 	private LockResult acquireProcessLockWaiting_(LockFile lockFile, Duration timeout) throws IOException {
+		while (true) {
+			try {
+				return tryAcquireProcessLock(lockFile, timeout);
+			} catch (FileAlreadyExistsException ignored) {
+				// Another process created the lock after we checked it, try again.
+			}
+		}
+	}
+
+	@SuppressWarnings("BusyWait")
+	private LockResult tryAcquireProcessLock(LockFile lockFile, Duration timeout) throws IOException {
 		final long timeoutMs = timeout.toMillis();
 		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
 		final long currentPid = ProcessHandle.current().pid();
@@ -448,13 +459,11 @@ public abstract class CompileConfiguration implements Runnable {
 			if (disowned) {
 				logger.lifecycle("Previous process has disowned the lock due to abrupt termination.");
 				Files.deleteIfExists(lockFile.file);
-			} else if (handle.isEmpty()) {
+			} else if (lockingProcessId >= 0 && handle.isEmpty()) {
 				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
-				ProcessUtil processUtil = ProcessUtil.create(getProject());
-				logger.lifecycle(processUtil.printWithParents(handle.get()));
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 
@@ -499,7 +508,7 @@ public abstract class CompileConfiguration implements Runnable {
 			Files.createDirectories(lockFile.file.getParent());
 		}
 
-		Files.writeString(lockFile.file, String.valueOf(currentPid));
+		Files.writeString(lockFile.file, String.valueOf(currentPid), StandardOpenOption.CREATE_NEW);
 
 		if (disowned) {
 			return LockResult.ACQUIRED_PREVIOUS_OWNER_DISOWNED;

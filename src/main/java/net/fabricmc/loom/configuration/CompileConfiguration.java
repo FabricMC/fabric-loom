@@ -83,6 +83,7 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.ClasspathGroupService;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ExceptionUtil;
+import net.fabricmc.loom.util.ProcessUtil;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -463,6 +464,11 @@ public abstract class CompileConfiguration implements Runnable {
 				Files.deleteIfExists(lockFile.file);
 				abrupt = true;
 			} else {
+				if (handle.isPresent()) {
+					ProcessUtil processUtil = ProcessUtil.create(getProject());
+					logger.lifecycle(processUtil.printWithParents(handle.get()));
+				}
+
 				logger.lifecycle("Waiting for lock to be released...");
 				long sleptMs = 0;
 

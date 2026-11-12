@@ -29,23 +29,14 @@ import static net.fabricmc.loom.util.Constants.Configurations;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.time.Duration;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
 import org.gradle.api.Action;
-import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.AbstractCopyTask;
@@ -83,7 +74,8 @@ import net.fabricmc.loom.extension.MixinExtension;
 import net.fabricmc.loom.task.service.ClasspathGroupService;
 import net.fabricmc.loom.util.Checksum;
 import net.fabricmc.loom.util.ExceptionUtil;
-import net.fabricmc.loom.util.ProcessUtil;
+import net.fabricmc.loom.util.ProcessLock;
+import net.fabricmc.loom.util.ProcessLock.LockResult;
 import net.fabricmc.loom.util.gradle.GradleUtils;
 import net.fabricmc.loom.util.gradle.daemon.DaemonUtils;
 import net.fabricmc.loom.util.service.ScopedServiceFactory;
@@ -116,7 +108,8 @@ public abstract class CompileConfiguration implements Runnable {
 
 			final boolean previousRefreshDeps = extension.refreshDeps();
 
-			final LockResult lockResult = acquireProcessLockWaiting(getLockFile());
+			final ProcessLock lock = createLock();
+			final LockResult lockResult = lock.acquire();
 
 			if (lockResult != LockResult.ACQUIRED_CLEAN) {
 				getProject().getLogger().lifecycle("Found existing cache lock file ({}), rebuilding loom cache. This may have been caused by a failed or canceled build.", lockResult);
@@ -164,11 +157,11 @@ public abstract class CompileConfiguration implements Runnable {
 				dependencyManager.handleDependencies();
 			} catch (Exception e) {
 				ExceptionUtil.processException(e, DaemonUtils.Context.fromProject(getProject()));
-				disownLock();
+				createLock().disown();
 				throw ExceptionUtil.createDescriptiveWrapper(RuntimeException::new, "Failed to setup Minecraft", e);
 			}
 
-			releaseLock();
+			createLock().release();
 			extension.setRefreshDeps(previousRefreshDeps);
 
 			MixinExtension mixin = LoomGradleExtension.get(getProject()).getMixin();
@@ -373,199 +366,17 @@ public abstract class CompileConfiguration implements Runnable {
 		});
 	}
 
-	private LockFile getLockFile() {
+	private ProcessLock createLock() {
 		final LoomGradleExtension extension = LoomGradleExtension.get(getProject());
 		final Path cacheDirectory = extension.getFiles().getUserCache().toPath();
 		final String pathHash = Checksum.of(getProject()).sha1().hex();
-		return new LockFile(
+		return new ProcessLock(
 				cacheDirectory.resolve("." + pathHash + ".lock"),
 				"Lock for cache='%s', project='%s'".formatted(
 						cacheDirectory, getProject().absoluteProjectPath(getProject().getPath())
-				)
+				),
+				getProject()
 		);
-	}
-
-	record LockFile(Path file, String description) {
-		@Override
-		public String toString() {
-			return this.description;
-		}
-	}
-
-	enum LockResult {
-		// acquired immediately or after waiting for another process to release
-		ACQUIRED_CLEAN,
-		// already owned by current pid
-		ACQUIRED_ALREADY_OWNED,
-		// acquired due to current owner not existing
-		ACQUIRED_PREVIOUS_OWNER_MISSING,
-		// acquired due to previous owner disowning the lock
-		ACQUIRED_PREVIOUS_OWNER_DISOWNED
-	}
-
-	private LockResult acquireProcessLockWaiting(LockFile lockFile) {
-		// one hour
-		return this.acquireProcessLockWaiting(lockFile, getDefaultTimeout());
-	}
-
-	private LockResult acquireProcessLockWaiting(LockFile lockFile, Duration timeout) {
-		try {
-			return this.acquireProcessLockWaiting_(lockFile, timeout);
-		} catch (final IOException e) {
-			throw new RuntimeException("Exception acquiring lock " + lockFile, e);
-		}
-	}
-
-	private LockResult acquireProcessLockWaiting_(LockFile lockFile, Duration timeout) throws IOException {
-		while (true) {
-			try {
-				return tryAcquireProcessLock(lockFile, timeout);
-			} catch (FileAlreadyExistsException ignored) {
-				// Another process created the lock after we checked it, try again.
-			}
-		}
-	}
-
-	@SuppressWarnings("BusyWait")
-	private LockResult tryAcquireProcessLock(LockFile lockFile, Duration timeout) throws IOException {
-		final long timeoutMs = timeout.toMillis();
-		final Logger logger = Logging.getLogger("loom_acquireProcessLockWaiting");
-		final long currentPid = ProcessHandle.current().pid();
-		boolean abrupt = false;
-		boolean disowned = false;
-
-		if (Files.exists(lockFile.file)) {
-			long lockingProcessId = -1;
-
-			try {
-				String lockValue = Files.readString(lockFile.file);
-
-				if ("disowned".equals(lockValue)) {
-					disowned = true;
-				} else {
-					lockingProcessId = Long.parseLong(lockValue);
-					logger.lifecycle("\"{}\" is currently held by pid '{}'.", lockFile, lockingProcessId);
-				}
-			} catch (final Exception ignored) {
-				// ignored
-			}
-
-			if (lockingProcessId == currentPid) {
-				return LockResult.ACQUIRED_ALREADY_OWNED;
-			}
-
-			Optional<ProcessHandle> handle = ProcessHandle.of(lockingProcessId);
-
-			if (disowned) {
-				logger.lifecycle("Previous process has disowned the lock due to abrupt termination.");
-				Files.deleteIfExists(lockFile.file);
-			} else if (lockingProcessId >= 0 && handle.isEmpty()) {
-				logger.lifecycle("Locking process does not exist, assuming abrupt termination and deleting lock file.");
-				Files.deleteIfExists(lockFile.file);
-				abrupt = true;
-			} else {
-				if (handle.isPresent()) {
-					ProcessUtil processUtil = ProcessUtil.create(getProject());
-					logger.lifecycle(processUtil.printWithParents(handle.get()));
-				}
-
-				logger.lifecycle("Waiting for lock to be released...");
-				long sleptMs = 0;
-
-				while (Files.exists(lockFile.file)) {
-					try {
-						if ("disowned".equals(Files.readString(lockFile.file))) {
-							logger.lifecycle("Previous process has disowned the lock due to abrupt termination.");
-							Files.deleteIfExists(lockFile.file);
-							disowned = true;
-							break;
-						}
-					} catch (NoSuchFileException e) {
-						break;
-					}
-
-					try {
-						Thread.sleep(100);
-					} catch (final InterruptedException e) {
-						Thread.currentThread().interrupt();
-					}
-
-					sleptMs += 100;
-
-					if (sleptMs >= 1000 * 60 && sleptMs % (1000 * 60) == 0L) {
-						logger.lifecycle(
-								"""
-										Have been waiting on "{}" held by pid '{}' for {} minute(s).
-										If this persists for an unreasonable length of time, kill this process, run './gradlew --stop' and then try again.""",
-								lockFile, lockingProcessId, sleptMs / 1000 / 60
-						);
-					}
-
-					if (sleptMs >= timeoutMs) {
-						throw new GradleException("Have been waiting on lock file '%s' for %s ms. Giving up as timeout is %s ms."
-								.formatted(lockFile, sleptMs, timeoutMs));
-					}
-				}
-			}
-		}
-
-		if (!Files.exists(lockFile.file.getParent())) {
-			Files.createDirectories(lockFile.file.getParent());
-		}
-
-		Files.writeString(lockFile.file, String.valueOf(currentPid), StandardOpenOption.CREATE_NEW);
-
-		if (disowned) {
-			return LockResult.ACQUIRED_PREVIOUS_OWNER_DISOWNED;
-		} else if (abrupt) {
-			return LockResult.ACQUIRED_PREVIOUS_OWNER_MISSING;
-		}
-
-		return LockResult.ACQUIRED_CLEAN;
-	}
-
-	private static Duration getDefaultTimeout() {
-		if (System.getenv("CI") != null) {
-			// Set a small timeout on CI, as it's unlikely going to unlock.
-			return Duration.ofMinutes(1);
-		}
-
-		return Duration.ofHours(1);
-	}
-
-	// When we fail to configure, write "disowned" to the lock file to release it from this process
-	// This allows the next run to rebuild without waiting for this process to exit
-	private void disownLock() {
-		final Path lock = getLockFile().file;
-
-		try {
-			Files.writeString(lock, "disowned");
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private void releaseLock() {
-		final Path lock = getLockFile().file;
-
-		if (!Files.exists(lock)) {
-			return;
-		}
-
-		try {
-			Files.delete(lock);
-		} catch (IOException e1) {
-			try {
-				// If we failed to delete the lock file, moving it before trying to delete it may help.
-				final Path del = lock.resolveSibling(lock.getFileName() + ".del");
-				Files.move(lock, del);
-				Files.delete(del);
-			} catch (IOException e2) {
-				var exception = new UncheckedIOException("Failed to release getProject() configuration lock", e2);
-				exception.addSuppressed(e1);
-				throw exception;
-			}
-		}
 	}
 
 	private void finalizedBy(String a, String b) {

@@ -166,6 +166,7 @@ public abstract sealed class AbstractProductionRunTask extends AbstractLoomTask 
 
 	protected void configureJvmArgs(ExecSpec exec) {
 		exec.args(getJvmArgs().get());
+		exec.args("-XX:+UnlockDiagnosticVMOptions", "-XX:-UseBASE64Intrinsics");
 		exec.args("-Dfabric.addMods=" + joinFiles(getMods().getFiles().stream()));
 	}
 

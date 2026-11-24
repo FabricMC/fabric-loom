@@ -86,7 +86,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 		when:
 		// First generate sources
 		def genSources = gradle.run(task: "genSources", args: ["--info"])
-		genSources.task(":genSources").outcome == SUCCESS
+		assert genSources.task(":genSources").outcome == SUCCESS
 
 		// Print out the source of the file
 		def lines = getClassSource(gradle, "net/minecraft/server/dedicated/ServerPropertiesLoader.java").lines().toList()
@@ -137,7 +137,7 @@ class DebugLineNumbersTest extends Specification implements GradleProjectTestTra
 		result.task(":runServer").outcome == SUCCESS
 
 		BREAKPOINTS.forEach { className, line ->
-			futures[className].get().location().lineNumber() == line
+			assert futures[className].get().location().lineNumber() == line
 		}
 	}
 

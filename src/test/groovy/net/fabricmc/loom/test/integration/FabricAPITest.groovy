@@ -105,12 +105,12 @@ class FabricAPITest extends Specification implements GradleProjectTestTrait {
 
 		def biomeApiJar = new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0.jar")
 		new File(gradle.mavenLocalDir, "net/fabricmc/fabric-api/fabric-biome-api-v1/999.0.0/fabric-biome-api-v1-999.0.0-sources.jar").exists()
-		def manifest = ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF").toString()
+		def manifest = new String(ZipUtils.unpack(biomeApiJar.toPath(), "META-INF/MANIFEST.MF"))
 
 		if (disableMixinAp) {
-			manifest.contains("Fabric-Loom-Mixin-Remap-Type=static")
+			assert manifest.contains("Fabric-Loom-Mixin-Remap-Type: static")
 		} else {
-			manifest.contains("Fabric-Loom-Mixin-Remap-Type=mixin")
+			assert manifest.contains("Fabric-Loom-Mixin-Remap-Type: mixin")
 		}
 
 		// Check that a client mixin exists

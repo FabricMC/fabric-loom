@@ -51,7 +51,9 @@ repositories {
 		name = 'Fabric'
 		url = 'https://maven.fabricmc.net/'
 	}
-	mavenCentral()
+	mavenCentral {
+		url = 'https://maven-central-eu.storage-download.googleapis.com/maven2/'
+	}
 }
 
 configurations.configureEach {

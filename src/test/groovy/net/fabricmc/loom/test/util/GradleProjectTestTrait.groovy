@@ -189,6 +189,7 @@ trait GradleProjectTestTrait {
 			args << "--parallel"
 			args << "--warning-mode" << warningMode
 			args << "--gradle-user-home" << gradleHomeDir
+			args << "--init-script" << new File("gradle/maven-central-mirror.init.gradle").absolutePath
 			args.addAll(options.args ?: [])
 
 			runner.withArguments(args as String[])

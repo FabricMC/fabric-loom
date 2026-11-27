@@ -227,6 +227,7 @@ public abstract non-sealed class ClientProductionRunTask extends AbstractProduct
 
 			exec.commandLine(XVFBExistsValueSource.XVFB);
 			exec.args("-a", getJavaLauncher().get().getExecutablePath());
+			exec.args("-Drenderpearl.vulkan.allowcpudevice=true");
 
 			return;
 		}

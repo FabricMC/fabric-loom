@@ -25,6 +25,7 @@
 package net.fabricmc.loom.test.unit.kotlin
 
 import kotlin.KotlinVersion
+import kotlin.metadata.jvm.KotlinClassMetadata
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.tree.ClassNode
 import spock.lang.Specification
@@ -36,9 +37,7 @@ import net.fabricmc.tinyremapper.api.TrEnvironment
 import net.fabricmc.tinyremapper.api.TrRemapper
 
 class KotlinRemapperClassloaderTest extends Specification {
-	private static String KOTLIN_VERSION = KotlinVersion.CURRENT.toString()
-	private static String KOTLIN_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/${KOTLIN_VERSION}/kotlin-stdlib-${KOTLIN_VERSION}.jar"
-	private static String KOTLIN_METADATA_URL = "https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-metadata-jvm/${KOTLIN_VERSION}/kotlin-metadata-jvm-${KOTLIN_VERSION}.jar"
+	private static final String KOTLIN_VERSION = KotlinVersion.CURRENT.toString()
 
 	def "Test Kotlin Remapper Classloader"() {
 		given:
@@ -67,9 +66,12 @@ class KotlinRemapperClassloaderTest extends Specification {
 
 		// Ensure that the visitor is using the kotlin version specified on the classpath.
 		visitor.runtimeKotlinVersion == KOTLIN_VERSION
+
+		cleanup:
+		classLoader?.close()
 	}
 
-	private class TestKotlinClasspath implements KotlinClasspath {
+	private static class TestKotlinClasspath implements KotlinClasspath {
 		@Override
 		String version() {
 			return KOTLIN_VERSION
@@ -77,22 +79,11 @@ class KotlinRemapperClassloaderTest extends Specification {
 
 		@Override
 		Set<URL> classpath() {
-			def kotlin = downloadFile(KOTLIN_URL, "kotlin-stdlib.jar")
-			def metadata = downloadFile(KOTLIN_METADATA_URL, "kotlin-metadata.jar")
-
 			return Set.of(
-					kotlin.toURI().toURL(),
-					metadata.toURI().toURL()
+					KotlinVersion.class.protectionDomain.codeSource.location,
+					KotlinClassMetadata.class.protectionDomain.codeSource.location
 					)
 		}
-	}
-
-	File tempDir = File.createTempDir()
-	File downloadFile(String url, String name) {
-		File dst = new File(tempDir, name)
-		dst.parentFile.mkdirs()
-		dst << new URL(url).newInputStream()
-		return dst
 	}
 
 	def getClassBytes(String name) {

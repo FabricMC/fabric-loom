@@ -1,0 +1,41 @@
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+
+def mirrorUrl = uri('https://maven-central-eu.storage-download.googleapis.com/maven2/')
+def mirrorMavenCentral = { repositories ->
+	repositories.withType(MavenArtifactRepository).all { repository ->
+		if (repository.url?.toString()?.replaceAll('/+$', '') in [
+			'https://repo.maven.apache.org/maven2',
+			'https://repo1.maven.org/maven2'
+		]) {
+			repository.url = mirrorUrl
+		}
+	}
+}
+
+gradle.beforeSettings { settings ->
+	mirrorMavenCentral(settings.pluginManagement.repositories)
+	mirrorMavenCentral(settings.dependencyResolutionManagement.repositories)
+	mirrorMavenCentral(settings.buildscript.repositories)
+}
+
+gradle.settingsEvaluated { settings ->
+	def repositories = settings.pluginManagement.repositories
+	if (repositories.empty) {
+		repositories.mavenCentral { url = mirrorUrl }
+		repositories.gradlePluginPortal()
+		return
+	}
+
+	// The plugin portal can redirect requests for dependencies to Maven Central.
+	def portal = repositories.findByName('Gradle Central Plugin Repository')
+	if (portal != null && !repositories.withType(MavenArtifactRepository).any { it.url == mirrorUrl }) {
+		def mirror = repositories.mavenCentral { url = mirrorUrl }
+		repositories.remove(mirror)
+		repositories.add(repositories.indexOf(portal), mirror)
+	}
+}
+
+gradle.beforeProject { project ->
+	mirrorMavenCentral(project.repositories)
+	mirrorMavenCentral(project.buildscript.repositories)
+}

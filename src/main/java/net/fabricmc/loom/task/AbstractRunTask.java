@@ -292,6 +292,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		commandLine.add(XVFBExistsValueSource.XVFB);
 		commandLine.add("--auto-servernum");
 		commandLine.add(javaExec);
+		commandLine.add("-Drenderpearl.vulkan.allowcpudevice=true");
 		commandLine.addAll(getAllJvmArgs());
 		commandLine.add(getMainClass().get());
 		commandLine.addAll(getArgs());
